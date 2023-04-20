@@ -204,9 +204,35 @@ class GmshIO:
 
         return mesh_data
 
-    def extract_element_data(self,elem_type, elem_tags, elem_node_tags):
+    def extract_node_data(self, node_tags, node_coordinates):
         """
-        Gets gmsh data belonging to a single element
+        Gets gmsh data belonging to nodal data
+
+        :param node_tags: gmsh node ids
+        :param node_coordinates: gmsh node coordinates
+        :return: dictionary of nodal data
+        """
+
+        # reshape nodal coordinate array to [num nodes, 3]
+        num_nodes = len(node_tags)
+        node_coordinates = np.reshape(node_coordinates, (num_nodes, 3))
+
+        return {"coordinates": node_coordinates,
+                "ids": node_tags}
+
+
+    def extract_elements_data(self, elem_types, elem_tags, elem_node_tags):
+        elements_data = {}
+
+        for elem_type, elem_tag, elem_node_tag in zip(elem_types, elem_tags, elem_node_tags):
+            element_dict = self.extract_element_data(elem_type, elem_tag, elem_node_tag)
+            elements_data.update(element_dict)
+
+        return elements_data
+
+    def extract_element_data(self, elem_type, elem_tags, elem_node_tags):
+        """
+        Gets gmsh data belonging to a single element type
 
         :param elem_type: gmsh id for element type
         :param elem_tags:  gmsh id for element number
@@ -236,25 +262,80 @@ class GmshIO:
                                                    "elements": {}}
 
         # get nodal information
-        node_tags, node_coords, node_params = gmsh_mesh.getNodes()  # nodes, elements
-
-        # reshape nodal coordinate array to [num nodes, 3]
-        num_nodes = len(node_tags)
-        node_coordinates = np.reshape(node_coords, (num_nodes, 3))
-
-        mesh_data["nodes"]["coordinates"] = node_coordinates
-        mesh_data["nodes"]["ids"] = node_tags
+        node_tags, node_coords, node_params = gmsh_mesh.getNodes()  # nodes
+        nodes_dict = self.extract_node_data(node_tags, node_coords)
+        mesh_data["nodes"].update(nodes_dict)
 
         # get all elemental information
         elem_types, elem_tags, elem_node_tags = gmsh_mesh.getElements()
 
         # todo, this is unhandy for the future and the connection to kratos, handier would be to group elements by physical group
-        for elem_type, elem_tag, elem_node_tag in zip(elem_types, elem_tags, elem_node_tags):
-            element_dict = self.extract_element_data(elem_type, elem_tag, elem_node_tag)
-            mesh_data["elements"].update(element_dict)
+        mesh_data["elements"] = self.extract_elements_data(elem_types, elem_tags, elem_node_tags)
 
         return mesh_data
 
+    def read_gmsh_msh(self, filename):
+        """
+        Reads a Gmsh .msh file
+
+        :param filename: name of the Gmsh .msh file
+        :return: dictionary containing information on the nodes and elements
+        """
+        gmsh.initialize()
+        gmsh.open(filename)
+
+        return self.extract_mesh_data(gmsh.model.mesh)
+
+    def get_nodes_in_group(self, group_name: str):
+        """
+        Gets all nodes which are part of a certain group
+
+        :param group_name: name of the requested group
+        :return: dictionary of nodal data
+        """
+
+        groups = gmsh.model.getPhysicalGroups()
+
+        for group in groups:
+            name = gmsh.model.getPhysicalName(group[0], group[1])
+            if name == group_name:
+                # gets nodes per group
+                nodes = gmsh.model.mesh.get_nodes_for_physical_group(group[0], group[1])
+
+                nodes_data = self.extract_node_data(nodes[0], nodes[1])
+
+                return nodes_data
+
+        return None
+
+
+    def get_elements_in_group(self, group_name: str):
+
+        # Get group dimensions and ids
+        groups = gmsh.model.getPhysicalGroups()
+
+        for group in groups:
+
+            # get name of the group
+            name = gmsh.model.getPhysicalName(group[0], group[1])
+
+            # if the requested group name is equal to the group, retrieve element data
+            if name == group_name:
+                # gets elements per group
+                entity = gmsh.model.getEntitiesForPhysicalGroup(group[0], group[1])[0]
+                elements = gmsh.model.mesh.getElements(entity)
+
+                # extract element data
+                element_data = self.extract_elements_data(elements[0], elements[1], elements[2])
+
+                return element_data
+
+        return None
+
 
 if __name__ == '__main__':
-    pass
+    gmsh_io = GmshIO()
+    gmsh_io.read_gmsh_msh(r"D:\software_development\scatter\mesh\embankment_rose2D.msh")
+
+    gmsh_io.get_nodes_in_group("embankment")
+    gmsh_io.get_elements_in_group("embankment")
