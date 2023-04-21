@@ -333,9 +333,56 @@ class GmshIO:
         return None
 
 
+    def get_boundary_data(self, entity_ndim, entity_id):
+        lower_entities = gmsh.model.getBoundary([(entity_ndim, entity_id)])
+        lower_entity_ids = [entity[1] for entity in lower_entities]
+
+        return lower_entity_ids
+
+
+    def extract_geo_data(self):
+
+        entities = gmsh.model.get_entities()
+
+        geo_data = {"points":   {},
+                    "lines":    {},
+                    "surfaces": {},
+                    "volumes":  {}}
+
+        # all entities
+        for entity in entities:
+
+            entity_ndim, entity_id = entity[0], entity[1]
+            # if entity is volume # get boundary of volume
+
+            # point
+            if entity_ndim == 0:
+                geo_data["points"][entity_id] = gmsh.model.get_value(entity_ndim, entity_id, [])
+
+            if entity_ndim == 1:
+                geo_data["lines"][entity_id] = self.get_boundary_data(entity_ndim, entity_id)
+            if entity_ndim ==2:
+                geo_data["surfaces"][entity_id] = self.get_boundary_data(entity_ndim, entity_id)
+            if entity_ndim == 3:
+                geo_data["volumes"][entity_id] = self.get_boundary_data(entity_ndim, entity_id)
+
+
+
+        return geo_data
+        # gmsh.model.occ.get_surface_loops(3)
+
+    def read_gmsh_geo(self, filename):
+        gmsh.initialize()
+        gmsh.open(filename)
+
+        self.extract_geo_data()
+        a=1+1
+        pass
+
+
 if __name__ == '__main__':
     gmsh_io = GmshIO()
-    gmsh_io.read_gmsh_msh(r"D:\software_development\scatter\mesh\embankment_rose2D.msh")
+    gmsh_io.read_gmsh_geo(r"D:\software_development\scatter\mesh\embankment_rose.geo")
 
     gmsh_io.get_nodes_in_group("embankment")
     gmsh_io.get_elements_in_group("embankment")
