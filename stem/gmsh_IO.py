@@ -41,7 +41,7 @@ class GmshIO:
     def __init__(self):
         pass
 
-    def create_point(self, coordinates, mesh_size):
+    def create_point(self, coordinates, mesh_size=0, id=None):
         """
         creates points in gmsh
         :param coordinates: gets points coordinates in order from user
@@ -55,7 +55,7 @@ class GmshIO:
         gmsh.model.geo.addPoint(x, y, z, lc)
 
 
-    def create_line(self, point_ids):
+    def create_line(self, point_ids, id=None):
         """
         creates lines in gmsh
         :param point_ids: gets point tags in order
@@ -339,9 +339,7 @@ class GmshIO:
 
         return lower_entity_ids
 
-
     def extract_geo_data(self):
-
         entities = gmsh.model.get_entities()
 
         geo_data = {"points":   {},
@@ -361,28 +359,48 @@ class GmshIO:
 
             if entity_ndim == 1:
                 geo_data["lines"][entity_id] = self.get_boundary_data(entity_ndim, entity_id)
-            if entity_ndim ==2:
+            if entity_ndim == 2:
                 geo_data["surfaces"][entity_id] = self.get_boundary_data(entity_ndim, entity_id)
             if entity_ndim == 3:
                 geo_data["volumes"][entity_id] = self.get_boundary_data(entity_ndim, entity_id)
 
-
-
         return geo_data
-        # gmsh.model.occ.get_surface_loops(3)
+
 
     def read_gmsh_geo(self, filename):
         gmsh.initialize()
         gmsh.open(filename)
 
-        self.extract_geo_data()
-        a=1+1
-        pass
+        geo_data = self.extract_geo_data()
+
+        gmsh.finalize()
+
+        return geo_data
+
+    def generate_geo_from_geo_data(self, geo_data):
+
+        gmsh.initialize()
+        for k, v in geo_data["points"].items():
+            gmsh.model.geo.addPoint(v[0], v[1], v[2], tag=k)
+
+        for k, v in geo_data["lines"].items():
+            gmsh.model.geo.addLine(v[0],v[1], tag=k)
+
+        for k, v in geo_data["surfaces"].items():
+            gmsh.model.geo.addCurveLoop(v, tag=k, reorient=True)
+            gmsh.model.geo.addPlaneSurface([k], tag=k)
+
+        for k, v in geo_data["volumes"].items():
+            gmsh.model.geo.addSurfaceLoop(v, tag=k)
+
+            gmsh.model.geo.add_volume([k], tag=k)
 
 
 if __name__ == '__main__':
     gmsh_io = GmshIO()
-    gmsh_io.read_gmsh_geo(r"D:\software_development\scatter\mesh\embankment_rose.geo")
+    geo_data = gmsh_io.read_gmsh_geo(r"D:\software_development\scatter\mesh\embankment_rose.geo")
+
+    gmsh_io.generate_geo_from_geo_data( geo_data)
 
     gmsh_io.get_nodes_in_group("embankment")
     gmsh_io.get_elements_in_group("embankment")
