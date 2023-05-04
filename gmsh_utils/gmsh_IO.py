@@ -1,3 +1,4 @@
+import pathlib
 from typing import Dict, List, Union, Type
 from enum import Enum
 import re
@@ -485,16 +486,17 @@ class GmshIO:
 
         self.__geo_data = geo_data
 
-
-
     def read_gmsh_geo(self, filename):
-        gmsh.initialize()
-        gmsh.open(filename)
 
-        self.extract_geo_data()
+        if pathlib.Path(filename).exists():
+            gmsh.initialize()
+            gmsh.open(filename)
 
-        gmsh.finalize()
+            self.extract_geo_data()
 
+            gmsh.finalize()
+        else:
+            raise FileNotFoundError(f"File {filename} does not exist!")
 
     def generate_geo_from_geo_data(self):
 
