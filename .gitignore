@@ -4,6 +4,6 @@ __pycache__
 venv/*
 pytest_cache/*
 build/*
-STEM.egg-info/*
+gmsh_utils.egg-info/*
 .coverage
 .tox/*
