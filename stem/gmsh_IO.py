@@ -42,6 +42,7 @@ class GmshIO:
 
     def __init__(self):
         self.__mesh_data = {}
+        self.__geo_data = {}
 
     @property
     def mesh_data(self) -> Dict[str, object]:
@@ -54,6 +55,35 @@ class GmshIO:
         """
 
         return self.__mesh_data
+
+    @property
+    def geo_data(self) -> Dict[str, object]:
+        """
+        Returns the geometry data dictionary
+
+        Returns:
+            Dict: Dictionary containing the geometry data, the geometry data contains: points, lines, surfaces, volumes
+            and the physical groups.
+        """
+
+        return self.__geo_data
+
+    @geo_data.setter
+    def geo_data(self, geo_data: Dict[str, object]) -> None:
+        """
+        Sets the geometry data dictionary. For now, an exception is raised if this method is called, this is because the
+        geometry data can only be set by the read_gmsh_geo method.
+
+        Args:
+            geo_data (Dict): Dictionary containing the geometry data, the geometry data contains: points, lines,
+            surfaces, volumes and the physical groups.
+
+        Returns:
+            None
+        """
+
+        Exception("Geometry data can only be set by the read_gmsh_geo method.")
+
 
     def create_point(self, coordinates: Union[List[float], npt.NDArray[np.float64]], element_size: float) -> None:
         """
@@ -383,7 +413,6 @@ class GmshIO:
 
         return None
 
-
     def get_elements_in_group(self, group_name: str):
 
         # Get group dimensions and ids
@@ -420,7 +449,8 @@ class GmshIO:
         geo_data = {"points":   {},
                     "lines":    {},
                     "surfaces": {},
-                    "volumes":  {}}
+                    "volumes":  {},
+                    "physical_groups": {}}
 
         # all entities
         for entity in entities:
@@ -431,7 +461,6 @@ class GmshIO:
             # point
             if entity_ndim == 0:
                 geo_data["points"][entity_id] = gmsh.model.get_value(entity_ndim, entity_id, [])
-
             if entity_ndim == 1:
                 geo_data["lines"][entity_id] = self.get_boundary_data(entity_ndim, entity_id)
             if entity_ndim == 2:
@@ -439,43 +468,71 @@ class GmshIO:
             if entity_ndim == 3:
                 geo_data["volumes"][entity_id] = self.get_boundary_data(entity_ndim, entity_id)
 
-        return geo_data
+        # Get group dimensions and ids
+        groups = gmsh.model.getPhysicalGroups()
+
+        for group in groups:
+
+            # get name of the group
+            name = gmsh.model.getPhysicalName(group[0], group[1])
+
+            # gets elements per group
+            entity = gmsh.model.getEntitiesForPhysicalGroup(group[0], group[1])[0]
+
+            geo_data["physical_groups"][name] = {"ndim": group[0],
+                                                 "id": group[1],
+                                                 "geometry_id": entity}
+
+        self.__geo_data = geo_data
+
 
 
     def read_gmsh_geo(self, filename):
         gmsh.initialize()
         gmsh.open(filename)
 
-        geo_data = self.extract_geo_data()
+        self.extract_geo_data()
 
         gmsh.finalize()
 
-        return geo_data
 
-    def generate_geo_from_geo_data(self, geo_data):
+    def generate_geo_from_geo_data(self):
 
         gmsh.initialize()
-        for k, v in geo_data["points"].items():
+
+        # add points to the geometry
+        for k, v in self.__geo_data["points"].items():
             gmsh.model.geo.addPoint(v[0], v[1], v[2], tag=k)
 
-        for k, v in geo_data["lines"].items():
+        # add lines to the geometry
+        for k, v in self.__geo_data["lines"].items():
             gmsh.model.geo.addLine(v[0],v[1], tag=k)
 
-        for k, v in geo_data["surfaces"].items():
+        # add surfaces to the geometry
+        for k, v in self.__geo_data["surfaces"].items():
             gmsh.model.geo.addCurveLoop(v, tag=k, reorient=True)
             gmsh.model.geo.addPlaneSurface([k], tag=k)
 
-        for k, v in geo_data["volumes"].items():
+        # add volumes to the geometry
+        for k, v in self.__geo_data["volumes"].items():
             gmsh.model.geo.addSurfaceLoop(v, tag=k)
-
             gmsh.model.geo.add_volume([k], tag=k)
 
+        # add physical groups to the geometry
+        for k, v in self.__geo_data["physical_groups"].items():
+            gmsh.model.addPhysicalGroup(v["ndim"], [v["geometry_id"]], tag=v["id"], name=k)
+
+        # synchronize the geometry
+        gmsh.model.geo.synchronize()
 
 if __name__ == '__main__':
     gmsh_io = GmshIO()
-    geo_data = gmsh_io.read_gmsh_geo(r"D:\software_development\scatter\mesh\embankment_rose.geo")
+    gmsh_io.read_gmsh_geo(r"D:\software_development\scatter\mesh\embankment_rose.geo")
 
-    gmsh_io.generate_geo_from_geo_data( geo_data)
+    gmsh_io.generate_geo_from_geo_data()
+
+    gmsh.model.mesh.generate(3)
+    gmsh.fltk.run()
 
     gmsh_io.get_nodes_in_group("embankment")
     gmsh_io.get_elements_in_group("embankment")
