@@ -133,8 +133,8 @@ class TestGmshIO:
         gmsh_io.read_gmsh_geo(geo_file)
 
         geo_data = gmsh_io.geo_data
-        expected_points = {1: [0., 0., 0.], 2: [0.5, 0.,  0.], 3: [0.5, 1.,  0.], 4: [0., 1., 0.], 11: [0., 2., 0.],
-                           12: [0.5, 2.,  0.], 13: [0., 0., -0.5], 14: [0.5, 0., -0.5], 18: [0.5, 1., -0.5],
+        expected_points = {1: [0., 0., 0.], 2: [0.5, 0., 0.], 3: [0.5, 1., 0.], 4: [0., 1., 0.], 11: [0., 2., 0.],
+                           12: [0.5, 2., 0.], 13: [0., 0., -0.5], 14: [0.5, 0., -0.5], 18: [0.5, 1., -0.5],
                            22: [0., 1., -0.5], 23: [0., 2., -0.5], 32: [0.5, 2., -0.5]}
         expected_lines = {5: [1, 2], 6: [2, 3], 7: [3, 4], 8: [1, 4], 13: [4, 11], 14: [11, 12], 15: [3, 12],
                           19: [13, 14], 20: [14, 18], 21: [18, 22], 22: [13, 22], 24: [1, 13], 25: [2, 14], 29: [3, 18],
@@ -156,6 +156,18 @@ class TestGmshIO:
         # check if expected and actual geo data are equal
         TestUtils.assert_dictionary_almost_equal(expected_geo_data, geo_data)
 
+    def test_read_gmsh_msh(self):
+        """
+        Checks whether a gmsh .msh file is read correctly.
 
-def test_generate_geo_from_geo_data():
-    assert False
+        """
+
+        msh_file = r"test_data/column_3D_tetra4.msh"
+
+        gmsh_io = GmshIO()
+        gmsh_io.read_gmsh_msh(msh_file)
+
+        mesh_data = gmsh_io.mesh_data
+
+        # check if the coordinates of the points are correct
+        expected_mesh_data = {}
