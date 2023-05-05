@@ -4,7 +4,7 @@ import numpy.testing as npt
 class TestUtils:
 
     @staticmethod
-    def assert_dictionary_almost_equal(expected: Dict[Any], actual: Dict[Any]):
+    def assert_dictionary_almost_equal(expected: Dict[Any, Any], actual: Dict[Any, Any]):
         """
         Checks whether two dictionaries are equal.
 
