@@ -414,7 +414,7 @@ class GmshIO:
 
         gmsh.finalize()
 
-    def get_nodes_in_group(self, group_name: str) -> Dict[str, Union[List[int], npt.NDArray[np.float64]]]:
+    def get_nodes_in_group(self, group_name: str) -> Dict[str, Union[npt.NDArray[np.int_], npt.NDArray[np.float64]]]:
         """
         Gets all nodes which are part of a certain group
 
@@ -422,7 +422,7 @@ class GmshIO:
             group_name (str): Name of the requested group.
 
         Returns:
-             Dict[str, Union[List[int], npt.NDArray[np.float64]]]: Dictionary which contains nodal data.
+             Dict[str, Union[npt.NDArray[np.int_], npt.NDArray[np.float64]]]: Dictionary which contains nodal data.
 
         """
 
@@ -440,7 +440,7 @@ class GmshIO:
 
         return {}
 
-    def get_elements_in_group(self, group_name: str) -> Dict[str, Dict[str, List[int]]]:
+    def get_elements_in_group(self, group_name: str) -> Dict[str, Dict[str, npt.NDArray[np.int_]]]:
         """
         Gets all elements which are part of a certain group
 
@@ -448,7 +448,7 @@ class GmshIO:
             group_name (str): Name of the requested group.
 
         Returns:
-            Dict[str, List[int]]: Dictionary which contains element data.
+            Dict[str, npt.NDArray[np.int_]]: Dictionary which contains element data.
 
         """
 
@@ -503,11 +503,11 @@ class GmshIO:
         # get all entities
         entities = gmsh.model.get_entities()
 
-        geo_data = {"points":   {},
-                    "lines":    {},
-                    "surfaces": {},
-                    "volumes":  {},
-                    "physical_groups": {}}
+        geo_data: [str, Dict[str, Any]] = {"points":   {},
+                                           "lines":    {},
+                                           "surfaces": {},
+                                           "volumes":  {},
+                                           "physical_groups": {}}
 
         # loop over all entities
         for entity in entities:
