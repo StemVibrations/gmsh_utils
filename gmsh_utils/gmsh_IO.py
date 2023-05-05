@@ -598,6 +598,8 @@ class GmshIO:
         """
         Generates a Gmsh geometry data from a geometry data dictionary.
 
+        The curve loops which form the surface are reoriented such that the surfaces are valid.
+
         """
 
         # initialize gmsh
@@ -627,16 +629,3 @@ class GmshIO:
 
         # synchronize the geometry
         gmsh.model.geo.synchronize()
-
-
-if __name__ == '__main__':
-    gmsh_io = GmshIO()
-    gmsh_io.read_gmsh_geo(r"D:\software_development\scatter\mesh\embankment_rose.geo")
-
-    gmsh_io.generate_geo_from_geo_data()
-
-    gmsh.model.mesh.generate(3)
-    gmsh.fltk.run()
-
-    gmsh_io.get_nodes_in_group("embankment")
-    gmsh_io.get_elements_in_group("embankment")
