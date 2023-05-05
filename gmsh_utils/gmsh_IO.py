@@ -1,5 +1,5 @@
 import pathlib
-from typing import Dict, List, Union, Type
+from typing import Dict, List, Union, Type, Any
 from enum import Enum
 import re
 
@@ -44,7 +44,7 @@ class GmshIO:
         self.__geo_data = {}
 
     @property
-    def mesh_data(self) -> Dict[str, object]:
+    def mesh_data(self) -> Dict[str, Dict[str, Any]]:
         """
         Returns the mesh data dictionary
 
@@ -56,7 +56,7 @@ class GmshIO:
         return self.__mesh_data
 
     @property
-    def geo_data(self) -> Dict[str, object]:
+    def geo_data(self) -> Dict[str, Dict[str, Any]]:
         """
         Returns the geometry data dictionary
 
@@ -68,7 +68,7 @@ class GmshIO:
         return self.__geo_data
 
     @geo_data.setter
-    def geo_data(self, geo_data: Dict[str, object]) -> None:
+    def geo_data(self, geo_data: Dict[str, Dict[str, Any]]) -> None:
         """
         Sets the geometry data dictionary. For now, an exception is raised if this method is called, this is because the
         geometry data can only be set by the read_gmsh_geo method.
@@ -301,18 +301,19 @@ class GmshIO:
 
         gmsh.finalize()
 
-    def extract_node_data(self, node_tags: List[int],
+    def extract_node_data(self, node_tags: npt.NDArray[np.int_],
                           node_coordinates: npt.NDArray[np.float64]) \
-            -> Dict[str, Union[List[int], npt.NDArray[np.float64]]]:
+            -> Dict[str, Union[npt.NDArray[np.int_], npt.NDArray[np.float64]]]:
         """
         Gets gmsh data belonging to nodal data
 
         Args:
-            node_tags (List[int]): gmsh node ids
+            node_tags (npt.NDArray[np.int_]): gmsh node ids
             node_coordinates (npt.NDArray[float]) : gmsh node coordinates
 
         Returns:
-            Dict[str, Union[List[int], npt.NDArray[np.float64]]]: A dictionary containing node ids and coordinates
+            Dict[str, Union[npt.NDArray[np.int_], npt.NDArray[np.float64]]]: A dictionary containing node ids and
+            coordinates
 
         """
 
@@ -323,23 +324,23 @@ class GmshIO:
         return {"coordinates": node_coordinates,
                 "ids": node_tags}
 
-    def extract_elements_data(self, elem_types: List[int], elem_tags: List[int], elem_node_tags: List[int]) -> \
-            Dict[str, Dict[str, List[int]]]:
+    def extract_elements_data(self, elem_types: npt.NDArray[np.int_], elem_tags: List[npt.NDArray[np.int_]],
+                              elem_node_tags: List[npt.NDArray[np.int_]]) -> Dict[str, Dict[str, npt.NDArray[np.int_]]]:
         """
         Extracts element data from gmsh mesh
 
         Args:
-            elem_types (List[int]): Element types.
-            elem_tags (List[int]): Element tags.
-            elem_node_tags (List[int]): Element node tags.
+            elem_types (npt.NDArray[np.int_]): Element types.
+            elem_tags (List[npt.NDArray[np.int_]]): Element tags.
+            elem_node_tags (List[npt.NDArray[np.int_]]): Element node tags.
 
         Returns:
-            Dict (Dict[str, Dict[str, List[int]]]): Dictionary which contains element data.
+            Dict (Dict[str, Dict[str, npt.NDArray[np.int_]]]): Dictionary which contains element data.
 
         """
 
         # initialize empty dictionary
-        elements_data: Dict[str, Dict[str, List[int]]] = {}
+        elements_data: Dict[str, Dict[str, npt.NDArray[np.int_]]] = {}
 
         # fill dictionary with element data
         for elem_type, elem_tag, elem_node_tag in zip(elem_types, elem_tags, elem_node_tags):
@@ -348,16 +349,17 @@ class GmshIO:
 
         return elements_data
 
-    def extract_element_data(self, elem_type: int, elem_tags: List[int], element_connectivities: List[int]) -> \
-            Dict[str, Dict[str, List[int]]]:
+    def extract_element_data(self, elem_type: int, elem_tags: npt.NDArray[np.int_],
+                             element_connectivities: npt.NDArray[np.int_]) -> \
+            Dict[str, Dict[str, npt.NDArray[np.int_]]]:
         """
         Extracts element data from gmsh mesh
         Gets gmsh data belonging to a single element type
 
         Args:
             elem_type (int): Element type.
-            elem_tags (List[int]): Element ids.
-            element_connectivities (List[int]): Element node tags.
+            elem_tags (npt.NDArray[np.int_]): Element ids.
+            element_connectivities (npt.NDArray[np.int_]): Element node tags.
 
         Returns:
             dict: Dictionary which contains element data.
@@ -381,8 +383,8 @@ class GmshIO:
 
         """
 
-        mesh_data: Dict[str, Dict[str, object]] = {"nodes": {},
-                                                   "elements": {}}
+        mesh_data: Dict[str, Dict[str, Any]] = {"nodes": {},
+                                                "elements": {}}
 
         # get nodal information
         node_tags, node_coords, node_params = gmsh_mesh.getNodes()  # nodes
