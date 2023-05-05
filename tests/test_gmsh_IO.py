@@ -99,7 +99,7 @@ class TestGmshIO:
         """
         Checks whether a gmsh .geo file is read correctly. For a 2d geometry
         """
-        geo_file = r"test_data/column_2D.geo"
+        geo_file = r"tests/test_data/column_2D.geo"
 
         gmsh_io = GmshIO()
         gmsh_io.read_gmsh_geo(geo_file)
@@ -127,7 +127,7 @@ class TestGmshIO:
         """
         Checks whether a gmsh .geo file is read correctly. For a 3d geometry
         """
-        geo_file = r"test_data/column_3D_tetra4.geo"
+        geo_file = r"tests/test_data/column_3D_tetra4.geo"
 
         gmsh_io = GmshIO()
         gmsh_io.read_gmsh_geo(geo_file)
@@ -162,7 +162,7 @@ class TestGmshIO:
 
         """
 
-        msh_file = r"test_data/block_2D.msh"
+        msh_file = r"tests/test_data/block_2D.msh"
 
         gmsh_io = GmshIO()
         gmsh_io.read_gmsh_msh(msh_file)
@@ -182,7 +182,7 @@ class TestGmshIO:
 
         """
 
-        msh_file = r"test_data/block_3D.msh"
+        msh_file = r"tests/test_data/block_3D.msh"
 
         gmsh_io = GmshIO()
 
