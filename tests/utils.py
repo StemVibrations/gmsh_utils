@@ -1,11 +1,20 @@
+from typing import Dict, Any
+
 import numpy.testing as npt
 class TestUtils:
 
     @staticmethod
-    def assert_dictionary_almost_equal(expected, actual):
+    def assert_dictionary_almost_equal(expected: Dict[Any], actual: Dict[Any]):
+        """
+        Checks whether two dictionaries are equal.
 
-        a=1+1
-        for k,v in expected.items():
+        Args:
+            expected: Expected dictionary.
+            actual: Actual dictionary.
+
+        """
+
+        for k, v in expected.items():
             assert k in actual
 
             if isinstance(v, dict):

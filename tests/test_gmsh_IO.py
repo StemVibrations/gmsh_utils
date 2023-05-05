@@ -14,7 +14,7 @@ class TestGmshIO:
 
         """
         # define the points of the surface as a list of tuples
-        input_points = [(0, 0, 0), (1, 0, 0), (1, 3, 0), (0, 3, 0), (-1, 1.5, 0)]
+        input_points = np.array([(0, 0, 0), (1, 0, 0), (1, 3, 0), (0, 3, 0), (-1, 1.5, 0)])
         # define the mesh size
         mesh_size = 0.1
         # set a name label for the surface
@@ -58,7 +58,7 @@ class TestGmshIO:
         """
 
         # define the points of the surface as a list of tuples
-        input_points = [(0, 0, 0), (1, 0, 0), (1, 3, 0), (0, 3, 0), (-1, 1.5, 0)]
+        input_points = np.array([(0, 0, 0), (1, 0, 0), (1, 3, 0), (0, 3, 0), (-1, 1.5, 0)])
         # define the mesh size
         element_size = 0.1
         # set a name label for the surface
