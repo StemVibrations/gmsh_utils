@@ -1,7 +1,13 @@
 from gmsh_utils.gmsh_IO import GmshIO
+
+from utils import TestUtils
 import numpy as np
 import numpy.testing as npt
+import pytest
+
+
 class TestGmshIO:
+
     def test_generate_mesh_2D(self):
         """
         Checks whether mesh data generated for 2D geometries is not empty.
@@ -45,14 +51,13 @@ class TestGmshIO:
             assert value["element_ids"].size > 0
             assert value["connectivities"].size > 0
 
-
     def test_generate_mesh_3D(self):
         """
         Checks whether mesh data generated for 3D geometries is not empty.
 
         """
 
-         # define the points of the surface as a list of tuples
+        # define the points of the surface as a list of tuples
         input_points = [(0, 0, 0), (1, 0, 0), (1, 3, 0), (0, 3, 0), (-1, 1.5, 0)]
         # define the mesh size
         element_size = 0.1
@@ -90,9 +95,37 @@ class TestGmshIO:
             assert value["element_ids"].size > 0
             assert value["connectivities"].size > 0
 
+    def test_read_gmsh_geo_2D(self):
+        """
+        Checks whether a gmsh .geo file is read correctly. For a 2d geometry
+        """
+        geo_file = r"test_data/column_2D.geo"
+
+        gmsh_io = GmshIO()
+        gmsh_io.read_gmsh_geo(geo_file)
+
+        geo_data = gmsh_io.geo_data
+
+        # check if the coordinates of the points are correct
+        expected_points = {1: [0, 0, 0], 2: [0.5, 0, 0], 3: [0.5, 1, 0], 4: [0, 1, 0], 11: [0, 2, 0], 12: [0.5, 2.0, 0]}
+        expected_lines = {5: [1, 2], 6: [2, 3], 7: [3, 4], 8: [1, 4], 13: [4, 11], 14: [11, 12], 15: [3, 12]}
+        expected_surfaces = {10: [5, 6, 7, 8], 17: [-7, -13, -14, -15]}  # negative sign means reversed orientation
+
+        expected_physical_groups = {'group_1': {'geometry_id': 10, 'id': 1, 'ndim': 2},
+                                    'group_2': {'geometry_id': 17, 'id': 2, 'ndim': 2}}
+
+        expected_geo_data = {"points": expected_points,
+                             "lines": expected_lines,
+                             "surfaces": expected_surfaces,
+                             "volumes": {},
+                             "physical_groups": expected_physical_groups}
+
+        # check if expected and actual geo data are equal
+        TestUtils.assert_dictionary_almost_equal(expected_geo_data, geo_data)
+
     def test_read_gmsh_geo_3D(self):
         """
-        Checks whether a gmsh .geo file is read correctly.
+        Checks whether a gmsh .geo file is read correctly. For a 3d geometry
         """
         geo_file = r"test_data/column_3D_tetra4.geo"
 
@@ -100,52 +133,29 @@ class TestGmshIO:
         gmsh_io.read_gmsh_geo(geo_file)
 
         geo_data = gmsh_io.geo_data
+        expected_points = {1: [0., 0., 0.], 2: [0.5, 0.,  0.], 3: [0.5, 1.,  0.], 4: [0., 1., 0.], 11: [0., 2., 0.],
+                           12: [0.5, 2.,  0.], 13: [0., 0., -0.5], 14: [0.5, 0., -0.5], 18: [0.5, 1., -0.5],
+                           22: [0., 1., -0.5], 23: [0., 2., -0.5], 32: [0.5, 2., -0.5]}
+        expected_lines = {5: [1, 2], 6: [2, 3], 7: [3, 4], 8: [1, 4], 13: [4, 11], 14: [11, 12], 15: [3, 12],
+                          19: [13, 14], 20: [14, 18], 21: [18, 22], 22: [13, 22], 24: [1, 13], 25: [2, 14], 29: [3, 18],
+                          33: [4, 22], 41: [22, 23], 43: [18, 32], 44: [23, 32], 46: [11, 23], 55: [12, 32]}
+        expected_surfaces = {10: [5, 6, 7, 8], 17: [-7, -13, -14, -15], 26: [5, -19, -24, 25], 30: [6, -20, -25, 29],
+                             34: [7, -21, -29, 33], 38: [8, -22, 24, -33], 39: [19, 20, 21, 22],
+                             48: [-13, 33, -41, -46], 56: [-15, -29, -43, 55], 60: [-14, -44, 46, -55],
+                             61: [-21, 41, 43, 44]}
+        expected_volumes = {1: [-10, 26, 30, 34, 38, 39], 2: [-17, -34, -48, -56, -60, 61]}
+        expected_physical_groups = {'group_1': {'geometry_id': 1, 'id': 1, 'ndim': 3},
+                                    'group_2': {'geometry_id': 2, 'id': 2, 'ndim': 3}}
 
-        # check if the number of points is correct
-        assert len(geo_data["points"]) == 12
+        expected_geo_data = {"points": expected_points,
+                             "lines": expected_lines,
+                             "surfaces": expected_surfaces,
+                             "volumes": expected_volumes,
+                             "physical_groups": expected_physical_groups}
 
-        # check if the coordinates of the points are correct
-        point_coordinates = np.array(list(geo_data["points"].values()))
-        min_x, max_x = np.min(point_coordinates[:, 0]), np.max(point_coordinates[:, 0])
-        min_y, max_y = np.min(point_coordinates[:, 1]), np.max(point_coordinates[:, 1])
-        min_z, max_z = np.min(point_coordinates[:, 2]), np.max(point_coordinates[:, 2])
-
-        npt.assert_allclose([min_x, max_x], [0, 0.5])
-        npt.assert_allclose([min_y, max_y], [0, 2])
-        npt.assert_allclose([min_z, max_z], [-0.5, 0.0])
-
-        # check if the number of lines is correct
-        assert len(geo_data["lines"]) == 20
-
-        # check if the number of surfaces is correct
-        assert len(geo_data["surfaces"]) == 11
-
-        # check if the number of volumes is correct
-        assert len(geo_data["volumes"]) == 2
-
-        # check if the number of physical groups is correct
-        assert len(geo_data["physical_groups"]) == 2
-
-        # check if geometry ids are correct
-        group_1_id = geo_data["physical_groups"]["group_1"]["geometry_id"]
-        group_2_id = geo_data["physical_groups"]["group_2"]["geometry_id"]
-
-        assert group_1_id == 1
-        assert group_2_id == 1
-
-        # check if group dimension is correct
-        assert geo_data["physical_groups"]["group_1"]["ndim"] == 3
-
-        # get surface ids of group 1, any direction is fine
-        group_1_surface_ids = np.abs(geo_data["volumes"][group_1_id])
-
-        # get line ids of group 1, any direction is fine
-        group_1_line_ids = np.abs([geo_data["surfaces"][id] for id in group_1_surface_ids])
-
-        # check if number of lines of the volume in group 1 is correct
-        assert group_1_line_ids.shape == (6, 4)
+        # check if expected and actual geo data are equal
+        TestUtils.assert_dictionary_almost_equal(expected_geo_data, geo_data)
 
 
-
-
-
+def test_generate_geo_from_geo_data():
+    assert False
