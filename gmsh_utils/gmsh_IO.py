@@ -36,6 +36,10 @@ class GmshIO:
     mesh_data : Dict
         Dictionary containing the mesh data, i.e. nodal ids and coordinates; and elemental ids, connectivity's
         and element types.
+    geo_data : Dict
+        Dictionary containing the geometry data, the geometry data contains: points, lines, surfaces, volumes
+        and the physical groups.
+
 
     """
 
@@ -55,6 +59,26 @@ class GmshIO:
 
         return self.__mesh_data
 
+    @mesh_data.setter
+    def mesh_data(self, mesh_data: Dict[str, Dict[str, Any]]) -> None:
+        """
+        Sets the mesh data dictionary. For now, an exception is raised if this method is called, this is because the
+        mesh data can only be set by internal methods
+
+        Args:
+            mesh_data (Dict): Dictionary containing the mesh data, i.e. nodal ids and coordinates; and elemental ids,
+            connectivity's and element types.
+
+        Raises:
+            Exception: Mesh data can only be set by internal methods.
+
+        Returns:
+            None
+
+        """
+        raise Exception("Mesh data can only be set by internal methods.")
+
+
     @property
     def geo_data(self) -> Dict[str, Dict[str, Any]]:
         """
@@ -71,17 +95,20 @@ class GmshIO:
     def geo_data(self, geo_data: Dict[str, Dict[str, Any]]) -> None:
         """
         Sets the geometry data dictionary. For now, an exception is raised if this method is called, this is because the
-        geometry data can only be set by the read_gmsh_geo method.
+        geometry data can only be set by internal method.
 
         Args:
             geo_data (Dict): Dictionary containing the geometry data, the geometry data contains: points, lines,
             surfaces, volumes and the physical groups.
 
+        Raises:
+            Exception: Geometry data can only be set by internal methods.
+
         Returns:
             None
         """
 
-        Exception("Geometry data can only be set by the read_gmsh_geo method.")
+        raise Exception("Geometry data can only be set by internal methods.")
 
 
     def create_point(self, coordinates: Union[List[float], npt.NDArray[np.float64]], element_size: float) -> None:
@@ -90,11 +117,10 @@ class GmshIO:
 
         Args:
             coordinates (Union[List[float], npt.NDArray[float]]): An Iterable of point x,y,z coordinates.
-            mesh_size (float): The element size.
+            element_size (float): The element size.
 
-        Returns
-        -------
-        None
+        Returns:
+            None
         """
         x = coordinates[0]
         y = coordinates[1]
@@ -115,7 +141,6 @@ class GmshIO:
         point1 = point_ids[0]
         point2 = point_ids[1]
         gmsh.model.geo.addLine(point1, point2)
-
 
     def create_surface(self, line_ids: Union[List[int], npt.NDArray[np.int_]], name_label: str) -> int:
         """
