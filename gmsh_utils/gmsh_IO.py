@@ -503,11 +503,11 @@ class GmshIO:
         # get all entities
         entities = gmsh.model.get_entities()
 
-        geo_data: [str, Dict[str, Any]] = {"points":   {},
-                                           "lines":    {},
-                                           "surfaces": {},
-                                           "volumes":  {},
-                                           "physical_groups": {}}
+        geo_data: Dict[str, Dict[str, Any]] = {"points":   {},
+                                               "lines":    {},
+                                               "surfaces": {},
+                                               "volumes":  {},
+                                               "physical_groups": {}}
 
         # loop over all entities
         for entity in entities:
