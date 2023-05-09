@@ -47,6 +47,8 @@ class GmshIO:
         self.__mesh_data = {}
         self.__geo_data = {}
 
+        gmsh.initialize()
+
     @property
     def mesh_data(self) -> Dict[str, Dict[str, Any]]:
         """
@@ -111,7 +113,7 @@ class GmshIO:
         raise Exception("Geometry data can only be set by internal methods.")
 
 
-    def create_point(self, coordinates: Union[List[float], npt.NDArray[np.float64]], element_size: float) -> None:
+    def create_point(self, coordinates: Union[List[float], npt.NDArray[np.float64]], element_size: float) -> int:
         """
         Creates points in gmsh.
 
@@ -120,14 +122,14 @@ class GmshIO:
             element_size (float): The element size.
 
         Returns:
-            None
+            point id
         """
         x = coordinates[0]
         y = coordinates[1]
         z = coordinates[2]
-        gmsh.model.geo.addPoint(x, y, z, element_size)
+        return gmsh.model.geo.addPoint(x, y, z, element_size)
 
-    def create_line(self, point_ids: Union[List[int], npt.NDArray[np.int_]]) -> None:
+    def create_line(self, point_ids: Union[List[int], npt.NDArray[np.int_]]) -> int:
         """
         Creates lines in gmsh.
 
@@ -135,12 +137,22 @@ class GmshIO:
             point_ids (Union[List[int], npt.NDArray[int]]): A list of point tags in order.
 
         Returns:
-            None
+            line id
         """
 
         point1 = point_ids[0]
         point2 = point_ids[1]
-        gmsh.model.geo.addLine(point1, point2)
+        return gmsh.model.geo.addLine(point1, point2)
+
+    def create_lines_by_coordinates(self, coordinates):
+
+        points = [self.create_point(coord, -1) for coord in coordinates]
+
+        gmsh.model.geo.synchronize()
+        lines = [self.create_line([points[i], points[i+1]]) for i in range(len(points)-1)]
+
+        return lines
+
 
     def create_surface(self, line_ids: Union[List[int], npt.NDArray[np.int_]], name_label: str) -> int:
         """
