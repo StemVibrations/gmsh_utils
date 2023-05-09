@@ -129,12 +129,13 @@ class GmshIO:
         z = coordinates[2]
         return gmsh.model.geo.addPoint(x, y, z, element_size)
 
-    def create_line(self, point_ids: Union[List[int], npt.NDArray[np.int_]]) -> int:
+    def create_line(self, point_ids: Union[List[int], npt.NDArray[np.int_]], name_label="") -> int:
         """
         Creates lines in gmsh.
 
         Args:
             point_ids (Union[List[int], npt.NDArray[int]]): A list of point tags in order.
+            name_label (str): The name of the line.
 
         Returns:
             line id
@@ -142,12 +143,37 @@ class GmshIO:
 
         point1 = point_ids[0]
         point2 = point_ids[1]
-        return gmsh.model.geo.addLine(point1, point2)
+        line_id = gmsh.model.geo.addLine(point1, point2)
 
-    def create_lines_by_coordinates(self, coordinates):
+        # set name of point of name_label is not empty
+        if name_label != "":
+
+            group = self.get_physical_group_by_name(name_label)
+
+            if group is None:
+                line_ndim = 1
+                gmsh.model.addPhysicalGroup(line_ndim, [line_id], name=name_label)
+                gmsh.model.geo.synchronize()
+            else:
+
+                # get current entities in foudn group
+                ids = gmsh.model.getEntitiesForPhysicalGroup(group[0], group[1])
+
+                # remove current group and readd group with new entities
+                gmsh.model.remove_physical_groups([(group[0], group[1])])
+                gmsh.model.addPhysicalGroup(group[0], np.append(ids, line_id), tag=group[1], name=name_label )
+
+                gmsh.model.geo.synchronize()
+
+                # check
+                ids2 = gmsh.model.getEntitiesForPhysicalGroup(group[0], group[1])
+
+        return line_id
+
+    def create_lines_by_coordinates(self, coordinates, name_label="dsadsa") -> List[int]:
 
         points = [self.create_point(coord, -1) for coord in coordinates]
-        lines = [self.create_line([points[i], points[i+1]]) for i in range(len(points)-1)]
+        lines = [self.create_line([points[i], points[i+1]], name_label=name_label) for i in range(len(points)-1)]
 
         return lines
 
@@ -448,6 +474,29 @@ class GmshIO:
         self.extract_mesh_data(gmsh.model.mesh)
 
         gmsh.finalize()
+
+
+    def get_physical_group_by_name(self, group_name: str):
+        """
+        Gets a physical group by name
+
+        Args:
+            group_name (str): Name of the requested group.
+
+        Returns:
+            Tuple[int, int]: Tuple containing the dimension and tag of the requested group.
+
+        """
+
+        groups = gmsh.model.getPhysicalGroups()
+
+        for group in groups:
+            name = gmsh.model.getPhysicalName(group[0], group[1])
+            if name == group_name:
+                return group
+
+        return None
+
 
     def get_nodes_in_group(self, group_name: str) -> Dict[str, Union[npt.NDArray[np.int_], npt.NDArray[np.float64]]]:
         """
