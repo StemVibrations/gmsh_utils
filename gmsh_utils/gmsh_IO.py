@@ -147,8 +147,6 @@ class GmshIO:
     def create_lines_by_coordinates(self, coordinates):
 
         points = [self.create_point(coord, -1) for coord in coordinates]
-
-        gmsh.model.geo.synchronize()
         lines = [self.create_line([points[i], points[i+1]]) for i in range(len(points)-1)]
 
         return lines
@@ -537,6 +535,9 @@ class GmshIO:
         Extracts geometry data from gmsh model
 
         """
+
+        # synchronize model
+        gmsh.model.geo.synchronize()
 
         # get all entities
         entities = gmsh.model.get_entities()
