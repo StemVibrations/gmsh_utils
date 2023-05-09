@@ -500,7 +500,8 @@ class GmshIO:
 
     def get_boundary_data(self, entity_ndim: int, entity_id: int) -> List[int]:
         """
-        Gets lower entities of a certain entity
+        Gets lower entities of a certain entity, i.e. get surfaces from a volume; lines from a surface;
+        points from a line.
 
         Args:
             entity_ndim (int): Dimension of the entity.
