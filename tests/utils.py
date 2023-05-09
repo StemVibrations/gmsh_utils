@@ -19,6 +19,8 @@ class TestUtils:
 
             if isinstance(v, dict):
                 TestUtils.assert_dictionary_almost_equal(v, actual[k])
+            elif isinstance(v, str):
+                assert v == actual[k]
             else:
                 npt.assert_allclose(v, actual[k])
 
