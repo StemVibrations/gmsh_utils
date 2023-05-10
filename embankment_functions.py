@@ -1,7 +1,7 @@
 import gmsh
 import numpy as np
 
-class input_generator:
+class InputGenerator:
     def __init__(self, number_of_layers, mesh_size_list, input_points_list, name_label_list, eps,
                  default_mesh_size, dims, depth, save_file, gmsh_interface,
                  mesh_output_name):
@@ -23,6 +23,7 @@ class input_generator:
             layer = self.input_points_list[i]
             layer_list.append(layer)
         return layer_list
+
 
 def create_point(coordinates, mesh_size):
     """
@@ -62,15 +63,17 @@ def create_surface(line_ids, name_label):
     return surfaces
 
 
-def create_volume(surface_id, depth, name_label, i):
+def create_volume(surface_id, depth, name_label, volume_index):
     """
         extrude the surface to create a volume
         :param surface_id: surface tag
         :param depth: depth of 3D geometry
+        :param name_label: surface name label from user input
+        :param volume_index: volume index
         :return: -
         """
-    volumes = gmsh.model.occ.extrude([(2, surface_id)], 0, 0, depth)
-    gmsh.model.setPhysicalName(2, i+1, name_label)
+    gmsh.model.occ.extrude([(2, surface_id)], 0, 0, depth)
+    gmsh.model.setPhysicalName(2, volume_index+1, name_label)
 
 
 def generate_point_pairs(coord_list):
@@ -81,7 +84,8 @@ def generate_point_pairs(coord_list):
     """
     list_point_pairs = []
     counter = 0
-    for i in range(len(coord_list)): # number of layers
+    first_point_tag = 0
+    for i in range(len(coord_list)):  # number of layers
         point_pairs = []
         for j in range(len(coord_list[i]) - 1):
             if j == 0:
@@ -117,50 +121,119 @@ def make_lines(point_pairs):
     return list_lines
 
 
-def make_surfaces(line_list, name_label, dims):
+def make_surfaces(line_list, name_label):
     surfaces = []
     for i in range(len(line_list)):
         surfaces.append(create_surface(line_list[i], name_label[i]))
 
     return surfaces
 
+
 def make_volume(surface_id, depth, name_label):
-    volumes =[]
+    volumes = []
     for i in range(len(surface_id)):
         volumes.append(create_volume(surface_id[i], depth, name_label[i], i))
-    # vol_tag = gmsh.model.addPhysicalGroup(3, [volume_id])
-    return volumes
+
 
 def make_geometry(point_lists, default_mesh_size, name_label_list, dims, depth):
-    for i in range (len(point_lists)):
+    for i in range(len(point_lists)):
         make_points(point_lists[i], default_mesh_size)
 
     pair_lists = generate_point_pairs(point_lists)
     line_lists = make_lines(pair_lists)
-    # print(line_lists)
-    # input()
-    surface_tags  = make_surfaces(line_lists, name_label_list, dims)
-    # print(surface_tags)
-    # input()
+    surface_tags = make_surfaces(line_lists, name_label_list)
     if dims == 2:
         return surface_tags
     if dims == 3:
-        volume_tags = make_volume(surface_tags, depth, name_label_list)
-        # print (volume_tags)
-        # input()
-        return volume_tags
+        make_volume(surface_tags, depth, name_label_list)
 
 
-def fragment(tags, dims, number_of_layers):
+def fragment(dims, number_of_layers):
     """
-    fragments two surfaces to remove the dubble line and connect the two surfaces
+    fragments two surfaces to remove the double line and connect the two surfaces
     :param dims: dimension
     :param number_of_layers: number of layers
     :return:
     """
-    for i in range(number_of_layers - 1):
-        # gmsh.model.occ.fragment([(3, tags[i])], [(3, tags[i + 1])])
-        gmsh.model.occ.fragment([(dims,i+1)], [(dims,i+2)])
+    # gmsh.model.occ.synchronize()
+    # entities = gmsh.model.get_entities(dims)
+    # print(entities)
+    # gmsh.model.occ.fragment([(dims, 1)], [(dims, 2)])
+    # gmsh.model.occ.synchronize()
+    # gmsh.model.occ.fragment([(dims, 1)], [(dims, 3)])
+    # gmsh.model.occ.synchronize()
+    # common_surface = gmsh.model.occ.intersect([(3, 1), (3, 2)])
+    # gmsh.model.occ.remove([(2, common_surface)])
+    gmsh.model.occ.removeAllDuplicates()
+
+    # for i in range(len(entities)):
+    #     for j in range(i, len(entities)):
+    #         if i == j: continue
+    #         print("i=",i,"\nj=",j,"\nentities[i][1]=", entities[i][1], "\nentities[j][1]=", entities[j][1])
+    #         gmsh.model.occ.fragment([(dims, entities[i][1])], [(dims, entities[j][1])])
+
+    # for i in range(number_of_layers):
+    #     for j in range(i, number_of_layers):
+    #         if i == j: continue
+    #         print("i=",i,"\nj=",j,"\nentities[i][1]=", i+1, "\nentities[j][1]=", j+1)
+    #         gmsh.model.occ.fragment([(dims, i+1)], [(dims, j+1)])
+
+def get_num_nodes_from_elem_type(elem_type):
+    """
+    gets number of nodes from element types
+    :param elem_type: int that defines type of elements
+    :return: number of nodes needed for a type of element
+    """
+
+    # 2 node line
+    if elem_type == 1:
+        return 2  # number of nodes needed for 2-node line
+    # 3 node triangle
+    if elem_type == 2:
+        return 3  # number of nodes needed for 3-node triangle
+    # 4 node quadrangle
+    if elem_type == 3:
+        return 4  # number of nodes needed for 4-node quadrangle
+    # 4 node tetrahedron
+    if elem_type == 4:
+        return 4  # number of nodes needed for 4-node tetrahedron
+        # 1 node
+    if elem_type == 15:
+        return 1  # number of nodes needed for 1-node
+
+
+def extract_mesh_data(dims):
+    """
+    gets gmsh output data
+    :param dims: geometry dimension (2=2D or 3=3D)
+    :return: geometry and mesh data: node tags, node coordinates, element types, element tags 0D, 1D, 2D, 3D
+    """
+    node_tags, node_coords, node_params = gmsh.model.mesh.getNodes()  # nodes, elements
+    elem_types, elem_tags, elem_node_tags = gmsh.model.mesh.getElements()
+
+    # get number of nodes per element type
+    node_shape = [get_num_nodes_from_elem_type(elem_type) for elem_type in elem_types]
+    num_elem = sum(len(i) for i in elem_tags)
+    print(" - Mesh has " + str(len(node_tags)) + " nodes and " + str(num_elem) +
+          " elements")
+
+    num_nodes = len(node_tags)
+    coord = np.reshape(node_coords, (num_nodes, 3))
+
+    num_1d_elements = len(elem_tags[0])
+    node_tag_1D = np.reshape(elem_node_tags[0], (num_1d_elements, node_shape[0]))
+
+    num_2d_elements = len(elem_tags[1])
+    node_tag_2D = np.reshape(elem_node_tags[1], (num_2d_elements, node_shape[1]))
+
+    if dims == 3:
+        num_3d_elements = len(elem_tags[2])
+        node_tag_3D = np.reshape(elem_node_tags[2], (num_3d_elements, node_shape[2]))
+        return coord, node_tags, elem_types, elem_tags, node_tag_1D, node_tag_2D, node_tag_3D
+
+    if dims == 2:
+        return coord, node_tags, elem_types, elem_tags, node_tag_1D, node_tag_2D
+
 
 def set_mesh_size(layer_list, number_of_layers, mesh_size_lists, eps, depth):
     """
@@ -170,6 +243,7 @@ def set_mesh_size(layer_list, number_of_layers, mesh_size_lists, eps, depth):
     :param number_of_layers: number of layers
     :param mesh_size_lists: mesh sizes for each layer
     :param eps: epsilon defined for the box to be big enough to cover the whole layer
+    :param depth: depth of geometry to be extruded
     :return: -
     """
     entities_list = []
