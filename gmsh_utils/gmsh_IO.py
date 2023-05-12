@@ -59,7 +59,6 @@ class GmshIO:
         Prepares the input points list for the mesh generation.
 
         Args:
-            number_of_layers (int): The number of layers in the embankment.
             input_points_list (List[List[float]]): The list of input points provided by user input.
 
         Returns:
