@@ -113,7 +113,55 @@ class GmshIO:
         raise Exception("Geometry data can only be set by internal methods.")
 
 
-    def create_point(self, coordinates: Union[List[float], npt.NDArray[np.float64]], element_size: float) -> int:
+    def add_entity_to_group_by_name(self,entity_ndim: int, entity_ids: Union[List[int], npt.NDArray[np.int_]],
+                                    name_label: str) -> int:
+        """
+        Adds an entity to a physical group by name. If the group does not exist, it is created.
+
+        Args:
+            entity_ndim (int): The dimension of the entity.
+            entity_ids (Union[List[int], npt.NDArray[np.int_]]): The entity ids.
+            name_label (str): The name of the physical group.
+
+        Raises:
+            ValueError: The name of the physical group cannot end with 0D, 1D, 2D or 3D, as this is internally used to
+            keep track of points, lines, surfaces and volumes.
+
+        Returns:
+            int: The id of the physical group.
+
+        """
+
+        # check if name doesn't end with 0D, 1D, 2D, 3D, as this is internally used to keep track of points, lines,
+        # surfaces and volumes
+        if re.search(r"0D|1D|2D|3D$", name_label):
+            raise ValueError("The name of the physical group cannot end with 0D, 1D, 2D or 3D, as this is internally "
+                             "used to keep track of points, lines, surfaces and volumes.")
+
+        # add the number of dimension to the group name, e.g. "group" becomes "group_1D". To keep track of points,
+        # lines, surfaces and volumes
+        group_name_dimensional = name_label + f"_{entity_ndim}D"
+
+        group = self.get_physical_group_by_name(group_name_dimensional)
+        if group is None:
+            group_id = gmsh.model.addPhysicalGroup(entity_ndim, entity_ids, name=group_name_dimensional)
+            gmsh.model.geo.synchronize()
+        else:
+
+            # get current entities in found group
+            ids_current_entities = gmsh.model.getEntitiesForPhysicalGroup(group[0], group[1])
+
+            # remove current group and read group with new entities
+            gmsh.model.remove_physical_groups([(group[0], group[1])])
+            group_id = gmsh.model.addPhysicalGroup(group[0], np.append(ids_current_entities, entity_ids),
+                                                   tag=group[1], name=group_name_dimensional)
+
+            gmsh.model.geo.synchronize()
+
+        return group_id
+
+    def create_point(self, coordinates: Union[List[float], npt.NDArray[np.float64]], element_size: float,
+                     name_label="") -> int:
         """
         Creates points in gmsh.
 
@@ -122,14 +170,24 @@ class GmshIO:
             element_size (float): The element size.
 
         Returns:
-            point id
+            int: point id
         """
         x = coordinates[0]
         y = coordinates[1]
         z = coordinates[2]
-        return gmsh.model.geo.addPoint(x, y, z, element_size)
 
-    def create_line(self, point_ids: Union[List[int], npt.NDArray[np.int_]], name_label="") -> int:
+        point_id = gmsh.model.geo.addPoint(x, y, z, element_size)
+
+        gmsh.model.geo.synchronize()
+
+        # set name of point of name_label is not empty
+        if name_label != "":
+            point_ndim = 0
+            self.add_entity_to_group_by_name(point_ndim, [point_id], name_label)
+
+        return point_id
+
+    def create_line(self, point_ids: Union[List[int], npt.NDArray[np.int_]], name_label: str = "") -> int:
         """
         Creates lines in gmsh.
 
@@ -145,40 +203,38 @@ class GmshIO:
         point2 = point_ids[1]
         line_id = gmsh.model.geo.addLine(point1, point2)
 
+        # synchronize model
+        gmsh.model.geo.synchronize()
+
         # set name of point of name_label is not empty
         if name_label != "":
-
-            group = self.get_physical_group_by_name(name_label)
-
-            if group is None:
-                line_ndim = 1
-                gmsh.model.addPhysicalGroup(line_ndim, [line_id], name=name_label)
-                gmsh.model.geo.synchronize()
-            else:
-
-                # get current entities in foudn group
-                ids = gmsh.model.getEntitiesForPhysicalGroup(group[0], group[1])
-
-                # remove current group and readd group with new entities
-                gmsh.model.remove_physical_groups([(group[0], group[1])])
-                gmsh.model.addPhysicalGroup(group[0], np.append(ids, line_id), tag=group[1], name=name_label )
-
-                gmsh.model.geo.synchronize()
-
-                # check
-                ids2 = gmsh.model.getEntitiesForPhysicalGroup(group[0], group[1])
+            line_ndim = 1
+            self.add_entity_to_group_by_name(line_ndim, [line_id], name_label)
 
         return line_id
 
-    def create_lines_by_coordinates(self, coordinates, name_label="dsadsa") -> List[int]:
+    def create_lines_by_coordinates(self, coordinates: Union[List[List[float]], npt.NDArray[np.float64]],
+                                    name_label="") -> List[int]:
+        """
+        Creates lines in gmsh by using coordinates.
 
-        points = [self.create_point(coord, -1) for coord in coordinates]
+        Args:
+            coordinates (Union[List[List[float]], npt.NDArray[np.float64]]): An Iterable of point x,y,z coordinates.
+            name_label (str): The name of the line.
+
+        Returns:
+            List[int]: A list of line ids in order.
+
+        """
+
+        # create points and lines by coordinates
+        points = [self.create_point(coord, -1, name_label=name_label) for coord in coordinates]
         lines = [self.create_line([points[i], points[i+1]], name_label=name_label) for i in range(len(points)-1)]
 
         return lines
 
 
-    def create_surface(self, line_ids: Union[List[int], npt.NDArray[np.int_]], name_label: str) -> int:
+    def create_surface(self, line_ids: Union[List[int], npt.NDArray[np.int_]], name_label: str = "") -> int:
         """
         Creates curve and then surface in gmsh by using line tags.
 
@@ -193,8 +249,14 @@ class GmshIO:
         gmsh.model.geo.addCurveLoop(line_ids, 1)
         surface_id: int = gmsh.model.geo.addPlaneSurface([1], 1)
 
-        surface_ndim = 2
-        gmsh.model.setPhysicalName(surface_ndim, surface_id, name_label)
+        # synchronize model
+        gmsh.model.geo.synchronize()
+
+        # set name of point of name_label is not empty
+        if name_label != "":
+            surface_ndim = 2
+            self.add_entity_to_group_by_name(surface_ndim, [surface_id], name_label)
+
         return surface_id
 
     def create_volume_by_extruding_surface(self, surface_id: int,
@@ -213,6 +275,31 @@ class GmshIO:
         surface_ndim = 2
         gmsh.model.geo.extrude([(surface_ndim, surface_id)], extrusion_length[0], extrusion_length[1],
                                extrusion_length[2])
+
+    def create_surface_by_coordinates(self, coordinates: Union[List[List[float]], npt.NDArray[np.float64]],
+                                      name_label=""):
+        """
+        Creates surface in gmsh by using coordinates. The last coordinate is connected to the first coordinate.
+
+        Args:
+            coordinates (Union[List[List[float]], npt.NDArray[np.float64]]): An Iterable of point x,y,z coordinates.
+            name_label (str): The name of the surface.
+
+        Returns:
+            int: surface id
+
+        """
+
+        point_ids = [self.create_point(coord, -1, name_label=name_label) for coord in coordinates]
+
+        point_pairs = self.generate_point_pairs(point_ids)
+        lines_ids = [self.create_line(point_pair, name_label=name_label)
+                     for point_pair in point_pairs]
+        surface_id = self.create_surface(lines_ids, name_label=name_label)
+
+        return surface_id
+
+
 
     def make_geometry_2D(self, point_coordinates: Union[List[List[float]], npt.NDArray[np.float64]],
                          point_pairs: Union[List[List[int]], npt.NDArray[np.int_]],
@@ -625,12 +712,12 @@ class GmshIO:
             name = gmsh.model.getPhysicalName(group[0], group[1])
 
             # gets entity per group
-            entity = gmsh.model.getEntitiesForPhysicalGroup(group[0], group[1])[0]
+            entities = gmsh.model.getEntitiesForPhysicalGroup(group[0], group[1])
 
             # add group to dictionary
             geo_data["physical_groups"][name] = {"ndim": group[0],
                                                  "id": group[1],
-                                                 "geometry_id": entity}
+                                                 "geometry_ids": entities}
 
         self.__geo_data = geo_data
 
