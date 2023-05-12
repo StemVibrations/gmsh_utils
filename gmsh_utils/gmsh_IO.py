@@ -54,7 +54,7 @@ class GmshIO:
 
         return self.__mesh_data
 
-    def prepare_inputs(self, number_of_layers, input_points_list):
+    def prepare_inputs(self, input_points_list):
         """
         Prepares the input points list for the mesh generation.
 
@@ -66,6 +66,7 @@ class GmshIO:
             List[List[float]]: The list of input points for the mesh generation.
         """
         layer_list = []
+        number_of_layers = int(len(input_points_list))
         for i in range(number_of_layers):
             layer = input_points_list[i]
             layer_list.append(layer)
@@ -278,7 +279,7 @@ class GmshIO:
         return num_nodes
 
     def generate_gmsh_mesh(self, point_coordinates: Union[List[List[float]], npt.NDArray[np.float64]],
-                           number_of_layers: int, extrusion_length: Union[List[float], npt.NDArray[np.float64]],
+                           extrusion_length: Union[List[float], npt.NDArray[np.float64]],
                            mesh_size: float, dims: int, name_label: List[str], mesh_name: str,
                            mesh_output_dir: str, save_file: bool = False, open_gmsh_gui: bool = False) -> None:
         """
@@ -288,7 +289,6 @@ class GmshIO:
         Args:
             point_coordinates (Union[List[List[float]], npt.NDArray[np.float64]]): User input points of the surface as
                 a list or ndarray.
-            number_of_layers: Number of layers in the geometry.
             extrusion_length (Union[List[float], npt.NDArray[float]]): The depth of 3D geometry.
             mesh_size (float): The mesh size provided by user.
             dims (int): The dimension of geometry (2=2D or 3=3D).
@@ -307,7 +307,7 @@ class GmshIO:
         gmsh.initialize()
         gmsh.model.add(mesh_name)
 
-        layer_list = self.prepare_inputs(number_of_layers, point_coordinates)
+        layer_list = self.prepare_inputs(point_coordinates)
         if dims == 3:
             self.make_geometry_3d(layer_list, mesh_size, name_label, extrusion_length)
 
