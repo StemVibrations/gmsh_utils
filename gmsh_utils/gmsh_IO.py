@@ -54,22 +54,22 @@ class GmshIO:
 
         return self.__mesh_data
 
-    def prepare_inputs(self, input_points_list):
-        """
-        Prepares the input points list for the mesh generation.
-
-        Args:
-            input_points_list (List[List[float]]): The list of input points provided by user input.
-
-        Returns:
-            List[List[float]]: The list of input points for the mesh generation.
-        """
-        layer_list = []
-        number_of_layers = int(len(input_points_list))
-        for i in range(number_of_layers):
-            layer = input_points_list[i]
-            layer_list.append(layer)
-        return layer_list
+    # def prepare_inputs(self, input_points_list):
+    #     """
+    #     Prepares the input points list for the mesh generation.
+    #
+    #     Args:
+    #         input_points_list (List[List[float]]): The list of input points provided by user input.
+    #
+    #     Returns:
+    #         List[List[float]]: The list of input points for the mesh generation.
+    #     """
+    #     layer_list = []
+    #     number_of_layers = len(input_points_list)
+    #     for i in range(number_of_layers):
+    #         layer = input_points_list[i]
+    #         layer_list.append(layer)
+    #     return layer_list
 
     def create_point(self, coordinates: Union[List[float], npt.NDArray[np.float64]], element_size: float) -> None:
         """
@@ -86,7 +86,8 @@ class GmshIO:
         x = coordinates[0]
         y = coordinates[1]
         z = coordinates[2]
-        gmsh.model.occ.addPoint(x, y, z, element_size)
+        point_id = gmsh.model.occ.addPoint(x, y, z, element_size)
+        return point_id
 
     def create_line(self, point_ids: Union[List[int], npt.NDArray[np.int_]]) -> None:
         """
@@ -101,7 +102,8 @@ class GmshIO:
 
         point1 = point_ids[0]
         point2 = point_ids[1]
-        gmsh.model.occ.addLine(point1, point2)
+        line_id = gmsh.model.occ.addLine(point1, point2)
+        return line_id
 
     def create_surface(self, line_ids: Union[List[int], npt.NDArray[np.int_]], name_label: str) -> int:
         """
@@ -115,8 +117,8 @@ class GmshIO:
             int: surface id
         """
 
-        curve_loop = gmsh.model.occ.addCurveLoop(line_ids)
-        surface_id: int = gmsh.model.occ.addPlaneSurface([curve_loop])
+        curve_loop_id = gmsh.model.occ.addCurveLoop(line_ids)
+        surface_id: int = gmsh.model.occ.addPlaneSurface([curve_loop_id])
         surface_ndim = 2
         gmsh.model.setPhysicalName(surface_ndim, surface_id, name_label)
         return surface_id
@@ -142,64 +144,88 @@ class GmshIO:
                                extrusion_length[2])
         gmsh.model.setPhysicalName(surface_ndim, volume_ids+1, name_label)
 
-    def generate_point_pairs(self, point_coordinates: Union[List[List[float]], npt.NDArray[np.float64]]) \
-            -> List[List[List[int]]]:
+    def generate_point_pairs(self, number_of_layers,
+                             number_of_points_in_layers: Union[List[List[float]], npt.NDArray[np.float64]], point_ids)\
+                             -> List[List[List[int]]]:
         """
         Generates pairs of point IDs which form a line
 
         Args:
-            point_coordinates (Union[List[List[float]], npt.NDArray[float]]): A list of geometry points coordinates.
 
         Returns:
             List[List[int]]: A list of pairs of point IDs which create a line.
         """
-
         list_point_pairs = []
-        counter = 0
         first_point_tag = 0
-        for i in range(len(point_coordinates)):  # number of layers
+        for i in range(number_of_layers):  # number of layers
             point_pairs = []
-            for j in range(len(point_coordinates[i]) - 1):
+            for j in range(number_of_points_in_layers[i] - 1): # number of points in each layer (-1 for turning back)
                 if j == 0:
                     # saving the first point tag in order to return from last point to it
-                    first_point_tag = counter + i + 1
+                    first_point_tag = point_ids[i][j]
                 # puts two consecutive points tags as the beginning and end of line in an array
-                point_pair = [counter + i + 1, counter + i + 2]
+                point_pair = [point_ids[i][j], point_ids[i][j+1]]
                 point_pairs.append(point_pair)
-                counter += 1
             # make a pair that connects last point to first point
-            point_pairs.append([counter + i + 1, first_point_tag])
+            last_point_tag = len(point_ids[i])-1
+            point_pairs.append([point_ids[i][last_point_tag], first_point_tag])
             list_point_pairs.append(point_pairs)
 
         return list_point_pairs
 
     def make_points(self, point_coordinates: Union[List[List[float]], npt.NDArray[np.float64]],
-                    default_mesh_size:  float) -> None:
-        for point in point_coordinates:
-            coordinates = [point[0], point[1], point[2]]
-            self.create_point(coordinates, default_mesh_size)
+                    default_mesh_size:  float) -> List[None]:
+        """Makes points with point tags by getting coordinates.
 
-    def make_lines(self, point_pairs: Union[List[List[float]], npt.NDArray[np.float64]]):
-        counter = 0
+        Args:
+            point_coordinates (Union[List[List[float]], npt.NDArray[np.float64]]): An Iterable of point x,y,z coordinates.
+            default_mesh_size (float): The element size.
+
+        Returns:
+            List[None]: A list of point tags.
+            """
+        list_point_ids = []
+        for point in point_coordinates:
+            point_id = self.create_point(point, default_mesh_size)
+            list_point_ids.append(point_id)
+        return list_point_ids
+
+    def make_lines(self, point_pairs: Union[List[List[int]], npt.NDArray[np.int_]]):
+        """Makes lines with line tags by getting point pairs.
+
+        Args:
+            point_pairs (Union[List[List[int]], npt.NDArray[np.int_]]): A list of pairs of point tags which create a line.
+
+        Returns:
+            List[List[int]]: A list of line tags.
+            """
         list_lines = []
         for i in range(len(point_pairs)):
             lines = []
             for j in range(len(point_pairs[i])):
                 line = [point_pairs[i][j][0], point_pairs[i][j][1]]
-                lines.append(counter + 1)
-                self.create_line(line)
-                counter += 1
+                line_id = self.create_line(line)
+                lines.append(line_id)
             list_lines.append(lines)
         return list_lines
 
     def make_surfaces(self, line_list: Union[List[List[float]], npt.NDArray[np.float64]], name_label: List[str]):
+        """Makes surfaces with surface tags by getting line tags.
+
+        Args:
+            line_list (Union[List[List[float]], npt.NDArray[np.float64]]): A list of line tags in order.
+            name_label (List[str]): A list of surface name labels provided by user input.
+
+        Returns:
+            List[int]: A list of surface tags.
+            """
         surfaces = []
         for i in range(len(line_list)):
             surfaces.append(self.create_surface(line_list[i], name_label[i]))
 
         return surfaces
 
-    def make_volume(self, surface_id: [List[int], npt.NDArray[np.float64]],
+    def make_volume(self, surface_id: [List[int], npt.NDArray[np.int_]],
                     extrusion_length: Union[List[float], npt.NDArray[np.float64]], name_label: List[str]):
         volumes = []
         for volume in range(len(surface_id)):
@@ -220,11 +246,15 @@ class GmshIO:
         Returns:
             int: Surface id.
         """
+        number_of_layers = len(point_coordinates)
+        n_points_in_layers = [] #number of points in each layer
+        point_ids_of_layers = [] #list of point ids of coordinates of all layers
+        for i in range(number_of_layers):
+            n_points_in_layers.append(len(point_coordinates[i]))
+            list_point_id = self.make_points(point_coordinates[i], default_mesh_size)
+            point_ids_of_layers.append(list_point_id)
 
-        for i in range(len(point_coordinates)):
-            self.make_points(point_coordinates[i], default_mesh_size)
-
-        pair_lists = self.generate_point_pairs(point_coordinates)
+        pair_lists = self.generate_point_pairs(number_of_layers, n_points_in_layers, point_ids_of_layers)
         line_lists = self.make_lines(pair_lists)
         surface_ids = self.make_surfaces(line_lists, name_label_list)
 
@@ -306,12 +336,12 @@ class GmshIO:
         gmsh.initialize()
         gmsh.model.add(mesh_name)
 
-        layer_list = self.prepare_inputs(point_coordinates)
+        # layer_list = self.prepare_inputs(point_coordinates)
         if dims == 3:
-            self.make_geometry_3d(layer_list, mesh_size, name_label, extrusion_length)
+            self.make_geometry_3d(point_coordinates, mesh_size, name_label, extrusion_length)
 
         elif dims == 2:
-            self.make_geometry_2d(layer_list, mesh_size, name_label)
+            self.make_geometry_2d(point_coordinates, mesh_size, name_label)
 
         self.remove_duplicates()
         gmsh.model.occ.synchronize()
@@ -347,10 +377,15 @@ class GmshIO:
         """
 
         element_name = ElementType(elem_type).name
+
         n_nodes_per_element = self.get_num_nodes_from_elem_type(elem_type)
         num_elements = len(elem_tags)
         connectivities = np.reshape(element_connectivities, (num_elements, n_nodes_per_element))
-
+        # print("element_name=",element_name)
+        # print("n_nodes_per_element=",n_nodes_per_element)
+        # print("num_elements=",num_elements)
+        # print("elem_tags=",elem_tags)
+        # print("connectivities=",connectivities)
         return {element_name: {"element_ids": elem_tags,
                                "connectivities": connectivities}}
 
@@ -377,7 +412,8 @@ class GmshIO:
 
         mesh_data["nodes"]["coordinates"] = node_coordinates
         mesh_data["nodes"]["ids"] = node_tags
-
+        # print("node_coordinates=", node_coordinates)
+        # print("node_tags=", node_tags)
         # get all elemental information
         elem_types, elem_tags, elem_node_tags = gmsh_mesh.getElements()
 
