@@ -54,24 +54,7 @@ class GmshIO:
 
         return self.__mesh_data
 
-    # def prepare_inputs(self, input_points_list):
-    #     """
-    #     Prepares the input points list for the mesh generation.
-    #
-    #     Args:
-    #         input_points_list (List[List[float]]): The list of input points provided by user input.
-    #
-    #     Returns:
-    #         List[List[float]]: The list of input points for the mesh generation.
-    #     """
-    #     layer_list = []
-    #     number_of_layers = len(input_points_list)
-    #     for i in range(number_of_layers):
-    #         layer = input_points_list[i]
-    #         layer_list.append(layer)
-    #     return layer_list
-
-    def create_point(self, coordinates: Union[List[float], npt.NDArray[np.float64]], element_size: float) -> None:
+    def create_point(self, coordinates: Union[List[float], npt.NDArray[np.float64]], element_size: float) -> List[int]:
         """
         Creates points in gmsh.
 
@@ -89,7 +72,7 @@ class GmshIO:
         point_id = gmsh.model.occ.addPoint(x, y, z, element_size)
         return point_id
 
-    def create_line(self, point_ids: Union[List[int], npt.NDArray[np.int_]]) -> None:
+    def create_line(self, point_ids: Union[List[int], npt.NDArray[np.int_]]) -> List[int]:
         """
         Creates lines in gmsh.
 
@@ -145,8 +128,8 @@ class GmshIO:
         gmsh.model.setPhysicalName(surface_ndim, volume_ids+1, name_label)
 
     def generate_point_pairs(self, number_of_layers,
-                             number_of_points_in_layers: Union[List[List[float]], npt.NDArray[np.float64]], point_ids)\
-                             -> List[List[List[int]]]:
+                             number_of_points_in_layers: Union[List[List[float]], npt.NDArray[np.float64]],
+                             point_ids) -> List[List[List[int]]]:
         """
         Generates pairs of point IDs which form a line
 
@@ -159,7 +142,7 @@ class GmshIO:
         first_point_tag = 0
         for i in range(number_of_layers):  # number of layers
             point_pairs = []
-            for j in range(number_of_points_in_layers[i] - 1): # number of points in each layer (-1 for turning back)
+            for j in range(number_of_points_in_layers[i] - 1):  # number of points in each layer (-1 for turning back)
                 if j == 0:
                     # saving the first point tag in order to return from last point to it
                     first_point_tag = point_ids[i][j]
@@ -178,7 +161,8 @@ class GmshIO:
         """Makes points with point tags by getting coordinates.
 
         Args:
-            point_coordinates (Union[List[List[float]], npt.NDArray[np.float64]]): An Iterable of point x,y,z coordinates.
+            point_coordinates (Union[List[List[float]], npt.NDArray[np.float64]]): An Iterable of point x,y,z
+                                                                                   coordinates.
             default_mesh_size (float): The element size.
 
         Returns:
@@ -194,7 +178,8 @@ class GmshIO:
         """Makes lines with line tags by getting point pairs.
 
         Args:
-            point_pairs (Union[List[List[int]], npt.NDArray[np.int_]]): A list of pairs of point tags which create a line.
+            point_pairs (Union[List[List[int]], npt.NDArray[np.int_]]): A list of pairs of point tags which create a
+            line.
 
         Returns:
             List[List[int]]: A list of line tags.
@@ -227,6 +212,16 @@ class GmshIO:
 
     def make_volume(self, surface_id: [List[int], npt.NDArray[np.int_]],
                     extrusion_length: Union[List[float], npt.NDArray[np.float64]], name_label: List[str]):
+        """Makes volume with volume tags by getting surface tags.
+
+        Args:
+            surface_id (Union[List[int], npt.NDArray[np.int_]]): A list of surface tags.
+            extrusion_length (Union[List[float], npt.NDArray[np.float64]]): The extrusion length in x, y and z direction
+            name_label (List[str]): A list of volume name labels provided by user input.
+
+        Returns:
+            List[int]: A list of volume tags.
+            """
         volumes = []
         for volume in range(len(surface_id)):
             volumes.append(self.create_volume_by_extruding_surface(surface_id[volume], extrusion_length,
@@ -247,8 +242,8 @@ class GmshIO:
             int: Surface id.
         """
         number_of_layers = len(point_coordinates)
-        n_points_in_layers = [] #number of points in each layer
-        point_ids_of_layers = [] #list of point ids of coordinates of all layers
+        n_points_in_layers = []  # number of points in each layer
+        point_ids_of_layers = []  # list of point ids of coordinates of all layers
         for i in range(number_of_layers):
             n_points_in_layers.append(len(point_coordinates[i]))
             list_point_id = self.make_points(point_coordinates[i], default_mesh_size)
@@ -381,11 +376,6 @@ class GmshIO:
         n_nodes_per_element = self.get_num_nodes_from_elem_type(elem_type)
         num_elements = len(elem_tags)
         connectivities = np.reshape(element_connectivities, (num_elements, n_nodes_per_element))
-        # print("element_name=",element_name)
-        # print("n_nodes_per_element=",n_nodes_per_element)
-        # print("num_elements=",num_elements)
-        # print("elem_tags=",elem_tags)
-        # print("connectivities=",connectivities)
         return {element_name: {"element_ids": elem_tags,
                                "connectivities": connectivities}}
 
@@ -412,8 +402,6 @@ class GmshIO:
 
         mesh_data["nodes"]["coordinates"] = node_coordinates
         mesh_data["nodes"]["ids"] = node_tags
-        # print("node_coordinates=", node_coordinates)
-        # print("node_tags=", node_tags)
         # get all elemental information
         elem_types, elem_tags, elem_node_tags = gmsh_mesh.getElements()
 

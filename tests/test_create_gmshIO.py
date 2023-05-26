@@ -2,7 +2,7 @@ import pytest
 from gmsh_utils.gmsh_IO import GmshIO
 
 
-def test_generate_mesh_2D():
+def test_generate_mesh_2d():
     """
     Checks whether mesh data generated for 2D geometries is not empty.
 
@@ -30,7 +30,7 @@ def test_generate_mesh_2D():
     # set a name for mesh output file
     mesh_output_name = "test_2D"
     # set output directory
-    mesh_output_dir = "."
+    mesh_output_dir = "./"
 
     gmsh_io = GmshIO()
 
@@ -51,7 +51,7 @@ def test_generate_mesh_2D():
         assert value["connectivities"].size > 0
 
 
-def test_generate_mesh_3D():
+def test_generate_mesh_3d():
     """
     Checks whether mesh data generated for 3D geometries is not empty.
 
@@ -60,12 +60,12 @@ def test_generate_mesh_3D():
     # define the default mesh size
     default_mesh_size = 1
     # define the points of the surface as a list of tuples
-    input_points_list = [[(0, 0, 0), (3, 0, 0), (3, 1, 0), (0, 1, 0)],
-                         [(3, 0, 0), (5, 0, 0), (5, 1, 0), (4, 1.5, 0), (3, 1, 0)],
+    input_points_list = [[(3, 0, 0), (5, 0, 0), (5, 1, 0), (4, 1.5, 0), (3, 1, 0)],
+                         [(0, 0, 0), (3, 0, 0), (3, 1, 0), (0, 1, 0)],
                          [(0, 1, 0), (2, 1, 0), (2, 3, 0), (0, 3, 0)],
                          [(2, 1, 0), (3, 1, 0), (4, 1.5, 0), (5, 1, 0), (5, 3, 0), (2, 3, 0)],
-                         [(0, 3, 0), (2.5, 3, 0), (2, 4, 0), (0, 4, 0)],
-                         [(0.8, 4, 0), (1.2, 4, 0), (1.2, 4.1, 0), (0.8, 4.1, 0)]]
+                         [(0.8, 4, 0), (1.2, 4, 0), (1.2, 4.1, 0), (0.8, 4.1, 0)],
+                         [(0, 3, 0), (2.5, 3, 0), (2, 4, 0), (0, 4, 0)]]
     # define the name labels for the surfaces
     name_label_list = ["First Soil Layer", "FSL", "Second Soil Layer", "SSL", "Soil Ballast", "Line Track"]
 
@@ -80,7 +80,7 @@ def test_generate_mesh_3D():
     # set a name for mesh output file
     mesh_output_name = "test_3D"
     # set output directory
-    mesh_output_dir = "."
+    mesh_output_dir = "./"
 
     gmsh_io = GmshIO()
 
@@ -99,5 +99,3 @@ def test_generate_mesh_3D():
     for value in mesh_data["elements"].values():
         assert value["element_ids"].size > 0
         assert value["connectivities"].size > 0
-
-
