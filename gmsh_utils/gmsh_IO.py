@@ -111,8 +111,6 @@ class GmshIO:
 
         raise Exception("Geometry data can only be set by internal methods.")
 
-
-    def create_point(self, coordinates: Union[List[float], npt.NDArray[np.float64]], element_size: float) -> None:
     def create_point(self, coordinates: Union[List[float], npt.NDArray[np.float64]], element_size: float) -> List[int]:
         """
         Creates points in gmsh.
@@ -143,8 +141,6 @@ class GmshIO:
 
         point1 = point_ids[0]
         point2 = point_ids[1]
-        gmsh.model.geo.addLine(point1, point2)
-
         line_id = gmsh.model.occ.addLine(point1, point2)
         return line_id
 
