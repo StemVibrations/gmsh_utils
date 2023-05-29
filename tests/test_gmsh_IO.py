@@ -1,6 +1,6 @@
 from gmsh_utils.gmsh_IO import GmshIO
-from utils import TestUtils
-
+# from gmsh_IO import GmshIO
+from tests.utils import TestUtils
 import numpy as np
 import pytest
 
@@ -41,31 +41,36 @@ class TestGmshIO:
         Checks whether mesh data generated for 2D geometries is not empty.
 
         """
+        # define the default mesh size
+        default_mesh_size = 1
         # define the points of the surface as a list of tuples
-        input_points = np.array([(0, 0, 0), (1, 0, 0), (1, 3, 0), (0, 3, 0), (-1, 1.5, 0)])
-        # define the mesh size
-        mesh_size = 0.1
-        # set a name label for the surface
-        name_label = "Soil Layer"
-        # if True, saves mesh data to separate mdpa files
+        input_points_list = [[(0, 0, 0), (3, 0, 0), (3, 1, 0), (0, 1, 0)],
+                             [(3, 0, 0), (5, 0, 0), (5, 1, 0), (4, 1.5, 0), (3, 1, 0)],
+                             [(0, 1, 0), (2, 1, 0), (2, 3, 0), (0, 3, 0)],
+                             [(2, 1, 0), (3, 1, 0), (4, 1.5, 0), (5, 1, 0), (5, 3, 0), (2, 3, 0)],
+                             [(0, 3, 0), (2.5, 3, 0), (2, 4, 0), (0, 4, 0)],
+                             [(0.8, 4, 0), (1.2, 4, 0), (1.2, 4.1, 0), (0.8, 4.1, 0)]]
+        # define the name labels for the surfaces
+        name_label_list = ["First Soil Layer", "FSL", "Second Soil Layer", "SSL", "Soil Ballast", "Line Track"]
+
+        # define geometry dimension; input "3" for 3D to extrude the 2D surface, input "2" for 2D
+        dims = 2
+        # if 3D, input depth of geometry to be extruded from 2D surface
+        extrusion_length = [0, 0, 0]
+        # if "True", saves mesh data to separate mdpa files; otherwise "False"
         save_file = False
-        # if True, opens gmsh interface
-        gmsh_interface = False
+        # if "True", opens gmsh interface; otherwise "False"
+        open_gmsh_gui = False
         # set a name for mesh output file
         mesh_output_name = "test_2D"
-        # set output directory of the mesh
-        mesh_output_dir = "."
-
-        # test 2D geometry
-        # define geometry dimension; input "2" for 2D
-        dims = 2
-        # input depth of geometry if 3D
-        extrusion_length = [0, 0, 0]
+        # set output directory
+        mesh_output_dir = "./"
 
         gmsh_io = GmshIO()
-        gmsh_io.generate_gmsh_mesh(input_points, extrusion_length, mesh_size, dims, name_label,
-                                   mesh_output_name, mesh_output_dir, save_file,
-                                   gmsh_interface)
+
+        gmsh_io.generate_gmsh_mesh(input_points_list, extrusion_length, default_mesh_size, dims,
+                                   name_label_list, mesh_output_name, mesh_output_dir,
+                                   save_file, open_gmsh_gui)
 
         mesh_data = gmsh_io.mesh_data
 
@@ -85,33 +90,39 @@ class TestGmshIO:
 
         """
 
+        # define the default mesh size
+        default_mesh_size = 1
         # define the points of the surface as a list of tuples
-        input_points = np.array([(0, 0, 0), (1, 0, 0), (1, 3, 0), (0, 3, 0), (-1, 1.5, 0)])
-        # define the mesh size
-        element_size = 0.1
-        # set a name label for the surface
-        name_label = "Soil Layer"
-        # if True, saves mesh data to separate mdpa files
-        save_file = False
-        # if True, opens gmsh interface
-        gmsh_interface = False
-        # test 3D geometry
-        # define geometry dimension; input "3" for 3D to extrude the 2D surface
+        input_points_list = [[(0, 0, 0), (3, 0, 0), (3, 1, 0), (0, 1, 0)],
+                             [(3, 0, 0), (5, 0, 0), (5, 1, 0), (4, 1.5, 0), (3, 1, 0)],
+                             [(0, 1, 0), (2, 1, 0), (2, 3, 0), (0, 3, 0)],
+                             [(2, 1, 0), (3, 1, 0), (4, 1.5, 0), (5, 1, 0), (5, 3, 0), (2, 3, 0)],
+                             [(0, 3, 0), (2.5, 3, 0), (2, 4, 0), (0, 4, 0)],
+                             [(0.8, 4, 0), (1.2, 4, 0), (1.2, 4.1, 0), (0.8, 4.1, 0)]]
+        # define the name labels for the surfaces
+        name_label_list = ["First Soil Layer", "FSL", "Second Soil Layer", "SSL", "Soil Ballast", "Line Track"]
+
+        # define geometry dimension; input "3" for 3D to extrude the 2D surface, input "2" for 2D
         dims = 3
-        # input depth of geometry if 3D
-        extrusion_length = [0, 0, 1]
+        # if 3D, input depth of geometry to be extruded from 2D surface
+        extrusion_length = [0, 0, 3]
+        # if "True", saves mesh data to separate mdpa files; otherwise "False"
+        save_file = False
+        # if "True", opens gmsh interface; otherwise "False"
+        open_gmsh_gui = False
         # set a name for mesh output file
         mesh_output_name = "test_3D"
-        # set output directory of the mesh
-        mesh_output_dir = "."
+        # set output directory
+        mesh_output_dir = "./"
 
         gmsh_io = GmshIO()
 
-        gmsh_io.generate_gmsh_mesh(input_points, extrusion_length, element_size, dims, name_label,
-                                   mesh_output_name, mesh_output_dir, save_file,
-                                   gmsh_interface)
+        gmsh_io.generate_gmsh_mesh(input_points_list, extrusion_length, default_mesh_size, dims,
+                                   name_label_list, mesh_output_name, mesh_output_dir,
+                                   save_file, open_gmsh_gui)
 
         mesh_data = gmsh_io.mesh_data
+
 
         assert mesh_data["nodes"]["coordinates"].size > 0  # check if node_coords is not empty
         assert mesh_data["nodes"]["ids"].size > 0  # check if node_tags is not empty
@@ -275,9 +286,3 @@ class TestGmshIO:
 
         # check if expected and actual geo data are equal
         TestUtils.assert_dictionary_almost_equal(geo_data, new_geo_data)
-
-
-
-
-
-
