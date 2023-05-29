@@ -1,6 +1,7 @@
 import pytest
 from gmsh_utils.gmsh_IO import GmshIO
-
+import numpy as np
+import pytest
 
 def test_generate_mesh_2d():
     """
@@ -50,7 +51,7 @@ def test_generate_mesh_2d():
         assert value["element_ids"].size > 0
         assert value["connectivities"].size > 0
 
-
+#
 def test_generate_mesh_3d():
     """
     Checks whether mesh data generated for 3D geometries is not empty.
@@ -60,12 +61,12 @@ def test_generate_mesh_3d():
     # define the default mesh size
     default_mesh_size = 1
     # define the points of the surface as a list of tuples
-    input_points_list = [[(3, 0, 0), (5, 0, 0), (5, 1, 0), (4, 1.5, 0), (3, 1, 0)],
-                         [(0, 0, 0), (3, 0, 0), (3, 1, 0), (0, 1, 0)],
+    input_points_list = [[(0, 0, 0), (3, 0, 0), (3, 1, 0), (0, 1, 0)],
+                         [(3, 0, 0), (5, 0, 0), (5, 1, 0), (4, 1.5, 0), (3, 1, 0)],
                          [(0, 1, 0), (2, 1, 0), (2, 3, 0), (0, 3, 0)],
                          [(2, 1, 0), (3, 1, 0), (4, 1.5, 0), (5, 1, 0), (5, 3, 0), (2, 3, 0)],
-                         [(0.8, 4, 0), (1.2, 4, 0), (1.2, 4.1, 0), (0.8, 4.1, 0)],
-                         [(0, 3, 0), (2.5, 3, 0), (2, 4, 0), (0, 4, 0)]]
+                         [(0, 3, 0), (2.5, 3, 0), (2, 4, 0), (0, 4, 0)],
+                         [(0.8, 4, 0), (1.2, 4, 0), (1.2, 4.1, 0), (0.8, 4.1, 0)]]
     # define the name labels for the surfaces
     name_label_list = ["First Soil Layer", "FSL", "Second Soil Layer", "SSL", "Soil Ballast", "Line Track"]
 
@@ -89,6 +90,7 @@ def test_generate_mesh_3d():
                                save_file, open_gmsh_gui)
 
     mesh_data = gmsh_io.mesh_data
+
 
     assert mesh_data["nodes"]["coordinates"].size > 0  # check if node_coords is not empty
     assert mesh_data["nodes"]["ids"].size > 0  # check if node_tags is not empty
