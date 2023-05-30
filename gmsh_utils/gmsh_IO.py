@@ -601,7 +601,7 @@ class GmshIO:
         """
 
         # get boundary entities of current entity
-        lower_entities = gmsh.model.getBoundary([(entity_ndim, entity_id)])
+        lower_entities = gmsh.model.getBoundary([(entity_ndim, entity_id)], combined=False)
 
         # get ids of lower entities
         lower_entity_ids = [entity[1] for entity in lower_entities]
@@ -704,12 +704,12 @@ class GmshIO:
 
         # add surfaces to the geometry
         for k, v in self.__geo_data["surfaces"].items():
-            gmsh.model.occ.addCurveLoop(v, tag=k, reorient=True)
-            gmsh.model.occ.addPlaneSurface([k], tag=k)
+            curve_key = gmsh.model.occ.addCurveLoop(v)
+            gmsh.model.occ.addPlaneSurface([curve_key], tag=k)
 
         # add volumes to the geometry
         for k, v in self.__geo_data["volumes"].items():
-            gmsh.model.occ.addSurfaceLoop(v, tag=k)
+            gmsh.model.occ.addSurfaceLoop(np.abs(v), tag=k)
             gmsh.model.occ.add_volume([k], tag=k)
 
         # add physical groups to the geometry
