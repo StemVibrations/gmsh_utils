@@ -630,3 +630,31 @@ class GmshIO:
 
         # synchronize the geometry
         gmsh.model.geo.synchronize()
+
+    def generate_mesh(self, ndim: int, element_size: float = 0.0, order: int = 1):
+        """
+        Generates a mesh from the geometry data.
+
+        Args:
+            ndim (int): Dimension of the mesh.
+            element_size (float, optional): Element size. Defaults to 0.0.
+            order (int, optional): Order of the mesh. Defaults to 1.
+
+        """
+
+        self.generate_geo_from_geo_data()
+
+        if element_size > 0.0:
+            gmsh.model.mesh.setSize(gmsh.model.getEntities(), element_size)
+
+        # set mesh order
+        gmsh.model.mesh.setOrder(order)
+
+        # generate mesh
+        gmsh.model.mesh.generate(ndim)
+
+        # extract mesh data
+        self.extract_mesh_data(gmsh.model.mesh)
+
+        # finalize gmsh
+        gmsh.finalize()
