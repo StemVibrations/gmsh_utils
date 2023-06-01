@@ -642,6 +642,7 @@ class GmshIO:
 
         """
 
+        # sets gmsh geometry from a geometry data dictionary
         self.generate_geo_from_geo_data()
 
         if element_size > 0.0:
@@ -653,7 +654,7 @@ class GmshIO:
         # generate mesh
         gmsh.model.mesh.generate(ndim)
 
-        # extract mesh data
+        # parses gmsh mesh data into a mesh data dictionary
         self.extract_mesh_data(gmsh.model.mesh)
 
         # finalize gmsh
