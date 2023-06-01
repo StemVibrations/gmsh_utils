@@ -110,7 +110,7 @@ class TestGmshIO:
 
         mesh_data = gmsh_io.mesh_data
 
-        file = 'test_data/geometry2DGmsh.msh'
+        file = 'tests/test_data/geometry2DGmsh.msh'
 
         gmsh_io_check = GmshIO()
 
@@ -194,7 +194,7 @@ class TestGmshIO:
 
         mesh_data = gmsh_io.mesh_data
 
-        file = 'test_data/geometry3DGmsh.msh'
+        file = 'tests/test_data/geometry3DGmsh.msh'
 
         gmsh_io_check = GmshIO()
 
