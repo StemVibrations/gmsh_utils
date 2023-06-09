@@ -79,6 +79,46 @@ class TestGmshIO:
             assert value["element_ids"].size > 0
             assert value["connectivities"].size > 0
 
+    def test_similar_mesh_2D(self):
+        """
+        Checks whether mesh data generated for 2D geometries is similar to data generated with Gmsh
+        """
+        # define the points of the surface as a list of tuples
+        input_points = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)]
+        # define the element size
+        element_size = 0
+        # define geometry dimension; input "3" for 3D to extrude the 2D surface, input "2" for 2D
+        dims = 2
+        # if 3D, input depth of geometry to be extruded from 2D surface
+        extrusion_length = [0, 0, 2]
+        # set a name label for the surface
+        name_label = "Soil Layer"
+        # if "True", saves mesh data to separate mdpa files; otherwise "False"
+        save_file = True
+        # if "True", opens gmsh interface; otherwise "False"
+        open_gmsh_gui = False
+        # set a name for mesh output file
+        mesh_name = "geometry"
+        # set output directory
+        mesh_output_dir = "./"
+
+        gmsh_io = GmshIO()
+
+        gmsh_io.generate_gmsh_mesh(input_points, extrusion_length, element_size, dims, name_label, mesh_name,
+                                   mesh_output_dir,
+                                   save_file, open_gmsh_gui)
+
+        mesh_data = gmsh_io.mesh_data
+
+        file = 'tests/test_data/geometry2DGmsh.msh'
+
+        gmsh_io_check = GmshIO()
+
+        gmsh_io_check.read_gmsh_msh(file)
+        mesh_data_check = gmsh_io_check.mesh_data
+
+        TestUtils.assert_dictionary_almost_equal(mesh_data,mesh_data_check)
+
     def test_generate_mesh_3D(self):
         """
         Checks whether mesh data generated for 3D geometries is not empty.
@@ -122,6 +162,46 @@ class TestGmshIO:
         for value in mesh_data["elements"].values():
             assert value["element_ids"].size > 0
             assert value["connectivities"].size > 0
+
+    def test_similar_mesh_3D(self):
+        """
+        Checks whether mesh data generated for 3D geometries is similar to data generated with Gmsh
+        """
+        # define the points of the surface as a list of tuples
+        input_points = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)]
+        # define the element size
+        element_size = 0
+        # define geometry dimension; input "3" for 3D to extrude the 2D surface, input "2" for 2D
+        dims = 3
+        # if 3D, input depth of geometry to be extruded from 2D surface
+        extrusion_length = [0, 0, 2]
+        # set a name label for the surface
+        name_label = "Soil Layer"
+        # if "True", saves mesh data to separate mdpa files; otherwise "False"
+        save_file = True
+        # if "True", opens gmsh interface; otherwise "False"
+        open_gmsh_gui = False
+        # set a name for mesh output file
+        mesh_name = "geometry"
+        # set output directory
+        mesh_output_dir = "./"
+
+        gmsh_io = GmshIO()
+
+        gmsh_io.generate_gmsh_mesh(input_points, extrusion_length, element_size, dims, name_label, mesh_name,
+                                   mesh_output_dir,
+                                   save_file, open_gmsh_gui)
+
+        mesh_data = gmsh_io.mesh_data
+
+        file = 'tests/test_data/geometry3DGmsh.msh'
+
+        gmsh_io_check = GmshIO()
+
+        gmsh_io_check.read_gmsh_msh(file)
+        mesh_data_check = gmsh_io_check.mesh_data
+
+        TestUtils.assert_dictionary_almost_equal(mesh_data,mesh_data_check)
 
     def test_read_gmsh_geo_2D(self):
         """
