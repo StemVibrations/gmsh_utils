@@ -182,9 +182,7 @@ class GmshIO:
                                extrusion_length[2])
         gmsh.model.setPhysicalName(surface_ndim, volume_ids+1, name_label)
 
-    def generate_point_pairs(self, number_of_layers,
-                             number_of_points_in_layers: Union[List[List[float]], npt.NDArray[np.float64]],
-                             point_ids) -> List[List[List[int]]]:
+    def generate_point_pairs(self, point_ids) -> List[List[List[int]]]:
         """
         Generates pairs of point IDs which form a line
 
@@ -195,19 +193,19 @@ class GmshIO:
         """
         list_point_pairs = []
         first_point_tag = 0
-        for i in range(number_of_layers):  # number of layers
-            point_pairs = []
-            for j in range(number_of_points_in_layers[i] - 1):  # number of points in each layer (-1 for turning back)
-                if j == 0:
-                    # saving the first point tag in order to return from last point to it
-                    first_point_tag = point_ids[i][j]
-                # puts two consecutive points tags as the beginning and end of line in an array
-                point_pair = [point_ids[i][j], point_ids[i][j+1]]
-                point_pairs.append(point_pair)
-            # make a pair that connects last point to first point
-            last_point_tag = len(point_ids[i])-1
-            point_pairs.append([point_ids[i][last_point_tag], first_point_tag])
-            list_point_pairs.append(point_pairs)
+        # for i in range(number_of_layers):  # number of layers
+        point_pairs = []
+        for j in range(len(point_ids) - 1):  # number of points in each layer (-1 for turning back)
+            if j == 0:
+                # saving the first point tag in order to return from last point to it
+                first_point_tag = point_ids[j]
+            # puts two consecutive points tags as the beginning and end of line in an array
+            point_pair = [point_ids[j], point_ids[j+1]]
+            point_pairs.append(point_pair)
+        # make a pair that connects last point to first point
+        last_point_tag = point_ids[len(point_ids)-1]
+        point_pairs.append([last_point_tag, first_point_tag])
+        list_point_pairs.append(point_pairs)
 
         return list_point_pairs
 
@@ -225,6 +223,7 @@ class GmshIO:
             """
         list_point_ids = []
         for point in point_coordinates:
+            point = [point[0], point[1], point[2]]
             point_id = self.create_point(point, default_mesh_size)
             list_point_ids.append(point_id)
         return list_point_ids
@@ -241,12 +240,10 @@ class GmshIO:
             """
         list_lines = []
         for i in range(len(point_pairs)):
-            lines = []
             for j in range(len(point_pairs[i])):
                 line = [point_pairs[i][j][0], point_pairs[i][j][1]]
                 line_id = self.create_line(line)
-                lines.append(line_id)
-            list_lines.append(lines)
+                list_lines.append(line_id)
         return list_lines
 
     def make_surfaces(self, line_list: Union[List[List[float]], npt.NDArray[np.float64]], name_label: List[str]):
@@ -260,8 +257,8 @@ class GmshIO:
             List[int]: A list of surface tags.
             """
         surfaces = []
-        for i in range(len(line_list)):
-            surfaces.append(self.create_surface(line_list[i], name_label[i]))
+        # for i in range(len(line_list)):
+        surfaces.append(self.create_surface(line_list, name_label))
 
         return surfaces
 
@@ -296,15 +293,15 @@ class GmshIO:
         Returns:
             int: Surface id.
         """
-        number_of_layers = len(point_coordinates)
-        n_points_in_layers = []  # number of points in each layer
-        point_ids_of_layers = []  # list of point ids of coordinates of all layers
-        for i in range(number_of_layers):
-            n_points_in_layers.append(len(point_coordinates[i]))
-            list_point_id = self.make_points(point_coordinates[i], default_mesh_size)
-            point_ids_of_layers.append(list_point_id)
+        # number_of_layers = len(point_coordinates)
+        # n_points_in_layers = []  # number of points in each layer
+        # point_ids_of_layers = []  # list of point ids of coordinates of all layers
+        # for i in range(number_of_layers):
+        #     n_points_in_layers.append(len(point_coordinates[i]))
+        list_point_id = self.make_points(point_coordinates, default_mesh_size)
+        # point_ids_of_layers.append(list_point_id)
 
-        pair_lists = self.generate_point_pairs(number_of_layers, n_points_in_layers, point_ids_of_layers)
+        pair_lists = self.generate_point_pairs(list_point_id)
         line_lists = self.make_lines(pair_lists)
         surface_ids = self.make_surfaces(line_lists, name_label_list)
 
@@ -386,12 +383,13 @@ class GmshIO:
         gmsh.initialize()
         gmsh.model.add(mesh_name)
 
-        # layer_list = self.prepare_inputs(point_coordinates)
-        if dims == 3:
-            self.make_geometry_3d(point_coordinates, mesh_size, name_label, extrusion_length)
+        for i in range(len(point_coordinates)):
+            # layer_list = self.prepare_inputs(point_coordinates)
+            if dims == 3:
+                self.make_geometry_3d(point_coordinates[i], mesh_size, name_label[i], extrusion_length)
 
-        elif dims == 2:
-            self.make_geometry_2d(point_coordinates, mesh_size, name_label)
+            elif dims == 2:
+                self.make_geometry_2d(point_coordinates[i], mesh_size, name_label[i])
 
         self.remove_duplicates()
         gmsh.model.occ.synchronize()
@@ -700,6 +698,7 @@ class GmshIO:
 
         # add lines to the geometry
         for k, v in self.__geo_data["lines"].items():
+            print(self.__geo_data["lines"].items())
             gmsh.model.occ.addLine(v[0],v[1], tag=k)
 
         # add surfaces to the geometry
