@@ -65,7 +65,7 @@ class TestGmshIO:
         # set a name for mesh output file
         mesh_output_name = "test_2D"
         # set output directory
-        mesh_output_dir = "./"
+        mesh_output_dir = "."
 
         gmsh_io = GmshIO()
 
@@ -114,7 +114,7 @@ class TestGmshIO:
         # set a name for mesh output file
         mesh_output_name = "test_3D"
         # set output directory
-        mesh_output_dir = "./"
+        mesh_output_dir = "."
 
         gmsh_io = GmshIO()
 
