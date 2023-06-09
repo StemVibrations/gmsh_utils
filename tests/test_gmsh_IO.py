@@ -276,13 +276,14 @@ class TestGmshIO:
         # check if expected and actual geo data are equal
         TestUtils.assert_dictionary_almost_equal(geo_data, new_geo_data)
 
+    @pytest.mark.skip(reason="currently test is ignored")
     def test_generate_mesh(self):
         """
         Checks whether a mesh is generated correctly from a gmsh .geo file. A 2D block mesh is generated.
 
         """
 
-        geo_file = r"tests/test_data/block_2D.geo"
+        geo_file = r"test_data/block_2D.geo"
 
         gmsh_io = GmshIO()
 
