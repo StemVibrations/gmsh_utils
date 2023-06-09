@@ -228,7 +228,8 @@ class GmshIO:
             list_point_ids.append(point_id)
         return list_point_ids
 
-    def make_lines(self, point_pairs: Union[List[List[int]], npt.NDArray[np.int_]]):
+    def make_lines(self, point_pairs: Union[List[List[int]], npt.NDArray[np.int_]]) -> \
+                   Union[List[List[int]], npt.NDArray[np.int_]]:
         """Makes lines with line tags by getting point pairs.
 
         Args:
@@ -246,11 +247,12 @@ class GmshIO:
                 list_lines.append(line_id)
         return list_lines
 
-    def make_surfaces(self, line_list: Union[List[List[float]], npt.NDArray[np.float64]], name_label: List[str]):
+    def make_surfaces(self, line_list: Union[List[int], npt.NDArray[np.int_]], name_label: List[str]) -> \
+                      Union[List[int], npt.NDArray[np.int_]]:
         """Makes surfaces with surface tags by getting line tags.
 
         Args:
-            line_list (Union[List[List[float]], npt.NDArray[np.float64]]): A list of line tags in order.
+            line_list (Union[List[int], npt.NDArray[np.int_]]): A list of line tags in order.
             name_label (List[str]): A list of surface name labels provided by user input.
 
         Returns:
@@ -356,8 +358,9 @@ class GmshIO:
 
     def generate_gmsh_mesh(self, point_coordinates: Union[List[List[float]], npt.NDArray[np.float64]],
                            extrusion_length: Union[List[float], npt.NDArray[np.float64]],
-                           mesh_size: float, dims: int, name_label: List[str], mesh_name: str,
-                           mesh_output_dir: str, save_file: bool = False, open_gmsh_gui: bool = False) -> None:
+                           mesh_size: float, dims: int, name_label: List[str],
+                           mesh_name: str, mesh_output_dir: str, save_file: bool = False,
+                           open_gmsh_gui: bool = False) -> None:
         """
         Creates point pairs by storing point tags of two consecutive points in an array,
         then generates mesh for geometries in gmsh.
