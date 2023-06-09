@@ -317,10 +317,12 @@ class GmshIO:
 
         Args:
             point_coordinates (Union[List[float], npt.NDArray[float]]): Geometry points coordinates.
+            point_pairs (Union[List[List[int]], npt.NDArray[npt.NDArray[int]]]): A list of point tags of two consecutive
                 points in an array.
             default_mesh_size (float): The default mesh size provided by user.
             name_label_list (List[str]): A list of labels provided by user input.
             extrusion_length (Union[List[float], npt.NDArray[float]]): The extrusion length in x, y and z direction.
+            name_label (str): surface name label from user input.
 
         Returns:
             None
@@ -382,6 +384,7 @@ class GmshIO:
         """
 
         #todo add check for clockwise or anticlockwise
+        point_pairs = self.generate_point_pairs(point_coordinates)
 
         gmsh.initialize()
         gmsh.model.add(mesh_name)
@@ -402,6 +405,7 @@ class GmshIO:
         # self.__mesh_data = self.extract_mesh_data(gmsh.model.mesh)
         # extracts mesh data from gmsh
         self.extract_mesh_data(gmsh.model.mesh)
+
         if save_file:
             # writes mesh file output in .msh format
             file_extension = ".msh"
@@ -720,3 +724,32 @@ class GmshIO:
 
         # synchronize the geometry
         gmsh.model.occ.synchronize()
+
+    def generate_mesh(self, ndim: int, element_size: float = 0.0, order: int = 1):
+        """
+        Generates a mesh from the geometry data.
+
+        Args:
+            ndim (int): Dimension of the mesh.
+            element_size (float, optional): Element size. Defaults to 0.0.
+            order (int, optional): Order of the mesh. Defaults to 1.
+
+        """
+
+        # sets gmsh geometry from a geometry data dictionary
+        self.generate_geo_from_geo_data()
+
+        if element_size > 0.0:
+            gmsh.model.mesh.setSize(gmsh.model.getEntities(), element_size)
+
+        # set mesh order
+        gmsh.model.mesh.setOrder(order)
+
+        # generate mesh
+        gmsh.model.mesh.generate(ndim)
+
+        # parses gmsh mesh data into a mesh data dictionary
+        self.extract_mesh_data(gmsh.model.mesh)
+
+        # finalize gmsh
+        gmsh.finalize()

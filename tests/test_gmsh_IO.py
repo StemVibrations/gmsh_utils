@@ -1,8 +1,9 @@
 from gmsh_utils.gmsh_IO import GmshIO
-# from gmsh_IO import GmshIO
-from tests.utils import TestUtils
+from utils import TestUtils
+
 import numpy as np
 import pytest
+
 
 class TestGmshIO:
     """
@@ -35,7 +36,6 @@ class TestGmshIO:
                 "surfaces": expected_surfaces,
                 "volumes": expected_volumes,
                 "physical_groups": expected_physical_groups}
-
 
     def test_generate_mesh_2D(self):
         """
@@ -123,7 +123,6 @@ class TestGmshIO:
                                    save_file, open_gmsh_gui)
 
         mesh_data = gmsh_io.mesh_data
-
 
         assert mesh_data["nodes"]["coordinates"].size > 0  # check if node_coords is not empty
         assert mesh_data["nodes"]["ids"].size > 0  # check if node_tags is not empty
@@ -223,14 +222,13 @@ class TestGmshIO:
                                                                  [1., 1., -1.],
                                                                  [0., 1., -1.]]),
                                         'ids': [1, 2, 3, 4, 5, 6, 7, 8]},
-                             'elements': {'TETRAHEDRON_4N': {'element_ids': [1, 2, 3, 4, 5, 6],
-                                                             'connectivities': [[2, 1, 4, 8],
-                                                                                [5, 6, 8, 2],
-                                                                                [5, 2, 8, 1],
-                                                                                [2, 4, 3, 7],
-                                                                                [8, 6, 7, 2],
-                                                                                [8, 2, 7, 4]]}}}
-
+                              'elements': {'TETRAHEDRON_4N': {'element_ids': [1, 2, 3, 4, 5, 6],
+                                                              'connectivities': [[2, 1, 4, 8],
+                                                                                 [5, 6, 8, 2],
+                                                                                 [5, 2, 8, 1],
+                                                                                 [2, 4, 3, 7],
+                                                                                 [8, 6, 7, 2],
+                                                                                 [8, 2, 7, 4]]}}}
 
         # check if the coordinates of the points are correct
         TestUtils.assert_dictionary_almost_equal(expected_mesh_data, mesh_data)
@@ -277,3 +275,48 @@ class TestGmshIO:
 
         # check if expected and actual geo data are equal
         TestUtils.assert_dictionary_almost_equal(geo_data, new_geo_data)
+
+    def test_generate_mesh(self):
+        """
+        Checks whether a mesh is generated correctly from a gmsh .geo file. A 2D block mesh is generated.
+
+        """
+
+        geo_file = r"tests/test_data/block_2D.geo"
+
+        gmsh_io = GmshIO()
+
+        # read geo file
+        gmsh_io.read_gmsh_geo(geo_file)
+
+        # generate mesh
+        gmsh_io.generate_mesh(2, 1)
+
+        # get mesh data
+        mesh_data = gmsh_io.mesh_data
+
+        # set expected mesh data
+        expected_mesh_data = {'nodes': {'coordinates': np.array([[0., 0., 0.],
+                                                                 [1., 0., 0.],
+                                                                 [1., 1., 0.],
+                                                                 [0., 1., 0.],
+                                                                 [0.5, 0.5, 0.]]),
+                                        'ids': np.array([1, 2, 3, 4, 5])},
+                              'elements': {'LINE_2N': {'element_ids': np.array([9, 10, 11, 12]),
+                                                       'connectivities': np.array([[1, 2],
+                                                                                   [2, 3],
+                                                                                   [3, 4],
+                                                                                   [1, 4]])},
+                                           'TRIANGLE_3N': {'element_ids': np.array([1, 2, 3, 4]),
+                                                           'connectivities': np.array([[1, 2, 5],
+                                                                                       [4, 1, 5],
+                                                                                       [2, 3, 5],
+                                                                                       [3, 4, 5]])},
+                                           'POINT_1N': {'element_ids': np.array([5, 6, 7, 8]),
+                                                        'connectivities': np.array([[1],
+                                                                                    [2],
+                                                                                    [3],
+                                                                                    [4]])}}}
+
+        # check if the coordinates of the points are correct
+        TestUtils.assert_dictionary_almost_equal(expected_mesh_data, mesh_data)
