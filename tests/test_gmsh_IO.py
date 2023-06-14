@@ -233,8 +233,6 @@ class TestGmshIO:
         # check if the coordinates of the points are correct
         TestUtils.assert_dictionary_almost_equal(expected_mesh_data, mesh_data)
 
-    # @pytest.mark.skip(reason="currently test cannot be run, because the generate_geo_from_geo_data function is not /"
-    #                          "working properly")
     def test_generate_geo_from_geo_data(self, expected_geo_data_3D):
         """
         Checks if the gmsh geometry is correctly generated from the geo data dictionary.
@@ -259,28 +257,23 @@ class TestGmshIO:
 
         new_geo_data = gmsh_io.geo_data
 
-        # only check absolute values in surfaces, because the values can be reoriented
-        for surface in geo_data["surfaces"]:
-            geo_data["surfaces"][surface] = np.sort(np.abs(geo_data["surfaces"][surface]).astype(int))
+        # only check absolute and sorted values in surfaces, because the values can be reoriented by occ
+        for surface_id in geo_data["surfaces"].keys():
+            geo_data["surfaces"][surface_id] = np.sort(np.abs(geo_data["surfaces"][surface_id]).astype(int)).tolist()
 
-        for surface in new_geo_data["surfaces"]:
-            new_geo_data["surfaces"][surface] = np.sort(np.abs(new_geo_data["surfaces"][surface]).astype(int))
+        for surface_id in new_geo_data["surfaces"].keys():
+            new_geo_data["surfaces"][surface_id] = np.sort(np.abs(new_geo_data["surfaces"][surface_id]).astype(int))
 
-        # todo sort point ids in surface, because occ reorients them, we cannot check for orientation,
-        #  and make this todo a regular comment
+        # only check absolute and sorted values in volumes, because the values can be reoriented by occ
+        for volume_id in new_geo_data["volumes"].keys():
+            new_geo_data["volumes"][volume_id] = np.sort(np.abs(new_geo_data["volumes"][volume_id]).astype(int))
 
-
-        for surface in new_geo_data["volumes"]:
-            new_geo_data["volumes"][surface] = np.sort(np.abs(new_geo_data["volumes"][surface]).astype(int))
-
-        for surface in geo_data["volumes"]:
-            geo_data["volumes"][surface] = np.sort(np.abs(geo_data["volumes"][surface]).astype(int))
-
+        for volume_id in geo_data["volumes"].keys():
+            geo_data["volumes"][volume_id] = np.sort(np.abs(geo_data["volumes"][volume_id]).astype(int))
 
         # check if expected and actual geo data are equal
         TestUtils.assert_dictionary_almost_equal(geo_data, new_geo_data)
 
-    # @pytest.mark.skip(reason="currently test is ignored")
     def test_generate_mesh(self):
         """
         Checks whether a mesh is generated correctly from a gmsh .geo file. A 2D block mesh is generated.
@@ -311,12 +304,12 @@ class TestGmshIO:
                                                        'connectivities': np.array([[1, 2],
                                                                                    [2, 3],
                                                                                    [3, 4],
-                                                                                   [1, 4]])},
+                                                                                   [4, 1]])},
                                            'TRIANGLE_3N': {'element_ids': np.array([1, 2, 3, 4]),
-                                                           'connectivities': np.array([[1, 2, 5],
-                                                                                       [4, 1, 5],
-                                                                                       [2, 3, 5],
-                                                                                       [3, 4, 5]])},
+                                                           'connectivities': np.array([[2, 5, 1],
+                                                                                       [1, 5, 4],
+                                                                                       [3, 5, 2],
+                                                                                       [4, 5, 3]])},
                                            'POINT_1N': {'element_ids': np.array([5, 6, 7, 8]),
                                                         'connectivities': np.array([[1],
                                                                                     [2],
