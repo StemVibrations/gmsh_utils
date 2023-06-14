@@ -233,8 +233,8 @@ class TestGmshIO:
         # check if the coordinates of the points are correct
         TestUtils.assert_dictionary_almost_equal(expected_mesh_data, mesh_data)
 
-    @pytest.mark.skip(reason="currently test cannot be run, because the generate_geo_from_geo_data function is not /"
-                             "working properly")
+    # @pytest.mark.skip(reason="currently test cannot be run, because the generate_geo_from_geo_data function is not /"
+    #                          "working properly")
     def test_generate_geo_from_geo_data(self, expected_geo_data_3D):
         """
         Checks if the gmsh geometry is correctly generated from the geo data dictionary.
@@ -261,29 +261,33 @@ class TestGmshIO:
 
         # only check absolute values in surfaces, because the values can be reoriented
         for surface in geo_data["surfaces"]:
-            geo_data["surfaces"][surface] = np.abs(geo_data["surfaces"][surface]).astype(int)
+            geo_data["surfaces"][surface] = np.sort(np.abs(geo_data["surfaces"][surface]).astype(int))
 
         for surface in new_geo_data["surfaces"]:
-            new_geo_data["surfaces"][surface] = np.abs(new_geo_data["surfaces"][surface]).astype(int)
+            new_geo_data["surfaces"][surface] = np.sort(np.abs(new_geo_data["surfaces"][surface]).astype(int))
 
         # todo sort point ids in surface, because occ reorients them, we cannot check for orientation,
         #  and make this todo a regular comment
 
 
+        for surface in new_geo_data["volumes"]:
+            new_geo_data["volumes"][surface] = np.sort(np.abs(new_geo_data["volumes"][surface]).astype(int))
 
+        for surface in geo_data["volumes"]:
+            geo_data["volumes"][surface] = np.sort(np.abs(geo_data["volumes"][surface]).astype(int))
 
 
         # check if expected and actual geo data are equal
         TestUtils.assert_dictionary_almost_equal(geo_data, new_geo_data)
 
-    @pytest.mark.skip(reason="currently test is ignored")
+    # @pytest.mark.skip(reason="currently test is ignored")
     def test_generate_mesh(self):
         """
         Checks whether a mesh is generated correctly from a gmsh .geo file. A 2D block mesh is generated.
 
         """
 
-        geo_file = r"test_data/block_2D.geo"
+        geo_file = r"tests/test_data/block_2D.geo"
 
         gmsh_io = GmshIO()
 

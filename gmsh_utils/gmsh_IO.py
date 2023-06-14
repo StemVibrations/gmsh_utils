@@ -310,7 +310,7 @@ class GmshIO:
         return surface_ids
 
     def make_geometry_3d(self, point_coordinates: Union[List[List[float]], npt.NDArray[np.float64]],
-                         default_mesh_size: float, name_label_list: List[str],
+                         default_mesh_size: float, name_label_list: str,
                          extrusion_length: Union[List[float], npt.NDArray[np.float64]], ) -> None:
         """
         Creates 3D geometries by extruding the 2D surface
