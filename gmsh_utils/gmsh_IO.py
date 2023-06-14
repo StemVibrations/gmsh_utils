@@ -722,8 +722,12 @@ class GmshIO:
         for k, v in self.__geo_data["physical_groups"].items():
             gmsh.model.addPhysicalGroup(v["ndim"], [v["geometry_id"]], tag=v["id"], name=k)
 
-        # synchronize the geometry
+        # synchronize the geometry for generating the mesh
         gmsh.model.occ.synchronize()
+
+        # synchronize the geo geometry such that physical groups are added, important is that this is done after
+        # synchoronizing the occ geometry :-D
+        gmsh.model.geo.synchronize()
 
     def generate_mesh(self, ndim: int, element_size: float = 0.0, order: int = 1):
         """
