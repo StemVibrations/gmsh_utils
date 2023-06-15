@@ -3,6 +3,7 @@ from utils import TestUtils
 
 import numpy as np
 import pytest
+import platform
 
 class TestGmshIO:
     """
@@ -86,7 +87,7 @@ class TestGmshIO:
         # define the points of the surface as a list of tuples
         input_points = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)]
         # define the element size
-        element_size = 0
+        element_size = 0.1
         # define geometry dimension; input "3" for 3D to extrude the 2D surface, input "2" for 2D
         dims = 2
         # if 3D, input depth of geometry to be extruded from 2D surface
@@ -110,7 +111,11 @@ class TestGmshIO:
 
         mesh_data = gmsh_io.mesh_data
 
-        file = 'tests/test_data/geometry2DGmsh.msh'
+        opSys = platform.system()
+        if opSys == 'Windows':
+            file = 'tests/test_data/rect2D_wnd.msh'
+        if opSys == 'Linux':
+            file = 'tests/test_data/rect2D_lnx.msh'
 
         gmsh_io_check = GmshIO()
 
@@ -194,7 +199,11 @@ class TestGmshIO:
 
         mesh_data = gmsh_io.mesh_data
 
-        file = 'tests/test_data/geometry3DGmsh.msh'
+        opSys = platform.system()
+        if opSys == 'Windows':
+            file = 'tests/test_data/rect3D_wnd.msh'
+        if opSys == 'Linux':
+            file = 'tests/test_data/rect3D_lnx.msh'
 
         gmsh_io_check = GmshIO()
 
