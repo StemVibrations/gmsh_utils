@@ -175,7 +175,7 @@ class TestGmshIO:
         # define the points of the surface as a list of tuples
         input_points = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)]
         # define the element size
-        element_size = 0
+        element_size = 0.1
         # define geometry dimension; input "3" for 3D to extrude the 2D surface, input "2" for 2D
         dims = 3
         # if 3D, input depth of geometry to be extruded from 2D surface
