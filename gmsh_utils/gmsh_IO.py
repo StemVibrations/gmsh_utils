@@ -208,13 +208,13 @@ class GmshIO:
 
         return point_pairs
 
-    def make_points(self, point_coordinates: Union[List[List[float]], npt.NDArray[np.float64]],
+    def make_points(self, point_coordinates: Union[List[float], npt.NDArray[np.float64]],
                     default_mesh_size:  float) -> List[int]:
         """
         Makes points with point tags by getting coordinates.
 
         Args:
-            point_coordinates (Union[List[List[float]], npt.NDArray[np.float64]]): An Iterable of point x,y,z
+            point_coordinates (Union[List[float], npt.NDArray[np.float64]]): An Iterable of point x,y,z
                                                                                    coordinates.
             default_mesh_size (float): The element size.
 
@@ -223,7 +223,6 @@ class GmshIO:
         """
         list_point_ids = []
         for point in point_coordinates:
-            point = [point[0], point[1], point[2]]
             point_id = self.create_point(point, default_mesh_size)
             list_point_ids.append(point_id)
         return list_point_ids
