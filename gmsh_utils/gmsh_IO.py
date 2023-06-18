@@ -179,8 +179,8 @@ class GmshIO:
 
         surface_ndim = 2
         volume_tag: int = gmsh.model.occ.extrude([(surface_ndim, surface_id)], extrusion_length[0], extrusion_length[1],
-                               extrusion_length[2])
-        gmsh.model.setPhysicalName(surface_ndim, volume_ids+1, name_label)
+                                                 extrusion_length[2])
+        gmsh.model.setPhysicalName(surface_ndim, volume_ids + 1, name_label)
         return volume_tag
 
     def generate_point_pairs(self, point_ids) -> List[List[int]]:
@@ -200,16 +200,16 @@ class GmshIO:
                 # saving the first point tag in order to return from last point to it
                 first_point_tag = point_ids[point_id]
             # puts two consecutive points tags as the beginning and end of line in an array
-            point_pair = [point_ids[point_id], point_ids[point_id+1]]
+            point_pair = [point_ids[point_id], point_ids[point_id + 1]]
             point_pairs.append(point_pair)
         # make a pair that connects last point to first point
-        last_point_tag = point_ids[len(point_ids)-1]
+        last_point_tag = point_ids[len(point_ids) - 1]
         point_pairs.append([last_point_tag, first_point_tag])
 
         return point_pairs
 
-    def make_points(self, point_coordinates: Union[List[float], npt.NDArray[np.float64]],
-                    default_mesh_size:  float) -> List[int]:
+    def make_points(self, point_coordinates: Union[float, any],
+                    default_mesh_size: float) -> List[int]:
         """
         Makes points with point tags by getting coordinates.
 
@@ -227,7 +227,7 @@ class GmshIO:
             list_point_ids.append(point_id)
         return list_point_ids
 
-    def make_lines(self, point_pairs: Union[List[List[int]], npt.NDArray[np.int_]])\
+    def make_lines(self, point_pairs: Union[List[List[int]], npt.NDArray[np.int_]]) \
             -> Union[List[int], npt.NDArray[np.int_]]:
         """
         Makes lines with line tags by getting point pairs.
@@ -247,7 +247,7 @@ class GmshIO:
             list_lines.append(line_id)
         return list_lines
 
-    def make_surfaces(self, line_list: Union[List[int], npt.NDArray[np.int_]], name_label: str)\
+    def make_surfaces(self, line_list: Union[List[int], npt.NDArray[np.int_]], name_label: str) \
             -> Union[List[int], npt.NDArray[np.int_]]:
         """
         Makes surfaces with surface tags by getting line tags.
@@ -282,7 +282,7 @@ class GmshIO:
         volumes = []
         for volume in range(len(surface_id)):
             volume_tag = self.create_volume_by_extruding_surface(surface_id[volume], extrusion_length,
-                                                                   name_label[volume], volume)
+                                                                 name_label[volume], volume)
             volumes.append(volume_tag)
 
     def make_geometry_2d(self, point_coordinates: Union[List[float], Any],
@@ -612,10 +612,10 @@ class GmshIO:
         # get all entities
         entities = gmsh.model.get_entities()
 
-        geo_data: Dict[str, Dict[str, Any]] = {"points":   {},
-                                               "lines":    {},
+        geo_data: Dict[str, Dict[str, Any]] = {"points": {},
+                                               "lines": {},
                                                "surfaces": {},
-                                               "volumes":  {},
+                                               "volumes": {},
                                                "physical_groups": {}}
 
         # loop over all entities
