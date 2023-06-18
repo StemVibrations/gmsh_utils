@@ -208,7 +208,7 @@ class GmshIO:
 
         return point_pairs
 
-    def make_points(self, point_coordinates: Union[List[float], npt.NDArray[np.float64]],
+    def make_points(self, point_coordinates: Union[List[List[float]], npt.NDArray[np.float64]],
                     default_mesh_size:  float) -> List[int]:
         """
         Makes points with point tags by getting coordinates.
@@ -287,14 +287,14 @@ class GmshIO:
                                                                    name_label[volume], volume)
             volumes.append(volume_tag)
 
-    def make_geometry_2d(self, point_coordinates: Union[List[float], npt.NDArray[np.float64]],
-                         default_mesh_size: float, name_label_list: str) -> List[int]:
+    def make_geometry_2d(self, point_coordinates: Union[List[List[float]], npt.NDArray[np.float64]],
+                         default_mesh_size: float, name_label_list: str) -> Union[List[int], npt.NDArray[np.int_]]:
         """
         Takes point_pairs and puts their tags as the beginning and end of line in gmsh to create line,
         then creates surface to make 2D geometry.
 
         Args:
-            point_coordinates (Union[List[float], npt.NDArray[np.float64]]): A list of point coordinates.
+            point_coordinates (Union[List[List[float]], npt.NDArray[np.float64]]): A list of point coordinates.
             default_mesh_size (float): The default mesh size provided by user.
             name_label_list (List[str]): A list of surface name labels provided by user input.
 
@@ -309,14 +309,14 @@ class GmshIO:
 
         return surface_ids
 
-    def make_geometry_3d(self, point_coordinates: Union[List[float], npt.NDArray[np.float64]],
+    def make_geometry_3d(self, point_coordinates: Union[List[List[float]], npt.NDArray[np.float64]],
                          default_mesh_size: float, name_label_list: str,
                          extrusion_length: Union[List[float], npt.NDArray[np.float64]], ) -> None:
         """
         Creates 3D geometries by extruding the 2D surface
 
         Args:
-            point_coordinates (Union[List[float], npt.NDArray[float]]): Geometry points coordinates.
+            point_coordinates (Union[List[List[float]], npt.NDArray[float]]): Geometry points coordinates.
             default_mesh_size (float): The default mesh size provided by user.
             name_label_list (List[str]): A list of labels provided by user input.
             extrusion_length (Union[List[float], npt.NDArray[float]]): The extrusion length in x, y and z direction.
