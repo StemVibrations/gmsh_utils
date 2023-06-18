@@ -162,7 +162,7 @@ class TestGmshIO:
         # check if expected and actual geo data are equal
         TestUtils.assert_dictionary_almost_equal(expected_geo_data, geo_data)
 
-    def test_read_gmsh_geo_3D(self,expected_geo_data_3D):
+    def test_read_gmsh_geo_3D(self, expected_geo_data_3D):
         """
         Checks whether a gmsh .geo file is read correctly. For a 3d geometry
         """

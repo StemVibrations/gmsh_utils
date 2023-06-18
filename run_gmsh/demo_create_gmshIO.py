@@ -13,7 +13,7 @@ mesh_size_list = []
 name_label_list = []
 number_of_layers = len(input_dict)
 for value in input_dict.values():
-    input_points_list.append(value[1])
+    input_points_list.append(list(value[1]))
 # Directly access the dictionary keys
 keys = input_dict.keys()
 # Print the keys
