@@ -1,6 +1,6 @@
 # Soil and Track System Modeling Tool
 
-![Tests](https://github.com/StemVibrations/gmsh_utils/actions/workflows/tests.yml/badge.svg)
+![Tests branch main](https://github.com/StemVibrations/gmsh_utils/actions/workflows/tests.yml/badge.svg)
 
 
 ## Rules
