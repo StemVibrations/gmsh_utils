@@ -180,7 +180,7 @@ class GmshIO:
         new_dim_tags = gmsh.model.occ.extrude([(surface_dim, surface_id)], extrusion_length[0], extrusion_length[1],
                                                  extrusion_length[2])
         # gets the first volume tag from the list of new dimension tags
-        volume_tag : int = next((dim_tag[1] for dim_tag in new_dim_tags if dim_tag[0] == volume_dim), None)
+        volume_tag : int = next((dim_tag[1] for dim_tag in new_dim_tags if dim_tag[0] == volume_dim))
         gmsh.model.setPhysicalName(volume_dim, volume_tag, name_label)
         return volume_tag
 
