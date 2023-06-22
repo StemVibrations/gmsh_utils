@@ -180,7 +180,7 @@ class GmshIO:
         new_dim_tags = gmsh.model.occ.extrude([(surface_dim, surface_id)], extrusion_length[0], extrusion_length[1],
                                                  extrusion_length[2])
         # gets the first volume tag from the list of new dimension tags
-        volume_tag = next((dim_tag[1] for dim_tag in new_dim_tags if dim_tag[0] == volume_dim), None)
+        volume_tag : int = next((dim_tag[1] for dim_tag in new_dim_tags if dim_tag[0] == volume_dim), None)
         gmsh.model.setPhysicalName(volume_dim, volume_tag, name_label)
         return volume_tag
 
@@ -243,7 +243,7 @@ class GmshIO:
         return line_ids
 
     def make_surface(self, line_list: Union[List[int], npt.NDArray[np.int_]], name_label: str) \
-            -> Union[List[int], npt.NDArray[np.int_]]:
+            -> int:
         """
         Makes surfaces with surface tags by getting line tags.
 
@@ -277,7 +277,7 @@ class GmshIO:
         return volume_id
 
     def make_geometry_2d(self, point_coordinates: Union[List[float], Any], name_label: str,
-                         mesh_size=-1) -> Union[List[int], npt.NDArray[np.int_]]:
+                         mesh_size=-1) -> int:
         """
         Takes point_pairs and puts their tags as the beginning and end of line in gmsh to create line,
         then creates surface to make 2D geometry.
