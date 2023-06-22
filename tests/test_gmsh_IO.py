@@ -111,7 +111,7 @@ class TestGmshIO:
 
         gmsh_io = GmshIO()
 
-        gmsh_io.generate_gmsh_mesh(input_points, extrusion_length, element_size, dims, name_label, mesh_name,
+        gmsh_io.generate_gmsh_mesh([input_points], extrusion_length, element_size, dims, name_label, mesh_name,
                                    mesh_output_dir,
                                    save_file, open_gmsh_gui)
 
@@ -119,9 +119,9 @@ class TestGmshIO:
 
         opSys = platform.system()
         if opSys == 'Windows':
-            file = 'tests/test_data/rect2D_wnd.msh'
+            file = 'tests/test_data/tmp/rect2D_wnd_occ.msh'
         if opSys == 'Linux':
-            file = 'tests/test_data/rect2D_lnx.msh'
+            file = 'tests/test_data/tmp/rect2D_lnx_occ.msh'
 
         gmsh_io_check = GmshIO()
 
@@ -204,7 +204,8 @@ class TestGmshIO:
 
         gmsh_io = GmshIO()
 
-        gmsh_io.generate_gmsh_mesh(input_points, extrusion_length, element_size, dims, name_label, mesh_name,
+
+        gmsh_io.generate_gmsh_mesh([input_points], extrusion_length, element_size, dims, [name_label], mesh_name,
                                    mesh_output_dir,
                                    save_file, open_gmsh_gui)
 
@@ -212,9 +213,9 @@ class TestGmshIO:
 
         opSys = platform.system()
         if opSys == 'Windows':
-            file = 'tests/test_data/rect3D_wnd.msh'
+            file = 'tests/test_data/tmp/rect3D_wnd_occ.msh'
         if opSys == 'Linux':
-            file = 'tests/test_data/rect3D_lnx.msh'
+            file = 'tests/test_data/tmp/rect3D_lnx_occ.msh'
 
         gmsh_io_check = GmshIO()
 
