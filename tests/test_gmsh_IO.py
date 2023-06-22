@@ -99,7 +99,7 @@ class TestGmshIO:
         # if "True", opens gmsh interface; otherwise "False"
         open_gmsh_gui = False
         # set a name for mesh output file
-        mesh_name = "geometry"
+        mesh_name = "rect2D_stem"
         # set output directory
         mesh_output_dir = "./"
 
@@ -187,7 +187,7 @@ class TestGmshIO:
         # if "True", opens gmsh interface; otherwise "False"
         open_gmsh_gui = False
         # set a name for mesh output file
-        mesh_name = "geometry"
+        mesh_name = "rect3D_stem"
         # set output directory
         mesh_output_dir = "./"
 
