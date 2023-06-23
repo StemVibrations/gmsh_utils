@@ -209,12 +209,13 @@ class GmshIO:
 
         return point_pairs
 
-    def make_points(self, point_coordinates: Union[List[float], npt.NDArray[np.float64]], mesh_size=-1) -> List[int]:
+    def make_points(self, point_coordinates: Union[List[List[float]], npt.NDArray[np.float64]], mesh_size: float = -1) \
+            -> List[int]:
         """
         Makes points with point tags by getting coordinates.
 
         Args:
-            point_coordinates: An Iterable of point x,y,z coordinates.
+            point_coordinates (Union[List[List[float]], npt.NDArray[np.float64]]): An Iterable of point x,y,z coordinates.
             mesh_size (float): The element size.
 
         Returns:
@@ -256,14 +257,14 @@ class GmshIO:
 
         return surface
 
-    def make_geometry_2d(self, point_coordinates: Union[List[float], npt.NDArray[np.float64]], name_label: str,
+    def make_geometry_2d(self, point_coordinates: Union[List[List[float]], npt.NDArray[np.float64]], name_label: str,
                          mesh_size=-1) -> int:
         """
         Takes point_pairs and puts their tags as the beginning and end of line in gmsh to create line,
         then creates surface to make 2D geometry.
 
         Args:
-            point_coordinates (Union[List[float], npt.NDArray[np.float64]]): A list of point coordinates.
+            point_coordinates (Union[List[List[float]], npt.NDArray[np.float64]]): A list of point coordinates.
             name_label (str): A list of surface name labels provided by user input.
             mesh_size (float): The default mesh size provided by user.
 
@@ -278,7 +279,7 @@ class GmshIO:
 
         return surface_id
 
-    def make_geometry_3d(self, point_coordinates: Union[List[float], Any], name_label: str,
+    def make_geometry_3d(self, point_coordinates: Union[List[List[float]], npt.NDArray[np.float64]], name_label: str,
                          extrusion_length: Union[List[float], npt.NDArray[np.float64]], mesh_size=-1) -> None:
         """
         Creates 3D geometries by extruding the 2D surface
@@ -323,14 +324,14 @@ class GmshIO:
 
         return num_nodes
 
-    def generate_geometry(self, point_coordinates: Union[List[List[float]], npt.NDArray[np.float64]],
+    def generate_geometry(self, point_coordinates: Union[Any[List[float]], npt.NDArray[np.float64]],
                           extrusion_length: Union[List[float], npt.NDArray[np.float64]], dims: int,
                           name_label: List[str], mesh_name: str, mesh_size=-1) -> None:
         """
         Generates the geometry
 
         Args:
-            point_coordinates (Union[List[List[float]], npt.NDArray[np.float64]]): User input points of the surface as
+            point_coordinates (Union[Any[List[float]], npt.NDArray[np.float64]]): User input points of the surface as
                 a list or ndarray.
             extrusion_length (Union[List[float], npt.NDArray[float]]): The depth of 3D geometry.
             dims (int): The dimension of geometry (2=2D or 3=3D).
