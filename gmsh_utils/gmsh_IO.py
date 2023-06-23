@@ -220,10 +220,7 @@ class GmshIO:
         Returns:
             List[None]: A list of point tags.
         """
-        list_point_ids = []
-        for point in point_coordinates:
-            point_id = self.create_point(point, mesh_size)
-            list_point_ids.append(point_id)
+        list_point_ids = [self.create_point(point, mesh_size) for point in point_coordinates]
         return list_point_ids
 
     def make_lines(self, point_pairs: Union[List[List[int]], npt.NDArray[np.int_]]) \
