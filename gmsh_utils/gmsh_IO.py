@@ -215,7 +215,7 @@ class GmshIO:
 
         Args:
             point_coordinates: An Iterable of point x,y,z coordinates.
-            default_mesh_size (float): The element size.
+            mesh_size (float): The element size.
 
         Returns:
             List[None]: A list of point tags.
