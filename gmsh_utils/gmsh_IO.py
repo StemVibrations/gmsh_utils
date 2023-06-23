@@ -215,7 +215,8 @@ class GmshIO:
         Makes points with point tags by getting coordinates.
 
         Args:
-            point_coordinates (Union[List[List[float]], npt.NDArray[np.float64]]): An Iterable of point x,y,z coordinates.
+            point_coordinates (Union[List[List[float]], npt.NDArray[np.float64]]): An Iterable of point
+            x,y,z coordinates.
             mesh_size (float): The element size.
 
         Returns:
