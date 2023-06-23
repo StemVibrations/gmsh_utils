@@ -109,7 +109,7 @@ class GmshIO:
 
         raise Exception("Geometry data can only be set by internal methods.")
 
-    def create_point(self, coordinates: Union[float, Any], mesh_size=-1) -> int:
+    def create_point(self, coordinates: Union[List[float], npt.NDArray[np.float64]], mesh_size=-1) -> int:
         """
         Creates points in gmsh.
 
@@ -209,7 +209,7 @@ class GmshIO:
 
         return point_pairs
 
-    def make_points(self, point_coordinates: Union[List[float], Any], mesh_size=-1) -> List[int]:
+    def make_points(self, point_coordinates: Union[List[float], npt.NDArray[np.float64]], mesh_size=-1) -> List[int]:
         """
         Makes points with point tags by getting coordinates.
 
