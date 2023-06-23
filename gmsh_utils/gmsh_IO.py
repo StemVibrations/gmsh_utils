@@ -249,7 +249,7 @@ class GmshIO:
             name_label (str): surface name labels provided by user input.
 
         Returns:
-            int: A list of surface tags.
+            int: The surface tag.
         """
 
         surface = self.create_surface(line_list, name_label)
