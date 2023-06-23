@@ -19,14 +19,15 @@ class TestGmshIO:
         expected_points = {1: [0., 0., 0.], 2: [0.5, 0., 0.], 3: [0.5, 1., 0.], 4: [0., 1., 0.], 11: [0., 2., 0.],
                            12: [0.5, 2., 0.], 13: [0., 0., -0.5], 14: [0.5, 0., -0.5], 18: [0.5, 1., -0.5],
                            22: [0., 1., -0.5], 23: [0., 2., -0.5], 32: [0.5, 2., -0.5]}
-        expected_lines = {5: [1, 2], 6: [2, 3], 7: [3, 4], 8: [1, 4], 13: [4, 11], 14: [11, 12], 15: [3, 12],
-                          19: [13, 14], 20: [14, 18], 21: [18, 22], 22: [13, 22], 24: [1, 13], 25: [2, 14], 29: [3, 18],
-                          33: [4, 22], 41: [22, 23], 43: [18, 32], 44: [23, 32], 46: [11, 23], 55: [12, 32]}
-        expected_surfaces = {10: [5, 6, 7, 8], 17: [-7, -13, -14, -15], 26: [5, -19, -24, 25], 30: [6, -20, -25, 29],
-                             34: [7, -21, -29, 33], 38: [8, -22, 24, -33], 39: [19, 20, 21, 22],
-                             48: [-13, 33, -41, -46], 56: [-15, -29, -43, 55], 60: [-14, -44, 46, -55],
-                             61: [-21, 41, 43, 44]}
-        expected_volumes = {1: [-10, 26, 30, 34, 38, 39], 2: [-17, -34, -48, -56, -60, 61]}
+        expected_lines = {5: [1, 2], 6: [2, 3], 7: [3, 4], 8: [4, 1], 13: [4, 11], 14: [11, 12], 15: [12, 3],
+                          19: [13, 14], 20: [14, 18], 21: [18, 22], 22: [22, 13], 24: [1, 13], 25: [2, 14],
+                          29: [3, 18], 33: [4, 22], 41: [23, 22], 43: [18, 32], 44: [32, 23], 46: [11, 23],
+                          55: [12, 32]}
+        expected_surfaces = {10: [5, 6, 7, 8], 17: [-13, -7, -15, -14], 26: [5, 25, -19, -24], 30: [6, 29, -20, -25],
+                             34: [7, 33, -21, -29], 38: [8, 24, -22, -33], 39: [19, 20, 21, 22],
+                             48: [-13, 33, -41, -46], 56: [-15, 55, -43, -29], 60: [-14, 46, -44, -55],
+                             61: [41, -21, 43, 44]}
+        expected_volumes = {1: [-10, 39, 26, 30, 34, 38], 2: [-17, 61, -48, -34, -56, -60]}
         expected_physical_groups = {'group_1': {'geometry_id': 1, 'id': 1, 'ndim': 3},
                                     'group_2': {'geometry_id': 2, 'id': 2, 'ndim': 3}}
 
@@ -41,31 +42,36 @@ class TestGmshIO:
         Checks whether mesh data generated for 2D geometries is not empty.
 
         """
+        # define the default mesh size
+        default_mesh_size = -1
         # define the points of the surface as a list of tuples
-        input_points = np.array([(0, 0, 0), (1, 0, 0), (1, 3, 0), (0, 3, 0), (-1, 1.5, 0)])
-        # define the mesh size
-        mesh_size = 0.1
-        # set a name label for the surface
-        name_label = "Soil Layer"
-        # if True, saves mesh data to separate mdpa files
+        input_points_list = [[(0, 0, 0), (3, 0, 0), (3, 1, 0), (0, 1, 0)],
+                             [(3, 0, 0), (5, 0, 0), (5, 1, 0), (4, 1.5, 0), (3, 1, 0)],
+                             [(0, 1, 0), (2, 1, 0), (2, 3, 0), (0, 3, 0)],
+                             [(2, 1, 0), (3, 1, 0), (4, 1.5, 0), (5, 1, 0), (5, 3, 0), (2, 3, 0)],
+                             [(0, 3, 0), (2.5, 3, 0), (2, 4, 0), (0, 4, 0)],
+                             [(0.8, 4, 0), (1.2, 4, 0), (1.2, 4.1, 0), (0.8, 4.1, 0)]]
+        # define the name labels for the surfaces
+        name_label_list = ["First Soil Layer", "FSL", "Second Soil Layer", "SSL", "Soil Ballast", "Line Track"]
+
+        # define geometry dimension; input "3" for 3D to extrude the 2D surface, input "2" for 2D
+        dims = 2
+        # if 3D, input depth of geometry to be extruded from 2D surface
+        extrusion_length = [0, 0, 0]
+        # if "True", saves mesh data to separate mdpa files; otherwise "False"
         save_file = False
-        # if True, opens gmsh interface
-        gmsh_interface = False
+        # if "True", opens gmsh interface; otherwise "False"
+        open_gmsh_gui = False
         # set a name for mesh output file
         mesh_output_name = "test_2D"
-        # set output directory of the mesh
+        # set output directory
         mesh_output_dir = "."
 
-        # test 2D geometry
-        # define geometry dimension; input "2" for 2D
-        dims = 2
-        # input depth of geometry if 3D
-        extrusion_length = [0, 0, 0]
-
         gmsh_io = GmshIO()
-        gmsh_io.generate_gmsh_mesh(input_points, extrusion_length, mesh_size, dims, name_label,
-                                   mesh_output_name, mesh_output_dir, save_file,
-                                   gmsh_interface)
+
+        gmsh_io.generate_geometry(input_points_list, extrusion_length, dims,
+                                  name_label_list, mesh_output_name, default_mesh_size)
+        gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, save_file, open_gmsh_gui)
 
         mesh_data = gmsh_io.mesh_data
 
@@ -85,31 +91,36 @@ class TestGmshIO:
 
         """
 
+        # define the default mesh size
+        default_mesh_size = 1
         # define the points of the surface as a list of tuples
-        input_points = np.array([(0, 0, 0), (1, 0, 0), (1, 3, 0), (0, 3, 0), (-1, 1.5, 0)])
-        # define the mesh size
-        element_size = 0.1
-        # set a name label for the surface
-        name_label = "Soil Layer"
-        # if True, saves mesh data to separate mdpa files
-        save_file = False
-        # if True, opens gmsh interface
-        gmsh_interface = False
-        # test 3D geometry
-        # define geometry dimension; input "3" for 3D to extrude the 2D surface
+        input_points_list = [[(0, 0, 0), (3, 0, 0), (3, 1, 0), (0, 1, 0)],
+                             [(3, 0, 0), (5, 0, 0), (5, 1, 0), (4, 1.5, 0), (3, 1, 0)],
+                             [(0, 1, 0), (2, 1, 0), (2, 3, 0), (0, 3, 0)],
+                             [(2, 1, 0), (3, 1, 0), (4, 1.5, 0), (5, 1, 0), (5, 3, 0), (2, 3, 0)],
+                             [(0, 3, 0), (2.5, 3, 0), (2, 4, 0), (0, 4, 0)],
+                             [(0.8, 4, 0), (1.2, 4, 0), (1.2, 4.1, 0), (0.8, 4.1, 0)]]
+        # define the name labels for the surfaces
+        name_label_list = ["First Soil Layer", "FSL", "Second Soil Layer", "SSL", "Soil Ballast", "Line Track"]
+
+        # define geometry dimension; input "3" for 3D to extrude the 2D surface, input "2" for 2D
         dims = 3
-        # input depth of geometry if 3D
-        extrusion_length = [0, 0, 1]
+        # if 3D, input depth of geometry to be extruded from 2D surface
+        extrusion_length = [0, 0, 3]
+        # if "True", saves mesh data to separate mdpa files; otherwise "False"
+        save_file = False
+        # if "True", opens gmsh interface; otherwise "False"
+        open_gmsh_gui = False
         # set a name for mesh output file
         mesh_output_name = "test_3D"
-        # set output directory of the mesh
+        # set output directory
         mesh_output_dir = "."
 
         gmsh_io = GmshIO()
 
-        gmsh_io.generate_gmsh_mesh(input_points, extrusion_length, element_size, dims, name_label,
-                                   mesh_output_name, mesh_output_dir, save_file,
-                                   gmsh_interface)
+        gmsh_io.generate_geometry(input_points_list, extrusion_length, dims,
+                                  name_label_list, mesh_output_name, default_mesh_size)
+        gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, save_file, open_gmsh_gui)
 
         mesh_data = gmsh_io.mesh_data
 
@@ -136,8 +147,8 @@ class TestGmshIO:
 
         # check if the coordinates of the points are correct
         expected_points = {1: [0, 0, 0], 2: [0.5, 0, 0], 3: [0.5, 1, 0], 4: [0, 1, 0], 11: [0, 2, 0], 12: [0.5, 2.0, 0]}
-        expected_lines = {5: [1, 2], 6: [2, 3], 7: [3, 4], 8: [1, 4], 13: [4, 11], 14: [11, 12], 15: [3, 12]}
-        expected_surfaces = {10: [5, 6, 7, 8], 17: [-7, -13, -14, -15]}  # negative sign means reversed orientation
+        expected_lines = {5: [1, 2], 6: [2, 3], 7: [3, 4], 8: [4, 1], 13: [4, 11], 14: [11, 12], 15: [12, 3]}
+        expected_surfaces = {10: [5, 6, 7, 8], 17: [-13, -7, -15, -14]}  # negative sign means reversed orientation
 
         expected_physical_groups = {'group_1': {'geometry_id': 10, 'id': 1, 'ndim': 2},
                                     'group_2': {'geometry_id': 17, 'id': 2, 'ndim': 2}}
@@ -151,7 +162,7 @@ class TestGmshIO:
         # check if expected and actual geo data are equal
         TestUtils.assert_dictionary_almost_equal(expected_geo_data, geo_data)
 
-    def test_read_gmsh_geo_3D(self):
+    def test_read_gmsh_geo_3D(self, expected_geo_data_3D):
         """
         Checks whether a gmsh .geo file is read correctly. For a 3d geometry
         """
@@ -161,28 +172,9 @@ class TestGmshIO:
         gmsh_io.read_gmsh_geo(geo_file)
 
         geo_data = gmsh_io.geo_data
-        expected_points = {1: [0., 0., 0.], 2: [0.5, 0., 0.], 3: [0.5, 1., 0.], 4: [0., 1., 0.], 11: [0., 2., 0.],
-                           12: [0.5, 2., 0.], 13: [0., 0., -0.5], 14: [0.5, 0., -0.5], 18: [0.5, 1., -0.5],
-                           22: [0., 1., -0.5], 23: [0., 2., -0.5], 32: [0.5, 2., -0.5]}
-        expected_lines = {5: [1, 2], 6: [2, 3], 7: [3, 4], 8: [1, 4], 13: [4, 11], 14: [11, 12], 15: [3, 12],
-                          19: [13, 14], 20: [14, 18], 21: [18, 22], 22: [13, 22], 24: [1, 13], 25: [2, 14], 29: [3, 18],
-                          33: [4, 22], 41: [22, 23], 43: [18, 32], 44: [23, 32], 46: [11, 23], 55: [12, 32]}
-        expected_surfaces = {10: [5, 6, 7, 8], 17: [-7, -13, -14, -15], 26: [5, -19, -24, 25], 30: [6, -20, -25, 29],
-                             34: [7, -21, -29, 33], 38: [8, -22, 24, -33], 39: [19, 20, 21, 22],
-                             48: [-13, 33, -41, -46], 56: [-15, -29, -43, 55], 60: [-14, -44, 46, -55],
-                             61: [-21, 41, 43, 44]}
-        expected_volumes = {1: [-10, 26, 30, 34, 38, 39], 2: [-17, -34, -48, -56, -60, 61]}
-        expected_physical_groups = {'group_1': {'geometry_id': 1, 'id': 1, 'ndim': 3},
-                                    'group_2': {'geometry_id': 2, 'id': 2, 'ndim': 3}}
-
-        expected_geo_data = {"points": expected_points,
-                             "lines": expected_lines,
-                             "surfaces": expected_surfaces,
-                             "volumes": expected_volumes,
-                             "physical_groups": expected_physical_groups}
 
         # check if expected and actual geo data are equal
-        TestUtils.assert_dictionary_almost_equal(expected_geo_data, geo_data)
+        TestUtils.assert_dictionary_almost_equal(expected_geo_data_3D, geo_data)
 
     def test_read_gmsh_msh_2D(self):
         """
@@ -265,12 +257,19 @@ class TestGmshIO:
 
         new_geo_data = gmsh_io.geo_data
 
-        # only check absolute values in surfaces, because the values can be reoriented
-        for surface in geo_data["surfaces"]:
-            geo_data["surfaces"][surface] = np.abs(geo_data["surfaces"][surface]).astype(int)
+        # only check absolute and sorted values in surfaces, because the values can be reoriented by occ
+        for surface_id in geo_data["surfaces"].keys():
+            geo_data["surfaces"][surface_id] = np.sort(np.abs(geo_data["surfaces"][surface_id]).astype(int)).tolist()
 
-        for surface in new_geo_data["surfaces"]:
-            new_geo_data["surfaces"][surface] = np.abs(new_geo_data["surfaces"][surface]).astype(int)
+        for surface_id in new_geo_data["surfaces"].keys():
+            new_geo_data["surfaces"][surface_id] = np.sort(np.abs(new_geo_data["surfaces"][surface_id]).astype(int))
+
+        # only check absolute and sorted values in volumes, because the values can be reoriented by occ
+        for volume_id in new_geo_data["volumes"].keys():
+            new_geo_data["volumes"][volume_id] = np.sort(np.abs(new_geo_data["volumes"][volume_id]).astype(int))
+
+        for volume_id in geo_data["volumes"].keys():
+            geo_data["volumes"][volume_id] = np.sort(np.abs(geo_data["volumes"][volume_id]).astype(int))
 
         # check if expected and actual geo data are equal
         TestUtils.assert_dictionary_almost_equal(geo_data, new_geo_data)
@@ -305,12 +304,12 @@ class TestGmshIO:
                                                        'connectivities': np.array([[1, 2],
                                                                                    [2, 3],
                                                                                    [3, 4],
-                                                                                   [1, 4]])},
+                                                                                   [4, 1]])},
                                            'TRIANGLE_3N': {'element_ids': np.array([1, 2, 3, 4]),
-                                                           'connectivities': np.array([[1, 2, 5],
-                                                                                       [4, 1, 5],
-                                                                                       [2, 3, 5],
-                                                                                       [3, 4, 5]])},
+                                                           'connectivities': np.array([[2, 5, 1],
+                                                                                       [1, 5, 4],
+                                                                                       [3, 5, 2],
+                                                                                       [4, 5, 3]])},
                                            'POINT_1N': {'element_ids': np.array([5, 6, 7, 8]),
                                                         'connectivities': np.array([[1],
                                                                                     [2],
