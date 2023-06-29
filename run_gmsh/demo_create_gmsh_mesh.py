@@ -21,7 +21,7 @@ for key in keys:
     name_label_list.append(key)  # Extract the name label
 
 # define geometry dimension; input "3" for 3D to extrude the 2D surface, input "2" for 2D
-dims = 3
+dims = 2
 # if 3D, input depth of geometry to be extruded from 2D surface
 extrusion_length = [0, 0, 3]
 # if "True", saves mesh data to separate mdpa files; otherwise "False"
@@ -36,7 +36,7 @@ mesh_output_dir = "./"
 
 gmsh_io = GmshIO()
 
-gmsh_io.generate_geometry(input_points_list, extrusion_length, dims, name_label_list,
-                          mesh_output_name, default_mesh_size)
+gmsh_io.generate_geometry(input_points_list, extrusion_length, dims,
+                          mesh_output_name, name_label_list, default_mesh_size)
 gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, save_file, open_gmsh_gui)
 mesh_data = gmsh_io.mesh_data

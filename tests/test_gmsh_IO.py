@@ -70,7 +70,7 @@ class TestGmshIO:
         gmsh_io = GmshIO()
 
         gmsh_io.generate_geometry(input_points_list, extrusion_length, dims,
-                                  name_label_list, mesh_output_name, default_mesh_size)
+                                  mesh_output_name, name_label_list, default_mesh_size)
         gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, save_file, open_gmsh_gui)
 
         mesh_data = gmsh_io.mesh_data
@@ -119,7 +119,7 @@ class TestGmshIO:
         gmsh_io = GmshIO()
 
         gmsh_io.generate_geometry(input_points_list, extrusion_length, dims,
-                                  name_label_list, mesh_output_name, default_mesh_size)
+                                  mesh_output_name, name_label_list, default_mesh_size)
         gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, save_file, open_gmsh_gui)
 
         mesh_data = gmsh_io.mesh_data
@@ -351,7 +351,7 @@ class TestGmshIO:
         gmsh_io = GmshIO()
 
         gmsh_io.generate_geometry(input_points_list, extrusion_length, dims,
-                                  name_label_list, mesh_output_name, default_mesh_size)
+                                  mesh_output_name, name_label_list, default_mesh_size)
         gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, save_file, open_gmsh_gui)
 
         geo_data = gmsh_io.geo_data
@@ -395,7 +395,7 @@ class TestGmshIO:
         gmsh_io = GmshIO()
 
         gmsh_io.generate_geometry(input_points_list, extrusion_length, dims,
-                                  name_label_list, mesh_output_name, default_mesh_size)
+                                  mesh_output_name, name_label_list, default_mesh_size)
         gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, save_file, open_gmsh_gui)
 
         geo_data = gmsh_io.geo_data
