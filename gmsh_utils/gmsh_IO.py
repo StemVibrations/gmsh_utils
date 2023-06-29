@@ -159,6 +159,8 @@ class GmshIO:
         surface_id: int = gmsh.model.occ.addPlaneSurface([curve_loop_id])
         surface_ndim = 2
         gmsh.model.setPhysicalName(surface_ndim, surface_id, name_label)
+        if surface_ndim == 2:
+            gmsh.model.addPhysicalGroup(surface_ndim, [surface_id], tag=-1, name=name_label)
         return surface_id
 
     def create_volume_by_extruding_surface(self, surface_id: int,
@@ -182,6 +184,7 @@ class GmshIO:
         # gets the first volume tag from the list of new dimension tags
         volume_tag: int = next((dim_tag[1] for dim_tag in new_dim_tags if dim_tag[0] == volume_dim))
         gmsh.model.setPhysicalName(volume_dim, volume_tag, name_label)
+        gmsh.model.addPhysicalGroup(volume_dim, [volume_tag], tag=-1, name=name_label)
         return volume_tag
 
     def generate_point_pairs(self, point_ids: List[int]) -> List[List[int]]:
@@ -355,7 +358,12 @@ class GmshIO:
                 self.make_geometry_2d(point_coordinates[layer], name_label[layer], mesh_size)
 
         self.remove_duplicates()
+        # synchronize the geometry for generating the mesh
         gmsh.model.occ.synchronize()
+
+        # synchronize the geo geometry such that physical groups are added, important is that this is done after
+        # synchronizing the occ geometry :-D
+        gmsh.model.geo.synchronize()
 
         self.extract_geo_data()
 
