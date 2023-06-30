@@ -388,16 +388,16 @@ class GmshIO:
             None
         """
 
-        self.extract_geo_data()
+        # self.extract_geo_data()
+        #
+        # new_geo_data = self.geo_data
+        #
+        # volume_tag_list = []
+        # for key, values in new_geo_data['volumes'].items():
+        #     volume_tag_list.append(key)
 
-        new_geo_data = self.geo_data
-
-        volume_tag_list = []
-        for key, values in new_geo_data['volumes'].items():
-            volume_tag_list.append(key)
-
-        if arbitrary_mesh_size == True:
-            self.set_mesh_size(volume_tag_list, len(volume_tag_list), mesh_size_list)
+        if arbitrary_mesh_size:
+            self.set_mesh_size(dims, mesh_size_list)
         gmsh.model.mesh.generate(dims)
 
         self.extract_mesh_data(gmsh.model.mesh)
@@ -414,17 +414,38 @@ class GmshIO:
 
         gmsh.finalize()
 
-    def set_mesh_size(self, volume_tag_list, number_of_layers, mesh_size_list):
+    def set_mesh_size(self, dims, mesh_size_list) -> None:
         """
-        Sets the mesh size by considering the left bottom point and the right top point and drawing a box within epsilon of
-        these points to select all the points in that box to assign the related mesh size
-        :param layer_list: list of layers' points
-        :param number_of_layers: number of layers
-        :param mesh_size_lists: mesh sizes for each layer
-        :return: -
+        Sets the mesh size by
+
+        Args:
+            volume_tag_list (List[int]): The dimension of geometry (2=2D or 3=3D).
+            mesh_size_list (List[float]): The mesh size provided by user.
+
+        Returns:
+            None
+
         """
-        for layer in range(number_of_layers):
-            entities_list = gmsh.model.getBoundary([(3, volume_tag_list[layer])], recursive=True)
+
+        self.extract_geo_data()
+
+        new_geo_data = self.geo_data
+
+        surface_tag_list = []
+        for key, values in new_geo_data['surfaces'].items():
+            surface_tag_list.append(key)
+
+        volume_tag_list = []
+        for key, values in new_geo_data['volumes'].items():
+            volume_tag_list.append(key)
+
+
+        for layer in range(len(volume_tag_list)):
+            if dims == 2:
+                entities_list = gmsh.model.getBoundary([(dims, surface_tag_list[layer])], recursive=True)
+            elif dims == 3:
+                entities_list = gmsh.model.getBoundary([(dims, volume_tag_list[layer])], recursive=True)
+
             gmsh.model.mesh.setSize(entities_list, mesh_size_list[layer])
 
     def extract_node_data(self, node_tags: npt.NDArray[np.int_],

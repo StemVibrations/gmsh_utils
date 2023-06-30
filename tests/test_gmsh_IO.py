@@ -72,9 +72,10 @@ class TestGmshIO:
 
         gmsh_io = GmshIO()
 
-        gmsh_io.generate_geometry(input_points_list, extrusion_length, dims,
-                                  mesh_output_name, name_label_list, default_mesh_size)
-        gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, save_file, open_gmsh_gui)
+        gmsh_io.generate_geometry(input_points_list, extrusion_length, dims, mesh_output_name,
+                                  name_label_list, default_mesh_size)
+        gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, mesh_size_list, save_file,
+                                      open_gmsh_gui, arbitrary_mesh_size)
 
         mesh_data = gmsh_io.mesh_data
 
@@ -123,9 +124,10 @@ class TestGmshIO:
 
         gmsh_io = GmshIO()
 
-        gmsh_io.generate_geometry(input_points_list, extrusion_length, dims,
-                                  mesh_output_name, name_label_list, default_mesh_size)
-        gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, save_file, open_gmsh_gui)
+        gmsh_io.generate_geometry(input_points_list, extrusion_length, dims, mesh_output_name,
+                                  name_label_list, default_mesh_size)
+        gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, mesh_size_list, save_file,
+                                      open_gmsh_gui, arbitrary_mesh_size)
 
         mesh_data = gmsh_io.mesh_data
 
@@ -348,8 +350,8 @@ class TestGmshIO:
 
         gmsh_io = GmshIO()
 
-        gmsh_io.generate_geometry(input_points_list, extrusion_length, dims,
-                                  mesh_output_name, name_label_list, default_mesh_size)
+        gmsh_io.generate_geometry(input_points_list, extrusion_length, dims, mesh_output_name,
+                                  name_label_list, default_mesh_size)
 
         geo_data = gmsh_io.geo_data
 
@@ -386,8 +388,8 @@ class TestGmshIO:
 
         gmsh_io = GmshIO()
 
-        gmsh_io.generate_geometry(input_points_list, extrusion_length, dims,
-                                  mesh_output_name, name_label_list, default_mesh_size)
+        gmsh_io.generate_geometry(input_points_list, extrusion_length, dims, mesh_output_name,
+                                  name_label_list, default_mesh_size)
 
         geo_data = gmsh_io.geo_data
 
