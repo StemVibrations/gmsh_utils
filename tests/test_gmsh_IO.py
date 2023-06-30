@@ -56,7 +56,7 @@ class TestGmshIO:
         # define the name labels for the surfaces
         name_label_list = ["First Soil Layer", "FSL", "Second Soil Layer", "SSL", "Soil Ballast", "Line Track"]
         # define the mesh size for each surface
-        mesh_size_list = [0.1, 0.9, 10, 0.5, 1, 0.1]
+        mesh_size_list = [15, 0.5, 1, 0.1, 1, 0.1]
         # define geometry dimension; input "3" for 3D to extrude the 2D surface, input "2" for 2D
         dims = 2
         # if 3D, input depth of geometry to be extruded from 2D surface
@@ -108,7 +108,7 @@ class TestGmshIO:
         # define the name labels for the surfaces
         name_label_list = ["First Soil Layer", "FSL", "Second Soil Layer", "SSL", "Soil Ballast", "Line Track"]
         # define the mesh size for each surface
-        mesh_size_list = [0.1, 0.9, 10, 0.5, 1, 0.1]
+        mesh_size_list = [15, 0.5, 1, 0.1, 1, 0.1]
         # define geometry dimension; input "3" for 3D to extrude the 2D surface, input "2" for 2D
         dims = 3
         # if 3D, input depth of geometry to be extruded from 2D surface

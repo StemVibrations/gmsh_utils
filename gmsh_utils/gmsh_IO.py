@@ -440,7 +440,7 @@ class GmshIO:
             volume_tag_list.append(key)
 
 
-        for layer in range(len(volume_tag_list)):
+        for layer in range(len(mesh_size_list)):
             if dims == 2:
                 entities_list = gmsh.model.getBoundary([(dims, surface_tag_list[layer])], recursive=True)
             elif dims == 3:
