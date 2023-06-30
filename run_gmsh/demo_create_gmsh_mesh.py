@@ -5,10 +5,11 @@ from gmsh_utils.gmsh_IO import GmshIO
 arbitrary_mesh_size: bool= True
 #  if "arbitrary_mesh_size = False", the mesh size is logically chosen by Gmsh itself based on the geometry if set to -1
 default_mesh_size: float = -1
-# define the points of the surface and mesh sizes as a dictionary
-input_dict = {'Second left Soil Layer': (0.01, [(3, 0, 0), (5, 0, 0), (5, 1.5, 0)]),
-              'First Soil Layer': (0.9, [(0, 0, 0), (3, 0, 0), (5, 1.5, 0), (2, 1, 0), (0, 1, 0)]),
-              'Third left Soil Layer': (10, [(0, 1, 0), (0, 3, 0), (2, 3, 0), (2, 1, 0)])}
+# define the name labels of the layers and points coordinates of the surface in order /
+# (regardless of clockwise or anticlockwise) and mesh sizes for each layer as a dictionary
+input_dict = {'First left Soil Layer': (default_mesh_size, [(0, 0, 0), (3, 0, 0), (5, 1.5, 0), (2, 1, 0), (0, 1, 0)]),
+              'Second right Soil Layer': (default_mesh_size, [(3, 0, 0), (5, 0, 0), (5, 1.5, 0)]),
+              'Third top Soil Layer': (default_mesh_size, [(0, 1, 0), (0, 3, 0), (2, 3, 0), (2, 1, 0)])}
 
 input_points_list = []
 mesh_size_list = []
@@ -42,8 +43,7 @@ mesh_output_dir = "./"
 
 gmsh_io = GmshIO()
 
-gmsh_io.generate_geometry(input_points_list, extrusion_length, dims, name_label_list,
-                          mesh_output_name, default_mesh_size)
-gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, mesh_size_list,
-                              save_file, open_gmsh_gui, arbitrary_mesh_size)
+gmsh_io.generate_geometry(input_points_list, extrusion_length, dims,
+                          mesh_output_name, name_label_list, default_mesh_size)
+gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, save_file, open_gmsh_gui)
 mesh_data = gmsh_io.mesh_data
