@@ -319,7 +319,7 @@ class TestGmshIO:
         # check if the coordinates of the points are correct
         TestUtils.assert_dictionary_almost_equal(expected_mesh_data, mesh_data)
 
-    def test_geometry_data_2D(self):
+    def test_physical_groups_in_geometry_data_2D(self):
         """
         Checks whether geometry data in 2D geometry has physical groups
     """
