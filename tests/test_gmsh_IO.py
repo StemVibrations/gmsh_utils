@@ -355,7 +355,7 @@ class TestGmshIO:
         # check if expected and actual geo data are equal
         TestUtils.assert_dictionary_almost_equal(expected_physical_groups, geo_data["physical_groups"])
 
-    def test_geometry_data_3D(self):
+    def test_physical_groups_in_geometry_data_3D(self):
         """
         Checks whether geometry data in 3D geometry has physical groups
 
