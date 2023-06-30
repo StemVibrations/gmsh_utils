@@ -70,7 +70,7 @@ class TestGmshIO:
         gmsh_io = GmshIO()
 
         gmsh_io.generate_geometry(input_points_list, extrusion_length, dims,
-                                  name_label_list, mesh_output_name, default_mesh_size)
+                                  mesh_output_name, name_label_list, default_mesh_size)
         gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, save_file, open_gmsh_gui)
 
         mesh_data = gmsh_io.mesh_data
@@ -119,7 +119,7 @@ class TestGmshIO:
         gmsh_io = GmshIO()
 
         gmsh_io.generate_geometry(input_points_list, extrusion_length, dims,
-                                  name_label_list, mesh_output_name, default_mesh_size)
+                                  mesh_output_name, name_label_list, default_mesh_size)
         gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, save_file, open_gmsh_gui)
 
         mesh_data = gmsh_io.mesh_data
@@ -318,3 +318,77 @@ class TestGmshIO:
 
         # check if the coordinates of the points are correct
         TestUtils.assert_dictionary_almost_equal(expected_mesh_data, mesh_data)
+
+    def test_physical_groups_in_geometry_data_2D(self):
+        """
+        Checks whether geometry data in 2D geometry has physical groups
+    """
+        # define the default mesh size
+        default_mesh_size = -1
+        # define the points of the surface as a list of tuples
+        input_points_list = [[(0, 0, 0), (3, 0, 0), (3, 1, 0), (0, 1, 0)],
+                             [(0, 1, 0), (3, 1, 0), (3, 2, 0), (0, 2, 0)],
+                             [(1, 2, 0), (2, 2, 0), (2, 2.5, 0), (1, 2.5, 0)]]
+        # define the name labels for the surfaces
+        name_label_list = ["Soil Layer", "Soil Embankment", "Soil Ballast"]
+
+        # define geometry dimension; input "3" for 3D to extrude the 2D surface, input "2" for 2D
+        dims = 2
+        # if 3D, input depth of geometry to be extruded from 2D surface
+        extrusion_length = [0, 0, 0]
+        # set a name for mesh output file
+        mesh_output_name = "test_2D"
+        # set output directory
+        mesh_output_dir = "."
+
+        gmsh_io = GmshIO()
+
+        gmsh_io.generate_geometry(input_points_list, extrusion_length, dims,
+                                  mesh_output_name, name_label_list, default_mesh_size)
+
+        geo_data = gmsh_io.geo_data
+
+        expected_physical_groups = {'Soil Layer': {'ndim': 2, 'id': 1, 'geometry_id': 1},
+                                    'Soil Embankment': {'ndim': 2, 'id': 2, 'geometry_id': 2},
+                                    'Soil Ballast': {'ndim': 2, 'id': 3, 'geometry_id': 3}}
+
+        # check if expected and actual geo data are equal
+        TestUtils.assert_dictionary_almost_equal(expected_physical_groups, geo_data["physical_groups"])
+
+    def test_physical_groups_in_geometry_data_3D(self):
+        """
+        Checks whether geometry data in 3D geometry has physical groups
+
+        """
+
+        # define the default mesh size
+        default_mesh_size = 1
+        # define the points of the surface as a list of tuples
+        input_points_list = [[(0, 0, 0), (3, 0, 0), (3, 1, 0), (0, 1, 0)],
+                             [(0, 1, 0), (3, 1, 0), (3, 2, 0), (0, 2, 0)],
+                             [(1, 2, 0), (2, 2, 0), (2, 2.5, 0), (1, 2.5, 0)]]
+        # define the name labels for the surfaces
+        name_label_list = ["Soil Layer", "Soil Embankment", "Soil Ballast"]
+
+        # define geometry dimension; input "3" for 3D to extrude the 2D surface, input "2" for 2D
+        dims = 3
+        # if 3D, input depth of geometry to be extruded from 2D surface
+        extrusion_length = [0, 0, 3]
+        # set a name for mesh output file
+        mesh_output_name = "test_3D"
+        # set output directory
+        mesh_output_dir = "."
+
+        gmsh_io = GmshIO()
+
+        gmsh_io.generate_geometry(input_points_list, extrusion_length, dims,
+                                  mesh_output_name, name_label_list, default_mesh_size)
+
+        geo_data = gmsh_io.geo_data
+
+        expected_physical_groups = {'Soil Layer': {'ndim': 3, 'id': 1, 'geometry_id': 1},
+                                    'Soil Embankment': {'ndim': 3, 'id': 2, 'geometry_id': 2},
+                                    'Soil Ballast': {'ndim': 3, 'id': 3, 'geometry_id': 3}}
+
+        # check if expected and actual geo data are equal
+        TestUtils.assert_dictionary_almost_equal(expected_physical_groups, geo_data["physical_groups"])
