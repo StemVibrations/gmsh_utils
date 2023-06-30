@@ -3,10 +3,11 @@ from gmsh_utils.gmsh_IO import GmshIO
 
 # define the default mesh size, if -1, the mesh size is logically chosen by Gmsh itself based on the geometry
 default_mesh_size: float = -1
-# define the points of the surface and mesh sizes as a dictionary
-input_dict = {'Second left Soil Layer': (default_mesh_size, [(3, 0, 0), (5, 0, 0), (5, 1.5, 0)]),
-              'First Soil Layer': (default_mesh_size, [(0, 0, 0), (3, 0, 0), (5, 1.5, 0), (2, 1, 0), (0, 1, 0)]),
-              'Third left Soil Layer': (default_mesh_size, [(0, 1, 0), (0, 3, 0), (2, 3, 0), (2, 1, 0)])}
+# define the name labels of the layers and points coordinates of the surface in order /
+# (regardless of clockwise or anticlockwise) and mesh sizes for each layer as a dictionary
+input_dict = {'First left Soil Layer': (default_mesh_size, [(0, 0, 0), (3, 0, 0), (5, 1.5, 0), (2, 1, 0), (0, 1, 0)]),
+              'Second right Soil Layer': (default_mesh_size, [(3, 0, 0), (5, 0, 0), (5, 1.5, 0)]),
+              'Third top Soil Layer': (default_mesh_size, [(0, 1, 0), (0, 3, 0), (2, 3, 0), (2, 1, 0)])}
 
 input_points_list = []
 mesh_size_list = []
