@@ -1,9 +1,9 @@
 # todo group input into geometry, settings, ...
 from gmsh_utils.gmsh_IO import GmshIO
 
-# define the default mesh size, if -1, the mesh size is logically chosen by Gmsh itself based on the geometry
+# if "True", mesh size is defined by the user in the dictionary below; if "False" GMsh will choose the mesh size itself
 arbitrary_mesh_size: bool= True
-
+#  if "arbitrary_mesh_size = False", the mesh size is logically chosen by Gmsh itself based on the geometry if set to -1
 default_mesh_size: float = -1
 # define the points of the surface and mesh sizes as a dictionary
 input_dict = {'Second left Soil Layer': (0.01, [(3, 0, 0), (5, 0, 0), (5, 1.5, 0)]),

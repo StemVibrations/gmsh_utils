@@ -159,6 +159,7 @@ class GmshIO:
         surface_id: int = gmsh.model.occ.addPlaneSurface([curve_loop_id])
         surface_ndim = 2
         gmsh.model.setPhysicalName(surface_ndim, surface_id, name_label)
+
         return surface_id
 
     def create_volume_by_extruding_surface(self, surface_id: int,
@@ -357,7 +358,7 @@ class GmshIO:
         gmsh.model.occ.synchronize()
 
     def generate_extract_mesh(self, dims: int, mesh_name: str, mesh_output_dir: str,
-                              mesh_size_list: List[int], save_file: bool = False, open_gmsh_gui: bool = False,
+                              mesh_size_list: List[float], save_file: bool = False, open_gmsh_gui: bool = False,
                               arbitrary_mesh_size: bool = True) -> None:
         """
         Generates mesh
@@ -367,7 +368,7 @@ class GmshIO:
             mesh_output_dir (str): Output directory of mesh file.
             save_file (bool, optional): If True, saves mesh data to gmsh msh file. (default is False)
             open_gmsh_gui (bool, optional): User indicates whether to open gmsh interface (default is False)
-            mesh_size_list (List[int]): The mesh size provided by user.
+            mesh_size_list (List[float]): The mesh size provided by user.
 
         Returns:
             None
