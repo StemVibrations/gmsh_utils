@@ -1,6 +1,7 @@
 from gmsh_utils.gmsh_IO import GmshIO
 from utils import TestUtils
 
+import gmsh
 import numpy as np
 import pytest
 
@@ -9,6 +10,13 @@ class TestGmshIO:
     """
     Tests for the GmshIO class.
     """
+
+    @pytest.fixture(autouse=True)
+    def close_gmsh(self):
+        """
+        Closes the gmsh interface after each test.
+        """
+        gmsh.finalize()
 
     @pytest.fixture
     def expected_geo_data_3D(self):
