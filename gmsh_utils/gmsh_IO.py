@@ -686,12 +686,12 @@ class GmshIO:
             name = gmsh.model.getPhysicalName(group[0], group[1])
 
             # gets entity per group
-            entity = gmsh.model.getEntitiesForPhysicalGroup(group[0], group[1])[0]
+            entities = gmsh.model.getEntitiesForPhysicalGroup(group[0], group[1])
 
             # add group to dictionary
             geo_data["physical_groups"][name] = {"ndim": group[0],
                                                  "id": group[1],
-                                                 "geometry_id": entity}
+                                                 "geometry_ids": list(entities)}
 
         self.__geo_data = geo_data
 
@@ -749,7 +749,7 @@ class GmshIO:
 
         # add physical groups to the geometry
         for k, v in self.__geo_data["physical_groups"].items():
-            gmsh.model.addPhysicalGroup(v["ndim"], [v["geometry_id"]], tag=v["id"], name=k)
+            gmsh.model.addPhysicalGroup(v["ndim"], v["geometry_ids"], tag=v["id"], name=k)
 
         # synchronize the geometry for generating the mesh
         gmsh.model.occ.synchronize()

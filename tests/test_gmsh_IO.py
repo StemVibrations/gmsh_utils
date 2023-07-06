@@ -1,6 +1,7 @@
 from gmsh_utils.gmsh_IO import GmshIO
 from utils import TestUtils
 
+import gmsh
 import numpy as np
 import pytest
 
@@ -9,6 +10,14 @@ class TestGmshIO:
     """
     Tests for the GmshIO class.
     """
+
+    @pytest.fixture(autouse=True)
+    def close_gmsh(self):
+        """
+        Closes the gmsh interface after each test.
+        """
+        if gmsh.is_initialized():
+            gmsh.finalize()
 
     @pytest.fixture
     def expected_geo_data_3D(self):
@@ -28,8 +37,36 @@ class TestGmshIO:
                              48: [-13, 33, -41, -46], 56: [-15, 55, -43, -29], 60: [-14, 46, -44, -55],
                              61: [41, -21, 43, 44]}
         expected_volumes = {1: [-10, 39, 26, 30, 34, 38], 2: [-17, 61, -48, -34, -56, -60]}
-        expected_physical_groups = {'group_1': {'geometry_id': 1, 'id': 1, 'ndim': 3},
-                                    'group_2': {'geometry_id': 2, 'id': 2, 'ndim': 3}}
+        expected_physical_groups = {'group_1': {'geometry_ids': [1], 'id': 1, 'ndim': 3},
+                                    'group_2': {'geometry_ids': [2], 'id': 2, 'ndim': 3}}
+
+        return {"points": expected_points,
+                "lines": expected_lines,
+                "surfaces": expected_surfaces,
+                "volumes": expected_volumes,
+                "physical_groups": expected_physical_groups}
+
+    @pytest.fixture
+    def expected_geo_data_3D_with_shared_group(self):
+        """
+        Expected geometry data for a 3D geometry. The geometry is 2 stacked blocks, where the top and bottom blocks
+        are in different groups.
+        """
+        expected_points = {1: [0., 0., 0.], 2: [0.5, 0., 0.], 3: [0.5, 1., 0.], 4: [0., 1., 0.], 11: [0., 2., 0.],
+                           12: [0.5, 2., 0.], 13: [0., 0., -0.5], 14: [0.5, 0., -0.5], 18: [0.5, 1., -0.5],
+                           22: [0., 1., -0.5], 23: [0., 2., -0.5], 32: [0.5, 2., -0.5]}
+        expected_lines = {5: [1, 2], 6: [2, 3], 7: [3, 4], 8: [4, 1], 13: [4, 11], 14: [11, 12], 15: [12, 3],
+                          19: [13, 14], 20: [14, 18], 21: [18, 22], 22: [22, 13], 24: [1, 13], 25: [2, 14],
+                          29: [3, 18], 33: [4, 22], 41: [23, 22], 43: [18, 32], 44: [32, 23], 46: [11, 23],
+                          55: [12, 32]}
+        expected_surfaces = {10: [5, 6, 7, 8], 17: [-13, -7, -15, -14], 26: [5, 25, -19, -24], 30: [6, 29, -20, -25],
+                             34: [7, 33, -21, -29], 38: [8, 24, -22, -33], 39: [19, 20, 21, 22],
+                             48: [-13, 33, -41, -46], 56: [-15, 55, -43, -29], 60: [-14, 46, -44, -55],
+                             61: [41, -21, 43, 44]}
+        expected_volumes = {1: [-10, 39, 26, 30, 34, 38], 2: [-17, 61, -48, -34, -56, -60]}
+        expected_physical_groups = {'group_1': {'geometry_ids': [1], 'id': 1, 'ndim': 3},
+                                    'group_2': {'geometry_ids': [2], 'id': 2, 'ndim': 3},
+                                    'gravity': {'geometry_ids': [1, 2], 'id': 3, 'ndim': 3}}
 
         return {"points": expected_points,
                 "lines": expected_lines,
@@ -215,8 +252,8 @@ class TestGmshIO:
         expected_lines = {5: [1, 2], 6: [2, 3], 7: [3, 4], 8: [4, 1], 13: [4, 11], 14: [11, 12], 15: [12, 3]}
         expected_surfaces = {10: [5, 6, 7, 8], 17: [-13, -7, -15, -14]}  # negative sign means reversed orientation
 
-        expected_physical_groups = {'group_1': {'geometry_id': 10, 'id': 1, 'ndim': 2},
-                                    'group_2': {'geometry_id': 17, 'id': 2, 'ndim': 2}}
+        expected_physical_groups = {'group_1': {'geometry_ids': [10], 'id': 1, 'ndim': 2},
+                                    'group_2': {'geometry_ids': [17], 'id': 2, 'ndim': 2}}
 
         expected_geo_data = {"points": expected_points,
                              "lines": expected_lines,
@@ -339,6 +376,49 @@ class TestGmshIO:
         # check if expected and actual geo data are equal
         TestUtils.assert_dictionary_almost_equal(geo_data, new_geo_data)
 
+
+    def test_generate_geo_from_geo_data_with_shared_group(self, expected_geo_data_3D_with_shared_group):
+        """
+        Checks if the gmsh geometry is correctly generated from the geo data dictionary. In this test, two volumes
+        are added to a separate group. And the same volumes are added to a shared group.
+
+        This test sets the geo_data dictionary manually, this data is then used to generate the gmsh geometry input.
+        The generated geometry input is then read and the geo data is extracted from it. The input and output should be
+        equal, besides reoriented lines within surfaces.
+        """
+
+        geo_data = expected_geo_data_3D_with_shared_group
+
+        gmsh_io = GmshIO()
+
+        # set private attribute geo_data
+        gmsh_io._GmshIO__geo_data = geo_data
+
+        # generate gmsh geo input from geo data dictionary
+        gmsh_io.generate_geo_from_geo_data()
+
+        # retrieve the generated geo input
+        gmsh_io.extract_geo_data()
+
+        new_geo_data = gmsh_io.geo_data
+
+        # only check absolute and sorted values in surfaces, because the values can be reoriented by occ
+        for surface_id in geo_data["surfaces"].keys():
+            geo_data["surfaces"][surface_id] = np.sort(np.abs(geo_data["surfaces"][surface_id]).astype(int)).tolist()
+
+        for surface_id in new_geo_data["surfaces"].keys():
+            new_geo_data["surfaces"][surface_id] = np.sort(np.abs(new_geo_data["surfaces"][surface_id]).astype(int))
+
+        # only check absolute and sorted values in volumes, because the values can be reoriented by occ
+        for volume_id in new_geo_data["volumes"].keys():
+            new_geo_data["volumes"][volume_id] = np.sort(np.abs(new_geo_data["volumes"][volume_id]).astype(int))
+
+        for volume_id in geo_data["volumes"].keys():
+            geo_data["volumes"][volume_id] = np.sort(np.abs(geo_data["volumes"][volume_id]).astype(int))
+
+        # check if expected and actual geo data are equal
+        TestUtils.assert_dictionary_almost_equal(geo_data, new_geo_data)
+
     def test_generate_mesh(self):
         """
         Checks whether a mesh is generated correctly from a gmsh .geo file. A 2D block mesh is generated.
@@ -413,9 +493,9 @@ class TestGmshIO:
 
         geo_data = gmsh_io.geo_data
 
-        expected_physical_groups = {'Soil Layer': {'ndim': 2, 'id': 1, 'geometry_id': 1},
-                                    'Soil Embankment': {'ndim': 2, 'id': 2, 'geometry_id': 2},
-                                    'Soil Ballast': {'ndim': 2, 'id': 3, 'geometry_id': 3}}
+        expected_physical_groups = {'Soil Layer': {'ndim': 2, 'id': 1, 'geometry_ids': [1]},
+                                    'Soil Embankment': {'ndim': 2, 'id': 2, 'geometry_ids': [2]},
+                                    'Soil Ballast': {'ndim': 2, 'id': 3, 'geometry_ids': [3]}}
 
         # check if expected and actual geo data are equal
         TestUtils.assert_dictionary_almost_equal(expected_physical_groups, geo_data["physical_groups"])
@@ -451,9 +531,9 @@ class TestGmshIO:
 
         geo_data = gmsh_io.geo_data
 
-        expected_physical_groups = {'Soil Layer': {'ndim': 3, 'id': 1, 'geometry_id': 1},
-                                    'Soil Embankment': {'ndim': 3, 'id': 2, 'geometry_id': 2},
-                                    'Soil Ballast': {'ndim': 3, 'id': 3, 'geometry_id': 3}}
+        expected_physical_groups = {'Soil Layer': {'ndim': 3, 'id': 1, 'geometry_ids': [1]},
+                                    'Soil Embankment': {'ndim': 3, 'id': 2, 'geometry_ids': [2]},
+                                    'Soil Ballast': {'ndim': 3, 'id': 3, 'geometry_ids': [3]}}
 
         # check if expected and actual geo data are equal
         TestUtils.assert_dictionary_almost_equal(expected_physical_groups, geo_data["physical_groups"])
