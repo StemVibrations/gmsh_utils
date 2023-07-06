@@ -4,10 +4,11 @@ import warnings
 
 # if "True", mesh size is defined by the user in the dictionary below; if "False" default_mesh_size is used
 arbitrary_mesh_size: bool= True
-# if "arbitrary_mesh_size = False", if set to -1 mesh size is logically chosen by Gmsh itself based on the geometry
+# if "arbitrary_mesh_size = False", define a mesh size, if set to -1 mesh size is logically chosen by Gmsh itself
+# based on the geometry
 default_mesh_size: float = -1
 # define the name labels of the layers and points coordinates of the surface in order /
-# (regardless of clockwise or anticlockwise) and mesh sizes for each layer as a dictionary (if arbitrary_mesh_size is
+# (regardless of clockwise or anticlockwise) and mesh sizes for each layer as a dictionary. If arbitrary_mesh_size is
 # false, the default_mesh_size is assigned to all layers)
 input_dict = {'First left Soil Layer': (10, [(0, 0, 0), (3, 0, 0), (5, 1.5, 0), (2, 1, 0), (0, 1, 0)]),
               'Second right Soil Layer': (0.1, [(3, 0, 0), (5, 0, 0), (5, 1.5, 0)]),

@@ -371,8 +371,8 @@ class GmshIO:
         self.extract_geo_data()
 
     def generate_extract_mesh(self, dims: int, mesh_name: str, mesh_output_dir: str,
-                              mesh_size_list: List[float], number_of_layers, save_file: bool = False, open_gmsh_gui: bool = False,
-                              arbitrary_mesh_size: bool = True) -> None:
+                              mesh_size_list: List[float], number_of_layers, save_file: bool = False,
+                              open_gmsh_gui: bool = False, arbitrary_mesh_size: bool = True) -> None:
         """
         Generates mesh
 
