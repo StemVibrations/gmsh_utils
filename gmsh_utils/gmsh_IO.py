@@ -352,8 +352,8 @@ class GmshIO:
 
         gmsh.initialize()
         gmsh.model.add(mesh_name)
-
-        for layer in range(len(point_coordinates)):
+        Number_of_layers = len(point_coordinates)
+        for layer in range(Number_of_layers):
             if dims == 3:
                 self.make_geometry_3d(point_coordinates[layer], extrusion_length, name_label[layer], mesh_size)
 
@@ -371,7 +371,7 @@ class GmshIO:
         self.extract_geo_data()
 
     def generate_extract_mesh(self, dims: int, mesh_name: str, mesh_output_dir: str,
-                              mesh_size_list: List[float], save_file: bool = False, open_gmsh_gui: bool = False,
+                              mesh_size_list: List[float], number_of_layers, save_file: bool = False, open_gmsh_gui: bool = False,
                               arbitrary_mesh_size: bool = True) -> None:
         """
         Generates mesh
@@ -397,7 +397,7 @@ class GmshIO:
         #     volume_tag_list.append(key)
 
         if arbitrary_mesh_size:
-            self.set_mesh_size(dims, mesh_size_list)
+            self.set_mesh_size(dims, mesh_size_list, number_of_layers)
         gmsh.model.mesh.generate(dims)
 
         self.extract_mesh_data(gmsh.model.mesh)
@@ -414,7 +414,7 @@ class GmshIO:
 
         gmsh.finalize()
 
-    def set_mesh_size(self, dims, mesh_size_list) -> None:
+    def set_mesh_size(self, dims, mesh_size_list, number_of_layers) -> None:
         """
         Sets the mesh size by
 
@@ -440,7 +440,7 @@ class GmshIO:
             volume_tag_list.append(key)
 
 
-        for layer in range(len(mesh_size_list)):
+        for layer in range(number_of_layers):
             if dims == 2:
                 entities_list = gmsh.model.getBoundary([(dims, surface_tag_list[layer])], recursive=True)
             elif dims == 3:
