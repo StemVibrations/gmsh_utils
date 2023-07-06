@@ -16,7 +16,8 @@ class TestGmshIO:
         """
         Closes the gmsh interface after each test.
         """
-        gmsh.finalize()
+        if gmsh.is_initialized():
+            gmsh.finalize()
 
     @pytest.fixture
     def expected_geo_data_3D(self):
