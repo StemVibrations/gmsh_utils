@@ -28,8 +28,8 @@ class TestGmshIO:
                              48: [-13, 33, -41, -46], 56: [-15, 55, -43, -29], 60: [-14, 46, -44, -55],
                              61: [41, -21, 43, 44]}
         expected_volumes = {1: [-10, 39, 26, 30, 34, 38], 2: [-17, 61, -48, -34, -56, -60]}
-        expected_physical_groups = {'group_1': {'geometry_id': 1, 'id': 1, 'ndim': 3},
-                                    'group_2': {'geometry_id': 2, 'id': 2, 'ndim': 3}}
+        expected_physical_groups = {'group_1': {'geometry_ids': [1], 'id': 1, 'ndim': 3},
+                                    'group_2': {'geometry_ids': [2], 'id': 2, 'ndim': 3}}
 
         return {"points": expected_points,
                 "lines": expected_lines,
@@ -150,8 +150,8 @@ class TestGmshIO:
         expected_lines = {5: [1, 2], 6: [2, 3], 7: [3, 4], 8: [4, 1], 13: [4, 11], 14: [11, 12], 15: [12, 3]}
         expected_surfaces = {10: [5, 6, 7, 8], 17: [-13, -7, -15, -14]}  # negative sign means reversed orientation
 
-        expected_physical_groups = {'group_1': {'geometry_id': 10, 'id': 1, 'ndim': 2},
-                                    'group_2': {'geometry_id': 17, 'id': 2, 'ndim': 2}}
+        expected_physical_groups = {'group_1': {'geometry_ids': [10], 'id': 1, 'ndim': 2},
+                                    'group_2': {'geometry_ids': [17], 'id': 2, 'ndim': 2}}
 
         expected_geo_data = {"points": expected_points,
                              "lines": expected_lines,
@@ -348,9 +348,9 @@ class TestGmshIO:
 
         geo_data = gmsh_io.geo_data
 
-        expected_physical_groups = {'Soil Layer': {'ndim': 2, 'id': 1, 'geometry_id': 1},
-                                    'Soil Embankment': {'ndim': 2, 'id': 2, 'geometry_id': 2},
-                                    'Soil Ballast': {'ndim': 2, 'id': 3, 'geometry_id': 3}}
+        expected_physical_groups = {'Soil Layer': {'ndim': 2, 'id': 1, 'geometry_ids': [1]},
+                                    'Soil Embankment': {'ndim': 2, 'id': 2, 'geometry_ids': [2]},
+                                    'Soil Ballast': {'ndim': 2, 'id': 3, 'geometry_ids': [3]}}
 
         # check if expected and actual geo data are equal
         TestUtils.assert_dictionary_almost_equal(expected_physical_groups, geo_data["physical_groups"])
@@ -386,9 +386,9 @@ class TestGmshIO:
 
         geo_data = gmsh_io.geo_data
 
-        expected_physical_groups = {'Soil Layer': {'ndim': 3, 'id': 1, 'geometry_id': 1},
-                                    'Soil Embankment': {'ndim': 3, 'id': 2, 'geometry_id': 2},
-                                    'Soil Ballast': {'ndim': 3, 'id': 3, 'geometry_id': 3}}
+        expected_physical_groups = {'Soil Layer': {'ndim': 3, 'id': 1, 'geometry_ids': [1]},
+                                    'Soil Embankment': {'ndim': 3, 'id': 2, 'geometry_ids': [2]},
+                                    'Soil Ballast': {'ndim': 3, 'id': 3, 'geometry_ids': [3]}}
 
         # check if expected and actual geo data are equal
         TestUtils.assert_dictionary_almost_equal(expected_physical_groups, geo_data["physical_groups"])
