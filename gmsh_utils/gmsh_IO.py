@@ -406,7 +406,7 @@ class GmshIO:
 
         gmsh.finalize()
 
-    def set_mesh_size(self, dims, mesh_size_list) -> None:
+    def set_mesh_size(self, dims: int, mesh_size_list: List[float]) -> None:
         """
         Sets the mesh size by surface tags for 2D and volume tags for 3D
 
