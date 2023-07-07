@@ -352,8 +352,7 @@ class GmshIO:
 
         gmsh.initialize()
         gmsh.model.add(mesh_name)
-        Number_of_layers = len(point_coordinates)
-        for layer in range(Number_of_layers):
+        for layer in range(len(point_coordinates)):
             if dims == 3:
                 self.make_geometry_3d(point_coordinates[layer], extrusion_length, name_label[layer], mesh_size)
 
@@ -371,33 +370,26 @@ class GmshIO:
         self.extract_geo_data()
 
     def generate_extract_mesh(self, dims: int, mesh_name: str, mesh_output_dir: str,
-                              mesh_size_list: List[float], number_of_layers, save_file: bool = False,
+                              mesh_size_list: List[float], save_file: bool = False,
                               open_gmsh_gui: bool = False, arbitrary_mesh_size: bool = True) -> None:
         """
-        Generates mesh
+        Generates and extracts mesh for the geometry
 
         Args:
             dims (int): The dimension of geometry (2=2D or 3=3D).
             mesh_name (str): Name of gmsh model and mesh output file.
             mesh_output_dir (str): Output directory of mesh file.
+            mesh_size_list (List[float]): The mesh size provided by user.
             save_file (bool, optional): If True, saves mesh data to gmsh msh file. (default is False)
             open_gmsh_gui (bool, optional): User indicates whether to open gmsh interface (default is False)
-            mesh_size_list (List[float]): The mesh size provided by user.
+            arbitrary_mesh_size (bool, optional): If True, mesh size is set by user per each layer
 
         Returns:
             None
         """
 
-        # self.extract_geo_data()
-        #
-        # new_geo_data = self.geo_data
-        #
-        # volume_tag_list = []
-        # for key, values in new_geo_data['volumes'].items():
-        #     volume_tag_list.append(key)
-
         if arbitrary_mesh_size:
-            self.set_mesh_size(dims, mesh_size_list, number_of_layers)
+            self.set_mesh_size(dims, mesh_size_list)
         gmsh.model.mesh.generate(dims)
 
         self.extract_mesh_data(gmsh.model.mesh)
@@ -414,12 +406,12 @@ class GmshIO:
 
         gmsh.finalize()
 
-    def set_mesh_size(self, dims, mesh_size_list, number_of_layers) -> None:
+    def set_mesh_size(self, dims, mesh_size_list) -> None:
         """
-        Sets the mesh size by
+        Sets the mesh size by surface tags for 2D and volume tags for 3D
 
         Args:
-            volume_tag_list (List[int]): The dimension of geometry (2=2D or 3=3D).
+            dims (int): The dimension of geometry (2=2D or 3=3D).
             mesh_size_list (List[float]): The mesh size provided by user.
 
         Returns:
@@ -431,6 +423,8 @@ class GmshIO:
 
         new_geo_data = self.geo_data
 
+        number_of_physical_groups = (len(new_geo_data['physical_groups']))
+
         surface_tag_list = []
         for key, values in new_geo_data['surfaces'].items():
             surface_tag_list.append(key)
@@ -439,8 +433,7 @@ class GmshIO:
         for key, values in new_geo_data['volumes'].items():
             volume_tag_list.append(key)
 
-
-        for layer in range(number_of_layers):
+        for layer in range(number_of_physical_groups):
             if dims == 2:
                 entities_list = gmsh.model.getBoundary([(dims, surface_tag_list[layer])], recursive=True)
             elif dims == 3:
