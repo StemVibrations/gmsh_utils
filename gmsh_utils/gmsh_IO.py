@@ -505,7 +505,7 @@ class GmshIO:
 
         """
 
-        self.reset_gmsh()
+        self.reset_gmsh_instance()
 
         gmsh.open(filename)
 
@@ -659,7 +659,7 @@ class GmshIO:
         """
 
         if pathlib.Path(filename).exists():
-            self.reset_gmsh()
+            self.reset_gmsh_instance()
 
             gmsh.open(filename)
 
@@ -678,7 +678,7 @@ class GmshIO:
         """
 
         # reset gmsh
-        self.reset_gmsh()
+        self.reset_gmsh_instance()
 
         # add points to the geometry
         for k, v in self.__geo_data["points"].items():
@@ -759,9 +759,9 @@ class GmshIO:
             gmsh.model.geo.synchronize()
 
     @staticmethod
-    def reset_gmsh():
+    def reset_gmsh_instance():
         """
-        Resets gmsh object.
+        Resets gmsh object. Finalizes gmsh if the gmsh object is initialized and initializes gmsh.
 
         """
         if gmsh.isInitialized():

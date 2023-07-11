@@ -552,7 +552,7 @@ class TestGmshIO:
         gmsh_io.synchronize_gmsh()
 
         # reset gmsh
-        gmsh_io.reset_gmsh()
+        gmsh_io.reset_gmsh_instance()
 
         # extract geo data
         gmsh_io.extract_geo_data()
