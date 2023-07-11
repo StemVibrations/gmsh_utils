@@ -350,8 +350,9 @@ class GmshIO:
             None
         """
 
-        gmsh.initialize()
-        gmsh.model.add(mesh_name)
+        if not gmsh.isInitialized():
+            gmsh.initialize()
+            gmsh.model.add(mesh_name)
 
         for layer in range(len(point_coordinates)):
             if dims == 3:
@@ -361,12 +362,7 @@ class GmshIO:
                 self.make_geometry_2d(point_coordinates[layer], name_label[layer], mesh_size)
 
         self.remove_duplicates()
-        # synchronize the geometry for generating the mesh
-        gmsh.model.occ.synchronize()
-
-        # synchronize the geo geometry such that physical groups are added, important is that this is done after
-        # synchronizing the occ geometry :-D
-        gmsh.model.geo.synchronize()
+        self.synchronize_gmsh()
 
         self.extract_geo_data()
 
@@ -400,7 +396,7 @@ class GmshIO:
         if open_gmsh_gui:
             gmsh.fltk.run()
 
-        gmsh.finalize()
+        self.finalize_gmsh()
 
     def extract_node_data(self, node_tags: npt.NDArray[np.int_],
                           node_coordinates: npt.NDArray[np.float64]) \
@@ -509,12 +505,13 @@ class GmshIO:
 
         """
 
-        gmsh.initialize()
+        self.reset_gmsh()
+
         gmsh.open(filename)
 
         self.extract_mesh_data(gmsh.model.mesh)
 
-        gmsh.finalize()
+        self.finalize_gmsh()
 
     def get_nodes_in_group(self, group_name: str) -> Dict[str, Union[npt.NDArray[np.int_], npt.NDArray[np.float64]]]:
         """
@@ -662,12 +659,13 @@ class GmshIO:
         """
 
         if pathlib.Path(filename).exists():
-            gmsh.initialize()
+            self.reset_gmsh()
+
             gmsh.open(filename)
 
             self.extract_geo_data()
 
-            gmsh.finalize()
+            self.finalize_gmsh()
         else:
             raise FileNotFoundError(f"File {filename} does not exist!")
 
@@ -679,8 +677,8 @@ class GmshIO:
 
         """
 
-        # initialize gmsh
-        gmsh.initialize()
+        # reset gmsh
+        self.reset_gmsh()
 
         # add points to the geometry
         for k, v in self.__geo_data["points"].items():
@@ -705,12 +703,7 @@ class GmshIO:
         for k, v in self.__geo_data["physical_groups"].items():
             gmsh.model.addPhysicalGroup(v["ndim"], [v["geometry_id"]], tag=v["id"], name=k)
 
-        # synchronize the geometry for generating the mesh
-        gmsh.model.occ.synchronize()
-
-        # synchronize the geo geometry such that physical groups are added, important is that this is done after
-        # synchronizing the occ geometry :-D
-        gmsh.model.geo.synchronize()
+        self.synchronize_gmsh()
 
     def generate_mesh(self, ndim: int, element_size: float = 0.0, order: int = 1):
         """
@@ -739,4 +732,58 @@ class GmshIO:
         self.extract_mesh_data(gmsh.model.mesh)
 
         # finalize gmsh
-        gmsh.finalize()
+        self.finalize_gmsh()
+
+    @staticmethod
+    def finalize_gmsh():
+        """
+        Finalizes gmsh.
+
+        """
+
+        if gmsh.isInitialized():
+            gmsh.finalize()
+
+    @staticmethod
+    def synchronize_gmsh():
+        """
+        Synchronizes the gmsh geometry.
+
+        """
+        if gmsh.isInitialized():
+            # synchronize the geometry for generating the mesh
+            gmsh.model.occ.synchronize()
+
+            # synchronize the geo geometry such that physical groups are added, important is that this is done after
+            # synchronizing the occ geometry :-D
+            gmsh.model.geo.synchronize()
+
+    @staticmethod
+    def reset_gmsh():
+        """
+        Resets gmsh.
+
+        """
+        if gmsh.isInitialized():
+            gmsh.finalize()
+        gmsh.initialize()
+
+    def clear_geo_data(self):
+        """
+        Clears the geometry data.
+
+        """
+
+        self.__geo_data = {"points": {},
+                           "lines": {},
+                           "surfaces": {},
+                           "volumes": {},
+                           "physical_groups": {}}
+
+    def clear_mesh_data(self):
+        """
+        Clears the mesh data.
+
+        """
+
+        self.__mesh_data = {}
