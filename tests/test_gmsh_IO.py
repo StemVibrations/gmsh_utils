@@ -472,3 +472,62 @@ class TestGmshIO:
 
         # check if expected and actual geo data are equal
         TestUtils.assert_dictionary_almost_equal(expected_physical_groups, geo_data["physical_groups"])
+
+    def test_finalize_gmsh(self):
+        """
+        Checks whether gmsh is finalized after calling finalize_gmsh
+
+        """
+
+        # initialize gmsh
+        gmsh_io = GmshIO()
+        gmsh.initialize()
+
+        # check if gmsh is initialized
+        assert gmsh.isInitialized()
+
+        # finalize gmsh
+        gmsh_io.finalize_gmsh()
+
+        # check if gmsh is finalized
+        assert not gmsh.isInitialized()
+
+    def test_synchronize_gmsh(self):
+        """
+        Checks whether gmsh is synchronized after calling synchronize_gmsh. This test checks whether the geo data
+        is updated with the created points and the physical group after calling synchronize_gmsh.
+
+        """
+
+        # initialize gmsh
+        gmsh_io = GmshIO()
+        gmsh.initialize()
+
+        point_id1 = gmsh.model.occ.addPoint(0, 0, 0)
+        point_id2 = gmsh.model.occ.addPoint(1, 0, 0)
+
+        gmsh.model.addPhysicalGroup(0, [point_id1, point_id2], name="test")
+
+        gmsh_io.extract_geo_data()
+
+        empty_geo_data = gmsh_io.geo_data
+
+        expected_empty_geo_data = {'lines': {}, 'physical_groups': {}, 'points': {}, 'surfaces': {}, 'volumes': {}}
+
+        TestUtils.assert_dictionary_almost_equal(empty_geo_data, expected_empty_geo_data)
+
+        # synchronize gmsh
+        gmsh_io.synchronize_gmsh()
+
+        gmsh_io.extract_geo_data()
+        filled_geo_data = gmsh_io.geo_data
+
+        expected_filled_geo_data = {'points': {1: [0., 0., 0.], 2: [1., 0., 0.]},
+                                    'lines': {},
+                                    'surfaces': {},
+                                    'volumes': {},
+                                    'physical_groups': {'test': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 0}}}
+
+        TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_filled_geo_data)
+
+
