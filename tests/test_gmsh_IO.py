@@ -503,25 +503,28 @@ class TestGmshIO:
         gmsh_io = GmshIO()
         gmsh.initialize()
 
+        # create two points and add to physical group
         point_id1 = gmsh.model.occ.addPoint(0, 0, 0)
         point_id2 = gmsh.model.occ.addPoint(1, 0, 0)
 
         gmsh.model.addPhysicalGroup(0, [point_id1, point_id2], name="test")
 
+        # extract geo data
         gmsh_io.extract_geo_data()
-
         empty_geo_data = gmsh_io.geo_data
 
+        # check if geo data is empty before synchronizing
         expected_empty_geo_data = {'lines': {}, 'physical_groups': {}, 'points': {}, 'surfaces': {}, 'volumes': {}}
-
         TestUtils.assert_dictionary_almost_equal(empty_geo_data, expected_empty_geo_data)
 
         # synchronize gmsh
         gmsh_io.synchronize_gmsh()
 
+        # extract geo data
         gmsh_io.extract_geo_data()
         filled_geo_data = gmsh_io.geo_data
 
+        # check if geo data is filled after synchronizing
         expected_filled_geo_data = {'points': {1: [0., 0., 0.], 2: [1., 0., 0.]},
                                     'lines': {},
                                     'surfaces': {},
@@ -529,5 +532,120 @@ class TestGmshIO:
                                     'physical_groups': {'test': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 0}}}
 
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_filled_geo_data)
+
+    def test_reset_gmsh(self):
+        """
+        Checks whether gmsh is reset after calling reset_gmsh.
+        """
+
+        # initialize gmsh
+        gmsh_io = GmshIO()
+        gmsh.initialize()
+
+        # create two points and add to physical group
+        point_id1 = gmsh.model.occ.addPoint(0, 0, 0)
+        point_id2 = gmsh.model.occ.addPoint(1, 0, 0)
+
+        gmsh.model.addPhysicalGroup(0, [point_id1, point_id2], name="test")
+
+        # synchronize gmsh
+        gmsh_io.synchronize_gmsh()
+
+        # reset gmsh
+        gmsh_io.reset_gmsh()
+
+        # extract geo data
+        gmsh_io.extract_geo_data()
+        empty_geo_data = gmsh_io.geo_data
+
+        # check if geo data is empty after resetting
+        expected_empty_geo_data = {'lines': {}, 'physical_groups': {}, 'points': {}, 'surfaces': {}, 'volumes': {}}
+
+        TestUtils.assert_dictionary_almost_equal(empty_geo_data, expected_empty_geo_data)
+
+    def test_clear_geo_data(self):
+        """
+        Checks whether geo data is cleared after calling clear_geo_data.
+        """
+
+        # initialize gmsh
+        gmsh_io = GmshIO()
+        gmsh.initialize()
+
+        # create two points and add to physical group
+        point_id1 = gmsh.model.occ.addPoint(0, 0, 0)
+        point_id2 = gmsh.model.occ.addPoint(1, 0, 0)
+
+        gmsh.model.addPhysicalGroup(0, [point_id1, point_id2], name="test")
+
+        # synchronize gmsh
+        gmsh_io.synchronize_gmsh()
+
+        # extract geo data
+        gmsh_io.extract_geo_data()
+
+        # clear geo data
+        gmsh_io.clear_geo_data()
+        empty_geo_data = gmsh_io.geo_data
+
+        # check if geo data is empty after resetting
+        expected_empty_geo_data = {'lines': {}, 'physical_groups': {}, 'points': {}, 'surfaces': {}, 'volumes': {}}
+        TestUtils.assert_dictionary_almost_equal(empty_geo_data, expected_empty_geo_data)
+
+        # check if geo data is present after re-extracting
+        gmsh_io.extract_geo_data()
+        filled_geo_data = gmsh_io.geo_data
+
+        # check if geo data is filled after synchronizing
+        expected_filled_geo_data = {'points': {1: [0., 0., 0.], 2: [1., 0., 0.]},
+                                    'lines': {},
+                                    'surfaces': {},
+                                    'volumes': {},
+                                    'physical_groups': {'test': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 0}}}
+        TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_filled_geo_data)
+
+
+    def test_clear_mesh_data(self):
+        """
+        Checks whether mesh data is cleared after calling clear_mesh_data.
+        """
+
+        # initialize gmsh
+        gmsh_io = GmshIO()
+        gmsh.initialize()
+
+        # create a line and add to physical group
+        point_id1 = gmsh.model.occ.addPoint(0, 0, 0)
+        point_id2 = gmsh.model.occ.addPoint(1, 0, 0)
+
+        line = gmsh_io.create_line([point_id1, point_id2])
+
+        gmsh.model.addPhysicalGroup(1, [line], name="test")
+
+        # synchronize gmsh
+        gmsh_io.synchronize_gmsh()
+        gmsh_io.extract_geo_data()
+
+        # generate mesh
+        gmsh_io.generate_mesh(1, element_size=0.5)
+
+        expected_filled_mesh_data = {'elements': {'LINE_2N': {'connectivities': [[1, 3], [3, 2]], 'element_ids': [1, 2]},
+                                                  'POINT_1N': {'connectivities': [[1], [2]], 'element_ids': [3, 4]}},
+                                     'nodes': {'coordinates': [[0., 0., 0.], [1., 0., 0.], [0.5, 0., 0.]],
+                                               'ids': [1, 2, 3]}}
+
+        # check if mesh data is filled after generating mesh
+        TestUtils.assert_dictionary_almost_equal(gmsh_io.mesh_data, expected_filled_mesh_data)
+
+        # clear mesh data
+        gmsh_io.clear_mesh_data()
+
+        # check if mesh data is empty after clearing
+        expected_empty_mesh_data = {}
+        TestUtils.assert_dictionary_almost_equal(gmsh_io.mesh_data, expected_empty_mesh_data)
+
+        # regenerate mesh
+        gmsh_io.generate_mesh(1, element_size=0.5)
+        TestUtils.assert_dictionary_almost_equal(gmsh_io.mesh_data, expected_filled_mesh_data)
 
 
