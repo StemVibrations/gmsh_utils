@@ -604,7 +604,6 @@ class TestGmshIO:
                                     'physical_groups': {'test': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 0}}}
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_filled_geo_data)
 
-
     def test_clear_mesh_data(self):
         """
         Checks whether mesh data is cleared after calling clear_mesh_data.
