@@ -761,7 +761,7 @@ class GmshIO:
     @staticmethod
     def reset_gmsh():
         """
-        Resets gmsh.
+        Resets gmsh object.
 
         """
         if gmsh.isInitialized():
