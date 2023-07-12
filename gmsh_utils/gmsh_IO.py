@@ -244,20 +244,16 @@ class GmshIO:
         line_ids = [self.create_line(point_pair) for point_pair in point_pairs]
         return line_ids
 
-    def make_surface(self, line_list: Sequence[int], name_label: str = "") -> int:
+
+    def make_geometry_1d(self, point_coordinates: Sequence[Sequence[float]],
+                            name_label: str = "", mesh_size=-1) -> int:
         """
-        Makes surfaces with surface tags by getting line tags.
-
-        Args:
-            line_list (Sequence[int]): A list of line tags in order.
-            name_label (str): surface name labels provided by user input.
-
-        Returns:
-            int: The surface tag.
+        Makes 1D geometry by creating points and lines in gmsh.
         """
-
-        surface = self.create_surface(line_list, name_label)
-        return surface
+        list_point_id = self.make_points(point_coordinates, mesh_size)
+        pair_list = self.generate_point_pairs(list_point_id)
+        line_list = self.make_lines(pair_list)
+        return line_list
 
     def make_geometry_2d(self, point_coordinates: Sequence[Sequence[float]],
                          name_label: str = "", mesh_size=-1) -> int:
@@ -275,9 +271,9 @@ class GmshIO:
         """
 
         list_point_id = self.make_points(point_coordinates, mesh_size)
-        pair_lists = self.generate_point_pairs(list_point_id)
-        line_lists = self.make_lines(pair_lists)
-        surface_id = self.make_surface(line_lists, name_label)
+        pair_list = self.generate_point_pairs(list_point_id)
+        line_list = self.make_lines(pair_list)
+        surface_id = self.create_surface(line_list, name_label)
 
         return surface_id
 
