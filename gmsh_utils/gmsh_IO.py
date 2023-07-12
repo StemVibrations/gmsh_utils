@@ -686,7 +686,6 @@ class GmshIO:
 
         # add lines to the geometry
         for k, v in self.__geo_data["lines"].items():
-            print(self.__geo_data["lines"].items())
             gmsh.model.occ.addLine(v[0], v[1], tag=k)
 
         # add surfaces to the geometry
