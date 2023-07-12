@@ -244,42 +244,75 @@ class GmshIO:
         line_ids = [self.create_line(point_pair) for point_pair in point_pairs]
         return line_ids
 
+    def make_geometry_0d(self, point_coordinates: Sequence[Sequence[float]], name_label: str = "",
+                         element_size: float = -1) -> List[int]:
+        """
+        Makes 0D geometry by creating points in gmsh.
+
+        Args:
+            - point_coordinates (Sequence[Sequence[float]]): A sequence of point x,y,z coordinates.
+            - name_label (str): The name of the physical group containing the points.
+            - element_size (float): The element size.
+
+        Returns:
+            - List[int]: A list of point tags.
+        """
+        point_ids = self.make_points(point_coordinates, element_size)
+
+        # only add physical group if name label is not empty
+        if name_label != "":
+            point_ndim = 0
+            gmsh.model.addPhysicalGroup(point_ndim, point_ids, tag=-1, name=name_label)
+
+        return point_ids
 
     def make_geometry_1d(self, point_coordinates: Sequence[Sequence[float]],
-                            name_label: str = "", mesh_size=-1) -> int:
+                         name_label: str = "", element_size: float = -1) -> List[int]:
         """
         Makes 1D geometry by creating points and lines in gmsh.
+
+        Args:
+            - point_coordinates (Sequence[Sequence[float]]): A sequence of point x,y,z coordinates.
+            - name_label (str): The name of the physical group containing the lines.
+            - element_size (float): The element size.
+
+        Returns:
+            - List[int]: A list of line tags.
         """
-        list_point_id = self.make_points(point_coordinates, mesh_size)
-        pair_list = self.generate_point_pairs(list_point_id)
-        line_list = self.make_lines(pair_list)
-        return line_list
+        point_ids = self.make_points(point_coordinates, mesh_size=element_size)
+        pair_list = self.generate_point_pairs(point_ids)
+        line_ids = self.make_lines(pair_list)
+
+        # only add physical group if name label is not empty
+        if name_label != "":
+            line_ndim = 1
+            gmsh.model.addPhysicalGroup(line_ndim, line_ids, tag=-1, name=name_label)
+
+        return line_ids
 
     def make_geometry_2d(self, point_coordinates: Sequence[Sequence[float]],
-                         name_label: str = "", mesh_size=-1) -> int:
+                         name_label: str = "", element_size=-1) -> int:
         """
         Takes point_pairs and puts their tags as the beginning and end of line in gmsh to create line,
         then creates surface to make 2D geometry.
 
         Args:
-            point_coordinates (Sequence[Sequence[float]]): A list of point coordinates.
-            name_label (str): A name label provided for the volume by user input.
-            mesh_size (float): The default mesh size provided by user.
+            - point_coordinates (Sequence[Sequence[float]]): A list of point coordinates.
+            - name_label (str): A name label provided for the volume by user input.
+            - element_size (float): The default mesh size provided by user.
 
         Returns:
-            int: Surface id
+            - int: Surface id
         """
 
-        list_point_id = self.make_points(point_coordinates, mesh_size)
-        pair_list = self.generate_point_pairs(list_point_id)
-        line_list = self.make_lines(pair_list)
-        surface_id = self.create_surface(line_list, name_label)
+        lined_ids = self.make_geometry_1d(point_coordinates, element_size=element_size)
+        surface_id = self.create_surface(lined_ids, name_label)
 
         return surface_id
 
     def make_geometry_3d(self, point_coordinates: Sequence[Sequence[float]],
                          extrusion_length: Sequence[float], name_label: str = "",
-                         mesh_size=-1) -> None:
+                         element_size: float = -1) -> None:
         """
         Creates 3D geometries by extruding the 2D surface
 
@@ -287,17 +320,17 @@ class GmshIO:
             point_coordinates (Sequence[Sequence[float]]): Geometry points coordinates.
             extrusion_length (Sequence[float]): The extrusion length in x, y and z direction.
             name_label (str): A name label provided for the volume by user input.
-            mesh_size (float): The default mesh size provided by user.
+            element_size (float): The default mesh size provided by user.
 
         Returns:
             None
         """
 
         # create surface without a name label, which is used for extrusion
-        surface = self.make_geometry_2d(point_coordinates, "", mesh_size)
+        surface = self.make_geometry_2d(point_coordinates, element_size=element_size)
         self.create_volume_by_extruding_surface(surface, extrusion_length, name_label)
 
-    def remove_duplicates(self):
+    def remove_duplicate_entities_from_geometry(self):
         """
         Removes duplicate entities from the geometry.
 
@@ -325,37 +358,71 @@ class GmshIO:
 
         return num_nodes
 
-    def generate_geometry(self, point_coordinates: Sequence[Sequence[Sequence[float]]],
-                          extrusion_length: Sequence[float], dims: int,
-                          mesh_name: str, name_label: List[str], mesh_size=-1) -> None:
+    def validate_layer_settings(self, layer_settings: Dict[str, Any]) -> None:
         """
-        Generates the geometry
+        Validates the layer settings
 
         Args:
-            point_coordinates (Sequence[Sequence[Sequence[float]]]): User input points of the \
-                surface as a list or ndarray.
-            extrusion_length (Sequence[float]): The depth of 3D geometry.
-            dims (int): The dimension of geometry (2=2D or 3=3D).
-            mesh_name (str): Name of gmsh model and mesh output file.
-            name_label (List[str]): The surface name label provided by user input.
-            mesh_size (float): The mesh size provided by user.
+            layer_settings (Dict[str, Any]): A dictionary containing the layer information.
 
-        Returns:
-            None
         """
+
+        for key, layer in layer_settings.items():
+
+            if "coordinates" not in layer:
+                raise ValueError(f"Layer {key} must contain the key 'coordinates'")
+            if "ndim" not in layer:
+                raise ValueError(f"Layer {key} must contain the key 'ndim'")
+
+            if layer["ndim"] == 3 and "extrusion_length" not in layer:
+                raise ValueError(f"Layer {key} must contain the key 'extrusion_length', which is needed "
+                                 f"for 3D geometries.")
+
+            if "element_size" not in layer:
+                layer["element_size"] = -1
+                print(f"Warning: Layer {key} does not contain the key 'element_size'. The element size will be "
+                      "determined by gmsh.")
+
+    def generate_geometry(self, layer_settings: Dict[str, Any], model_name: str) -> None:
+        """
+        Generates the geometry. Gmsh is initialized if it is not already initialized. Then for each layer in the
+        layer_settings dictionary, the geometry is created. The layer_settings dictionary must contain the following
+        keys:
+            - name: The name of the layer.\
+
+        Per item in the layer_settings dictionary, the following keys are required:
+            - coordinates: A list of point coordinates which make up the layer.\
+            - ndim: The number of dimensions of the layer geometry.\
+            - name: The name of the layer.\
+            - in 3D, extrusion_length: The extrusion length in x, y and z direction.\
+            - Optional[element_size]: The element size. If not provided, the element size is determined by gmsh.\
+
+        Args:
+            - layer_settings (Dict[str, Any]): A dictionary containing the layer information.
+            - model_name (str): Name of gmsh model and mesh output file.
+        """
+
+        # validate the layer_dictionary
+        self.validate_layer_settings(layer_settings)
 
         if not gmsh.isInitialized():
             gmsh.initialize()
-            gmsh.model.add(mesh_name)
+            gmsh.model.add(model_name)
 
-        for layer in range(len(point_coordinates)):
-            if dims == 3:
-                self.make_geometry_3d(point_coordinates[layer], extrusion_length, name_label[layer], mesh_size)
+        for layer_name, layer in layer_settings.items():
+            ndim = layer["ndim"]
 
-            elif dims == 2:
-                self.make_geometry_2d(point_coordinates[layer], name_label[layer], mesh_size)
+            if ndim == 0:
+                self.make_geometry_0d(layer["coordinates"], layer_name, layer["element_size"])
+            elif ndim == 1:
+                self.make_geometry_1d(layer["coordinates"], layer_name, layer["element_size"])
+            elif ndim == 2:
+                self.make_geometry_2d(layer["coordinates"], layer_name, layer["element_size"])
+            elif ndim == 3:
+                self.make_geometry_3d(layer["coordinates"], layer["extrusion_length"], layer_name,
+                                      layer["element_size"])
 
-        self.remove_duplicates()
+        self.remove_duplicate_entities_from_geometry()
         self.synchronize_gmsh()
 
         self.extract_geo_data()
