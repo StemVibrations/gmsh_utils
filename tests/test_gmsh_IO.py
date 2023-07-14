@@ -180,106 +180,6 @@ class TestGmshIO:
             assert value["element_ids"].size > 0
             assert value["connectivities"].size > 0
 
-    def test_generate_different_mesh_sizes_2D(self):
-        """
-        Checks whether mesh data generated for 2D geometries is not empty.
-
-        """
-        # if "True", mesh size is defined by the user in the dictionary below; if "False" default_mesh_size is used
-        arbitrary_mesh_size: bool = True
-        # if "arbitrary_mesh_size = False", define a mesh size, if set to -1 mesh size is logically chosen by Gmsh
-        # itself based on the geometry
-        default_mesh_size: float = -1
-        # define the points of the surface as a list of tuples
-        input_points_list = [[(0, 0, 0), (3, 0, 0), (5, 1.5, 0), (2, 1, 0), (0, 1, 0)],
-                             [(3, 0, 0), (5, 0, 0), (5, 1.5, 0)],
-                             [(0, 1, 0), (0, 3, 0), (2, 3, 0), (2, 1, 0)]]
-        # define the name labels for the surfaces
-        name_label_list = ["First left Soil Layer", "Second right Soil Layer", "Third top Soil Layer"]
-        # define the mesh size for each surface
-        mesh_size_list = [10, 0.1, 0.2]
-        # define geometry dimension; input "3" for 3D to extrude the 2D surface, input "2" for 2D
-        dims = 2
-        # if 3D, input depth of geometry to be extruded from 2D surface
-        extrusion_length = [0, 0, 0]
-        # if "True", saves mesh data to separate mdpa files; otherwise "False"
-        save_file = False
-        # if "True", opens gmsh interface; otherwise "False"
-        open_gmsh_gui = False
-        # set a name for mesh output file
-        mesh_output_name = "test_2D"
-        # set output directory
-        mesh_output_dir = "."
-
-        gmsh_io = GmshIO()
-
-        gmsh_io.generate_geometry(input_points_list, extrusion_length, dims, mesh_output_name,
-                                  name_label_list, default_mesh_size)
-        gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, mesh_size_list,
-                                      save_file, open_gmsh_gui, arbitrary_mesh_size)
-
-        mesh_data = gmsh_io.mesh_data
-
-        assert mesh_data["nodes"]["coordinates"].size > 0  # check if node_coords is not empty
-        assert mesh_data["nodes"]["ids"].size > 0  # check if node_tags is not empty
-        assert list(mesh_data["elements"].keys()) == ["LINE_2N", "TRIANGLE_3N",
-                                                      "POINT_1N"]  # check if correct elements are present
-
-        # check each element type contains ids and nodes
-        for value in mesh_data["elements"].values():
-            assert value["element_ids"].size > 0
-            assert value["connectivities"].size > 0
-
-    def test_generate_different_mesh_sizes_3D(self):
-        """
-        Checks whether mesh data generated for 3D geometries is not empty.
-
-        """
-        # if "True", mesh size is defined by the user in the dictionary below; if "False" default_mesh_size is used
-        arbitrary_mesh_size: bool = True
-        # if "arbitrary_mesh_size = False", define a mesh size, if set to -1 mesh size is logically chosen by Gmsh
-        # itself based on the geometry
-        default_mesh_size: float = -1
-        # define the points of the surface as a list of tuples
-        input_points_list = [[(0, 0, 0), (3, 0, 0), (5, 1.5, 0), (2, 1, 0), (0, 1, 0)],
-                             [(3, 0, 0), (5, 0, 0), (5, 1.5, 0)],
-                             [(0, 1, 0), (0, 3, 0), (2, 3, 0), (2, 1, 0)]]
-        # define the name labels for the surfaces
-        name_label_list = ["First left Soil Layer", "Second right Soil Layer", "Third top Soil Layer"]
-        # define the mesh size for each surface
-        mesh_size_list = [10, 0.1, 0.2]
-        # define geometry dimension; input "3" for 3D to extrude the 2D surface, input "2" for 2D
-        dims = 3
-        # if 3D, input depth of geometry to be extruded from 2D surface
-        extrusion_length = [0, 0, 3]
-        # if "True", saves mesh data to separate mdpa files; otherwise "False"
-        save_file = False
-        # if "True", opens gmsh interface; otherwise "False"
-        open_gmsh_gui = False
-        # set a name for mesh output file
-        mesh_output_name = "test_3D"
-        # set output directory
-        mesh_output_dir = "."
-
-        gmsh_io = GmshIO()
-
-        gmsh_io.generate_geometry(input_points_list, extrusion_length, dims, mesh_output_name,
-                                  name_label_list, default_mesh_size)
-        gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, mesh_size_list,
-                                      save_file, open_gmsh_gui, arbitrary_mesh_size)
-
-        mesh_data = gmsh_io.mesh_data
-
-        assert mesh_data["nodes"]["coordinates"].size > 0  # check if node_coords is not empty
-        assert mesh_data["nodes"]["ids"].size > 0  # check if node_tags is not empty
-        assert list(mesh_data["elements"].keys()) == ["LINE_2N", "TRIANGLE_3N", "TETRAHEDRON_4N",
-                                                      "POINT_1N"]  # check if correct elements are present
-
-        # check each element type contains ids and nodes
-        for value in mesh_data["elements"].values():
-            assert value["element_ids"].size > 0
-            assert value["connectivities"].size > 0
-
     def test_read_gmsh_geo_2D(self):
         """
         Checks whether a gmsh .geo file is read correctly. For a 2d geometry
@@ -511,8 +411,8 @@ class TestGmshIO:
         """
         Checks whether geometry data in 2D geometry has physical groups
     """
-        # define the default mesh size
-        default_mesh_size = -1
+        # define the global mesh size
+        global_mesh_size = -1
         # define the points of the surface as a list of tuples
         input_points_list = [[(0, 0, 0), (3, 0, 0), (3, 1, 0), (0, 1, 0)],
                              [(0, 1, 0), (3, 1, 0), (3, 2, 0), (0, 2, 0)],
@@ -532,7 +432,7 @@ class TestGmshIO:
         gmsh_io = GmshIO()
 
         gmsh_io.generate_geometry(input_points_list, extrusion_length, dims, mesh_output_name,
-                                  name_label_list, default_mesh_size)
+                                  name_label_list, global_mesh_size)
 
         geo_data = gmsh_io.geo_data
 
@@ -549,8 +449,8 @@ class TestGmshIO:
 
         """
 
-        # define the default mesh size
-        default_mesh_size = 1
+        # define the global mesh size
+        global_mesh_size = 1
         # define the points of the surface as a list of tuples
         input_points_list = [[(0, 0, 0), (3, 0, 0), (3, 1, 0), (0, 1, 0)],
                              [(0, 1, 0), (3, 1, 0), (3, 2, 0), (0, 2, 0)],
@@ -570,7 +470,7 @@ class TestGmshIO:
         gmsh_io = GmshIO()
 
         gmsh_io.generate_geometry(input_points_list, extrusion_length, dims, mesh_output_name,
-                                  name_label_list, default_mesh_size)
+                                  name_label_list, global_mesh_size)
 
         geo_data = gmsh_io.geo_data
 
@@ -580,3 +480,134 @@ class TestGmshIO:
 
         # check if expected and actual geo data are equal
         TestUtils.assert_dictionary_almost_equal(expected_physical_groups, geo_data["physical_groups"])
+
+    def test_set_mesh_size_of_group_1D(self):
+
+        geo_data = {'points': {1: [0., 0., 0.], 2: [5., 0., 0.] },
+                    'lines': {1: [1, 2]},
+                    'surfaces': {},
+                    'volumes': {},
+                    'physical_groups': {'Line': {'ndim': 1, 'id': 1, 'geometry_ids': [1]}}}
+
+        gmsh_io = GmshIO()
+        gmsh_io._GmshIO__geo_data = geo_data
+        gmsh_io.generate_geo_from_geo_data()
+
+        gmsh_io.set_mesh_size_of_group("Line", 0.1)
+        gmsh_io.generate_mesh(1,5)
+
+        mesh_data = gmsh_io.mesh_data
+
+    def test_set_mesh_size_of_group_2D(self):
+
+        geo_data = {'points': {1: [0., 0., 0.], 2: [5., 0., 0.], 3: [5., 5., 0.], 4: [0., 5., 0.]},
+                    'lines': {1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [4, 1]},
+                    'surfaces': {1: [1, 2, 3, 4]},
+                    'volumes': {},
+                    'physical_groups': {'Surface': {'ndim': 1, 'id': 1, 'geometry_ids': [1]}}}
+
+        gmsh_io = GmshIO()
+        gmsh_io._GmshIO__geo_data = geo_data
+        gmsh_io.generate_geo_from_geo_data()
+
+        gmsh_io.set_mesh_size_of_group("Surface", 0.1)
+        gmsh_io.generate_mesh(1,5)
+
+        mesh_data = gmsh_io.mesh_data
+
+def test_generate_different_mesh_sizes_2D(self):
+        """
+        Checks whether the mesh data generated can be dumped into a JSON file and
+        whether the dumped data is the same as the original mesh data.
+        """
+        # define a global mesh size, if set to -1 mesh size is logically chosen by Gmsh itself based on the geometry
+        global_mesh_size: float = -1
+        # define the points of the surface as a list of tuples
+        input_points_list = [[(0, 0, 0), (3, 0, 0), (3, 1, 0), (0, 1, 0)],
+                             [(3, 0, 0), (5, 0, 0), (5, 1, 0), (3, 1, 0)]]
+        # define the name labels for the surfaces
+        name_label_list = ["Soil1", "Soil2"]
+        # define the mesh size for each surface
+        mesh_size_list = [10, 0.1]
+        # define geometry dimension; input "3" for 3D to extrude the 2D surface, input "2" for 2D
+        dims = 2
+        # if 3D, input depth of geometry to be extruded from 2D surface
+        extrusion_length = [0, 0, 0]
+        # if "True", saves mesh data to separate mdpa files; otherwise "False"
+        save_file = False
+        # if "True", opens gmsh interface; otherwise "False"
+        open_gmsh_gui = False
+        # set a name for mesh output file
+        mesh_output_name = "test_mesh_2D"
+        # set output directory
+        mesh_output_dir = "."
+
+        gmsh_io = GmshIO()
+
+        gmsh_io.generate_geometry(input_points_list, extrusion_length, dims, mesh_output_name,
+                                  name_label_list, global_mesh_size)
+        gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, mesh_size_list,
+                                      save_file, open_gmsh_gui)
+
+        mesh_data = gmsh_io.mesh_data
+
+        # Write mesh data to a JSON file in the tests folder
+        # test_dir = os.path.dirname(os.path.abspath(__file__))
+        json_file_path = os.path.join(r"tests/test_data, "mesh_data_2D.json")
+
+        with open(json_file_path, "w") as json_file:
+            json.dump(mesh_data, json_file)
+
+        with open(json_file_path, "r") as json_file:
+            saved_mesh_data = json.load(json_file)
+
+        # Assert that the dumped data is the same as the original mesh data
+        TestUtils.assert_dictionary_almost_equal(gmsh_io.mesh_data, dumped_data)
+
+    def test_generate_different_mesh_sizes_3D(self):
+        """
+        Checks whether mesh data generated for 3D geometries is not empty.
+
+        """
+        # if "arbitrary_mesh_size = False", define a mesh size, if set to -1 mesh size is logically chosen by Gmsh
+        # itself based on the geometry
+        global_mesh_size: float = 5
+        # define the points of the surface as a list of tuples
+        input_points_list = [[(0, 0, 0), (2, 0, 0), (2, 1, 0), (0, 1, 0)],
+                             [(2, 0, 0), (4, 0, 0), (4, 1, 0), (2, 1, 0)]]
+        # define the name labels for the surfaces
+        name_label_list = ["First left Soil Layer", "Second right Soil Layer"]
+        # define the mesh size for each surface
+        mesh_size_list = [global_mesh_size, 0.8]
+        # define geometry dimension; input "3" for 3D to extrude the 2D surface, input "2" for 2D
+        dims = 2
+        # if 3D, input depth of geometry to be extruded from 2D surface
+        extrusion_length = [0, 0, 3]
+        # if "True", saves mesh data to separate mdpa files; otherwise "False"
+        save_file = True
+        # if "True", opens gmsh interface; otherwise "False"
+        open_gmsh_gui = True
+        # set a name for mesh output file
+        mesh_output_name = "test_mesh_3D"
+        # set output directory
+        mesh_output_dir = "."
+
+        gmsh_io = GmshIO()
+
+        gmsh_io.generate_geometry(input_points_list, extrusion_length, dims, mesh_output_name,
+                                  name_label_list, default_mesh_size)
+        gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, mesh_size_list,
+                                      save_file, open_gmsh_gui)
+
+        mesh_data = gmsh_io.mesh_data
+
+        assert mesh_data["nodes"]["coordinates"].size > 0  # check if node_coords is not empty
+        assert mesh_data["nodes"]["ids"].size > 0  # check if node_tags is not empty
+        assert list(mesh_data["elements"].keys()) == ["LINE_2N", "TRIANGLE_3N", "TETRAHEDRON_4N",
+                                                      "POINT_1N"]  # check if correct elements are present
+
+        # check each element type contains ids and nodes
+        for value in mesh_data["elements"].values():
+            assert value["element_ids"].size > 0
+            assert value["connectivities"].size > 0
+
