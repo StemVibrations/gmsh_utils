@@ -270,7 +270,7 @@ class GmshIO:
         Args:
             point_coordinates (Union[List[List[float]], npt.NDArray[np.float64]]): A list of point coordinates.
             name_label (str): A name label provided for the volume by user input.
-            mesh_size (float): The default mesh size provided by user.
+            mesh_size (float): The mesh size provided by user.
 
         Returns:
             int: Surface id
@@ -293,7 +293,7 @@ class GmshIO:
             point_coordinates (Union[List[float], npt.NDArray[float]]): Geometry points coordinates.
             extrusion_length (Union[List[float], npt.NDArray[float]]): The extrusion length in x, y and z direction.
             name_label (str): A name label provided for the volume by user input.
-            mesh_size (float): The default mesh size provided by user.
+            mesh_size (float): The mesh size provided by user.
 
         Returns:
             None
@@ -331,9 +331,34 @@ class GmshIO:
 
         return num_nodes
 
-    def generate_geometry(self, point_coordinates: Union[List[List[List[float]]], npt.NDArray[np.float64]],
+    def input_dict_to_list(self, input_dict: dict):
+        """
+        Converts the input dictionary to a list of coordinates and name labels
+
+        Args:
+            input_dict (dict): A dictionary of coordinates and name labels
+
+        Returns:
+            point_coordinates (Union[List[List[List[float]]], npt.NDArray[np.float64]]): User input points of the
+            surface as a list or ndarray.
+            name_label (List[str]): A list of name labels provided by user input.
+        """
+
+        point_coordinates = []
+        name_label = []
+        for value in input_dict.values():
+            point_coordinates.append(value["coordinates"]) # Extract the coordinates
+        # Directly access the dictionary keys
+        keys = input_dict.keys()
+        # Print the keys
+        for key in keys:
+            name_label.append(key)  # Extract the name label
+
+        return point_coordinates, name_label
+
+    def generate_geometry(self, point_coordinates, name_label,
                           extrusion_length: Union[List[float], npt.NDArray[np.float64]], dims: int,
-                          mesh_name: str, name_label: List[str], mesh_size=-1) -> None:
+                          mesh_name: str, mesh_size=-1) -> None:
         """
         Generates the geometry
 
@@ -368,9 +393,35 @@ class GmshIO:
         gmsh.model.geo.synchronize()
         self.extract_geo_data()
 
+    #
+    def set_mesh_size_of_group(self, group_name: str, mesh_size=-1):
+        """
+        Sets the customized mesh size of a specific group
+
+        Args:
+             group_name: The name of the group provided by user input
+             mesh_size (float): The customized mesh size provided by user for a specific group.
+
+        Returns:
+            None
+        """
+
+        if mesh_size <= 0:
+            raise ValueError(f"The mesh size of {group_name} is smaller than or equal to zero. "
+                             f"Please provide a mesh size larger than zero.")
+        group = self.geo_data["physical_groups"][group_name]
+        geometry_ids = group["geometry_ids"]
+        for geometry_id in geometry_ids:
+            ndim = group["ndim"]
+
+            if ndim == 0:
+                gmsh.model.mesh.setSize([(ndim, geometry_id)], mesh_size)
+            else:
+                entities_list = gmsh.model.getBoundary([(ndim, geometry_id)], recursive=True)
+                gmsh.model.mesh.setSize(entities_list, mesh_size)
+
     def generate_extract_mesh(self, dims: int, mesh_name: str, mesh_output_dir: str,
-                              mesh_size_list: List[float], save_file: bool = False,
-                              open_gmsh_gui: bool = False) -> None:
+                              save_file: bool = False, open_gmsh_gui: bool = False) -> None:
         """
         Generates and extracts mesh for the geometry
 
@@ -378,38 +429,12 @@ class GmshIO:
             dims (int): The dimension of geometry (2=2D or 3=3D).
             mesh_name (str): Name of gmsh model and mesh output file.
             mesh_output_dir (str): Output directory of mesh file.
-            mesh_size_list (List[float]): The mesh size provided by user.
             save_file (bool, optional): If True, saves mesh data to gmsh msh file. (default is False)
             open_gmsh_gui (bool, optional): User indicates whether to open gmsh interface (default is False)
-            arbitrary_mesh_size (bool, optional): If True, mesh size is set by user per each layer
 
         Returns:
             None
         """
-        self.extract_geo_data()
-
-        new_geo_data = self.geo_data
-
-        number_of_physical_groups = (len(new_geo_data['physical_groups']))
-
-        surface_tag_list = []
-        for key, values in new_geo_data['surfaces'].items():
-            surface_tag_list.append(key)
-
-        volume_tag_list = []
-        for key, values in new_geo_data['volumes'].items():
-            volume_tag_list.append(key)
-
-        for layer in range(number_of_physical_groups):
-            if mesh_size_list[layer] < 0:continue
-            else:
-                if dims == 2:
-                    entities_list = gmsh.model.getBoundary([(dims, surface_tag_list[layer])], recursive=True)
-                    gmsh.model.mesh.setSize(entities_list, mesh_size_list[layer])
-                elif dims == 3:
-                    entities_list = gmsh.model.getBoundary([(dims, volume_tag_list[layer])], recursive=True)
-                    gmsh.model.mesh.setSize(entities_list, mesh_size_list[layer])
-
         gmsh.model.mesh.generate(dims)
         self.extract_mesh_data(gmsh.model.mesh)
 
@@ -424,44 +449,6 @@ class GmshIO:
             gmsh.fltk.run()
 
         gmsh.finalize()
-
-    # def set_mesh_size(self, dims: int, mesh_size_list: List[float]) -> None:
-    #     """
-    #     Sets the mesh size by surface tags for 2D and volume tags for 3D
-    #
-    #     Args:
-    #         dims (int): The dimension of geometry (2=2D or 3=3D).
-    #         mesh_size_list (List[float]): The mesh size provided by user.
-    #
-    #     Returns:
-    #         None
-    #
-    #     """
-    #
-    #     self.extract_geo_data()
-    #
-    #     new_geo_data = self.geo_data
-    #
-    #     number_of_physical_groups = (len(new_geo_data['physical_groups']))
-    #
-    #     surface_tag_list = []
-    #     for key, values in new_geo_data['surfaces'].items():
-    #         surface_tag_list.append(key)
-    #
-    #     volume_tag_list = []
-    #     for key, values in new_geo_data['volumes'].items():
-    #         volume_tag_list.append(key)
-    #
-    #     for layer in range(number_of_physical_groups):
-    #         if dims == 2:
-    #             entities_list = gmsh.model.getBoundary([(dims, surface_tag_list[layer])], recursive=True)
-    #         elif dims == 3:
-    #             entities_list = gmsh.model.getBoundary([(dims, volume_tag_list[layer])], recursive=True)
-    #
-    #         # if layer ==0:
-    #         #     gmsh.model.mesh.setSize(entities_list, mesh_size_list[layer])
-    #
-    #         gmsh.model.mesh.setSize(entities_list, mesh_size_list[layer])
 
     def extract_node_data(self, node_tags: npt.NDArray[np.int_],
                           node_coordinates: npt.NDArray[np.float64]) \
@@ -741,6 +728,8 @@ class GmshIO:
         """
 
         # initialize gmsh
+        if gmsh.isInitialized():
+            gmsh.finalize()
         gmsh.initialize()
 
         # add points to the geometry
@@ -787,8 +776,8 @@ class GmshIO:
         # sets gmsh geometry from a geometry data dictionary
         self.generate_geo_from_geo_data()
 
-        if element_size > 0.0:
-            gmsh.model.mesh.setSize(gmsh.model.getEntities(), element_size)
+        #  if element_size > 0.0:
+        #     gmsh.model.mesh.setSize(gmsh.model.getEntities(), element_size)
 
         # set mesh order
         gmsh.model.mesh.setOrder(order)
