@@ -347,7 +347,7 @@ class GmshIO:
         point_coordinates = []
         name_label = []
         for value in input_dict.values():
-            point_coordinates.append(value["coordinates"]) # Extract the coordinates
+            point_coordinates.append(value["coordinates"])  # Extract the coordinates
         # Directly access the dictionary keys
         keys = input_dict.keys()
         # Print the keys
@@ -356,7 +356,7 @@ class GmshIO:
 
         return point_coordinates, name_label
 
-    def generate_geometry(self, point_coordinates, name_label,
+    def generate_geometry(self, point_coordinates, name_label: List[str],
                           extrusion_length: Union[List[float], npt.NDArray[np.float64]], dims: int,
                           mesh_name: str, mesh_size=-1) -> None:
         """
@@ -375,8 +375,10 @@ class GmshIO:
             None
         """
 
-        gmsh.initialize()
-        gmsh.model.add(mesh_name)
+        if not gmsh.isInitialized():
+            gmsh.initialize()
+            gmsh.model.add(mesh_name)
+
         for layer in range(len(point_coordinates)):
             if dims == 3:
                 self.make_geometry_3d(point_coordinates[layer], extrusion_length, name_label[layer], mesh_size)
@@ -385,16 +387,12 @@ class GmshIO:
                 self.make_geometry_2d(point_coordinates[layer], name_label[layer], mesh_size)
 
         self.remove_duplicates()
-        # synchronize the geometry for generating the mesh
-        gmsh.model.occ.synchronize()
+        self.synchronize_gmsh()
 
-        # synchronize the geo geometry such that physical groups are added, important is that this is done after
-        # synchronizing the occ geometry :-D
-        gmsh.model.geo.synchronize()
         self.extract_geo_data()
 
     #
-    def set_mesh_size_of_group(self, group_name: str, mesh_size=-1):
+    def set_mesh_size_of_group(self, group_name: str, mesh_size=-1) -> None:
         """
         Sets the customized mesh size of a specific group
 
@@ -413,7 +411,6 @@ class GmshIO:
         geometry_ids = group["geometry_ids"]
         for geometry_id in geometry_ids:
             ndim = group["ndim"]
-
             if ndim == 0:
                 gmsh.model.mesh.setSize([(ndim, geometry_id)], mesh_size)
             else:
@@ -448,7 +445,7 @@ class GmshIO:
         if open_gmsh_gui:
             gmsh.fltk.run()
 
-        gmsh.finalize()
+        self.finalize_gmsh()
 
     def extract_node_data(self, node_tags: npt.NDArray[np.int_],
                           node_coordinates: npt.NDArray[np.float64]) \
@@ -557,12 +554,13 @@ class GmshIO:
 
         """
 
-        gmsh.initialize()
+        self.reset_gmsh_instance()
+
         gmsh.open(filename)
 
         self.extract_mesh_data(gmsh.model.mesh)
 
-        gmsh.finalize()
+        self.finalize_gmsh()
 
     def get_nodes_in_group(self, group_name: str) -> Dict[str, Union[npt.NDArray[np.int_], npt.NDArray[np.float64]]]:
         """
@@ -668,7 +666,7 @@ class GmshIO:
 
             # get point data
             if entity_ndim == 0:
-                geo_data["points"][entity_id] = gmsh.model.get_value(entity_ndim, entity_id, [])
+                geo_data["points"][entity_id] = gmsh.model.get_value(entity_ndim, entity_id, []).tolist()
             # get line data
             if entity_ndim == 1:
                 geo_data["lines"][entity_id] = self.get_boundary_data(entity_ndim, entity_id)
@@ -693,7 +691,7 @@ class GmshIO:
             # add group to dictionary
             geo_data["physical_groups"][name] = {"ndim": group[0],
                                                  "id": group[1],
-                                                 "geometry_ids": list(entities)}
+                                                 "geometry_ids": entities.tolist()}
 
         self.__geo_data = geo_data
 
@@ -710,12 +708,13 @@ class GmshIO:
         """
 
         if pathlib.Path(filename).exists():
-            gmsh.initialize()
+            self.reset_gmsh_instance()
+
             gmsh.open(filename)
 
             self.extract_geo_data()
 
-            gmsh.finalize()
+            self.finalize_gmsh()
         else:
             raise FileNotFoundError(f"File {filename} does not exist!")
 
@@ -727,10 +726,8 @@ class GmshIO:
 
         """
 
-        # initialize gmsh
-        if gmsh.isInitialized():
-            gmsh.finalize()
-        gmsh.initialize()
+        # reset gmsh
+        self.reset_gmsh_instance()
 
         # add points to the geometry
         for k, v in self.__geo_data["points"].items():
@@ -738,7 +735,6 @@ class GmshIO:
 
         # add lines to the geometry
         for k, v in self.__geo_data["lines"].items():
-            print(self.__geo_data["lines"].items())
             gmsh.model.occ.addLine(v[0], v[1], tag=k)
 
         # add surfaces to the geometry
@@ -755,12 +751,7 @@ class GmshIO:
         for k, v in self.__geo_data["physical_groups"].items():
             gmsh.model.addPhysicalGroup(v["ndim"], v["geometry_ids"], tag=v["id"], name=k)
 
-        # synchronize the geometry for generating the mesh
-        gmsh.model.occ.synchronize()
-
-        # synchronize the geo geometry such that physical groups are added, important is that this is done after
-        # synchronizing the occ geometry :-D
-        gmsh.model.geo.synchronize()
+        self.synchronize_gmsh()
 
     def generate_mesh(self, ndim: int, element_size: float = 0.0, order: int = 1):
         """
@@ -789,4 +780,58 @@ class GmshIO:
         self.extract_mesh_data(gmsh.model.mesh)
 
         # finalize gmsh
-        gmsh.finalize()
+        self.finalize_gmsh()
+
+    @staticmethod
+    def finalize_gmsh():
+        """
+        Finalizes gmsh.
+
+        """
+
+        if gmsh.isInitialized():
+            gmsh.finalize()
+
+    @staticmethod
+    def synchronize_gmsh():
+        """
+        Synchronizes the gmsh geometry.
+
+        """
+        if gmsh.isInitialized():
+            # synchronize the geometry for generating the mesh
+            gmsh.model.occ.synchronize()
+
+            # synchronize the geo geometry such that physical groups are added, important is that this is done after
+            # synchronizing the occ geometry :-D
+            gmsh.model.geo.synchronize()
+
+    @staticmethod
+    def reset_gmsh_instance():
+        """
+        Resets gmsh object. Finalizes gmsh if the gmsh object is initialized and initializes gmsh.
+
+        """
+        if gmsh.isInitialized():
+            gmsh.finalize()
+        gmsh.initialize()
+
+    def clear_geo_data(self):
+        """
+        Clears the geometry data.
+
+        """
+
+        self.__geo_data = {"points": {},
+                           "lines": {},
+                           "surfaces": {},
+                           "volumes": {},
+                           "physical_groups": {}}
+
+    def clear_mesh_data(self):
+        """
+        Clears the mesh data.
+
+        """
+
+        self.__mesh_data = {}

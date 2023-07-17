@@ -16,7 +16,7 @@ input_dict = {'soil_1': {"mesh_size": global_mesh_size,
 # define geometry dimension; input "3" for 3D to extrude the 2D surface, input "2" for 2D
 dims = 3
 # if 3D, input depth of geometry to be extruded from 2D surface
-extrusion_length = [0, 0, 3]
+extrusion_length = [0, 0, 2]
 # if "True", saves mesh data to separate mdpa files; otherwise "False"
 save_file = True
 # if "True", opens gmsh interface; otherwise "False"
