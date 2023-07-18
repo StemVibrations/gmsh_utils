@@ -588,12 +588,22 @@ class GmshIO:
             entities = gmsh.model.getEntitiesForPhysicalGroup(group[0], group[1])
 
             element_ids = []
+
+            element_type = None
             for entity in entities:
+
                 element_ids.extend(gmsh.model.mesh.getElements(dim=group[0], tag=entity)[1][0].tolist())
+
+                # check group contains only one element type
+                if element_type is None:
+                    element_type = gmsh.model.mesh.getElements(dim=group[0], tag=entity)[0][0]
+                elif element_type != gmsh.model.mesh.getElements(dim=group[0], tag=entity)[0][0]:
+                    raise ValueError("Physical groups with multiple element types are not supported")
 
             # store group information in dictionary
             mesh_data["physical_groups"][name] = {"node_ids": node_ids,
-                                                  "element_ids": element_ids}
+                                                  "element_ids": element_ids,
+                                                  "element_type": ElementType(element_type).name}
 
         self.__mesh_data = mesh_data
 
@@ -605,6 +615,10 @@ class GmshIO:
             filename (str): name of the Gmsh .msh file
 
         """
+
+        # check if file exists
+        if not pathlib.Path(filename).exists():
+            raise FileNotFoundError(f"File {filename} not found")
 
         self.reset_gmsh_instance()
 

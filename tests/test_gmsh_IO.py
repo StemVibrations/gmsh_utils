@@ -700,7 +700,8 @@ class TestGmshIO:
             'elements': {'LINE_2N': {'connectivities': [[1, 3], [3, 2]], 'element_ids': [1, 2]},
                          'POINT_1N': {'connectivities': [[1], [2]], 'element_ids': [3, 4]}},
             'nodes': {'coordinates': [[0., 0., 0.], [1., 0., 0.], [0.5, 0., 0.]],
-                      'ids': [1, 2, 3]}}
+                      'ids': [1, 2, 3]},
+            'physical_groups': {'test': {'element_ids': [1, 2], "node_ids": [1, 2, 3], "element_type": "LINE_2N"}}}
 
         # check if mesh data is filled after generating mesh
         TestUtils.assert_dictionary_almost_equal(gmsh_io.mesh_data, expected_filled_mesh_data)
@@ -841,3 +842,19 @@ class TestGmshIO:
                                     'physical_groups': {'volume_group': {'geometry_ids': [1], 'id': 1, 'ndim': 3}}}
 
         TestUtils.assert_dictionary_almost_equal(gmsh_io.geo_data, expected_filled_geo_data)
+
+    def test_mesh_file_not_found(self):
+        """
+        Checks whether an error is raised if the mesh file is not found.
+
+        """
+        gmsh_io = GmshIO()
+        pytest.raises(FileNotFoundError, gmsh_io.read_gmsh_msh, "not_existing_file.msh")
+
+    def test_geo_file_not_found(self):
+        """
+        Checks whether an error is raised if the geo file is not found.
+
+        """
+        gmsh_io = GmshIO()
+        pytest.raises(FileNotFoundError, gmsh_io.read_gmsh_geo, "not_existing_file.geo")
