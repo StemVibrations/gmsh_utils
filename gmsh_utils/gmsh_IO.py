@@ -869,17 +869,3 @@ class GmshIO:
         """
 
         self.__mesh_data = {}
-
-if __name__ == '__main__':
-    gmsh.initialize()
-
-    gmsh.model.add("test")
-
-    coordinates = np.array([[0, 0, 0],[1, 0, 0], [1, 1, 0], [0, 1, 0]])
-
-    gmsh_io = GmshIO()
-    gmsh_io.make_points(coordinates)
-
-
-
-
