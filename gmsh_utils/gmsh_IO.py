@@ -610,7 +610,7 @@ class GmshIO:
 
         gmsh.open(filename)
 
-        self.extract_mesh_data(gmsh.model.mesh)
+        self.extract_mesh_data()
 
         self.finalize_gmsh()
 
