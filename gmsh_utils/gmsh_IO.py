@@ -594,11 +594,9 @@ class GmshIO:
 
                 element_ids.extend(gmsh.model.mesh.getElements(dim=group[0], tag=entity)[1][0].tolist())
 
-                # check group contains only one element type
-                if element_type is None:
-                    element_type = gmsh.model.mesh.getElements(dim=group[0], tag=entity)[0][0]
-                elif element_type != gmsh.model.mesh.getElements(dim=group[0], tag=entity)[0][0]:
-                    raise ValueError("Physical groups with multiple element types are not supported")
+                # gets element type of elements in physical group, note that gmsh makes sure that all elements in a
+                # physical group are of the same type
+                element_type = gmsh.model.mesh.getElements(dim=group[0], tag=entity)[0][0]
 
             # store group information in dictionary
             mesh_data["physical_groups"][name] = {"node_ids": node_ids,
