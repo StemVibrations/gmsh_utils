@@ -555,7 +555,8 @@ class GmshIO:
 
     def extract_mesh_data(self):
         """
-        Gets gmsh mesh data and stores it in a dictionary
+        Gets gmsh mesh data and stores it in a dictionary. The dictionary contains nodal data, elemental data and
+        physical group data. Each physical group contains the node ids and element ids, which are part of the group
 
         """
 
@@ -572,7 +573,6 @@ class GmshIO:
         elem_types, elem_tags, elem_node_tags = gmsh.model.mesh.getElements()
         mesh_data["elements"] = self.extract_elements_data(elem_types, elem_tags, elem_node_tags)
 
-
         # get all physical group information
         physical_groups = gmsh.model.getPhysicalGroups()
 
@@ -581,6 +581,7 @@ class GmshIO:
             # get name of the group
             name = gmsh.model.getPhysicalName(group[0], group[1])
 
+            # get the node ids belonging to the group
             node_ids = gmsh.model.mesh.get_nodes_for_physical_group(group[0], group[1])[0]
 
             # gets elements per group
@@ -593,7 +594,6 @@ class GmshIO:
             # store group information in dictionary
             mesh_data["physical_groups"][name] = {"node_ids": node_ids,
                                                   "element_ids": element_ids}
-
 
         self.__mesh_data = mesh_data
 
