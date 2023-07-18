@@ -419,10 +419,47 @@ class TestGmshIO:
                                                         'connectivities': np.array([[1],
                                                                                     [2],
                                                                                     [3],
-                                                                                    [4]])}}}
+                                                                                    [4]])}},
+                              'physical_groups': {'group_1': {"node_ids": [1, 2, 3, 4, 5],
+                                                              "element_ids": [1, 2, 3, 4]}}}
 
         # check if the coordinates of the points are correct
         TestUtils.assert_dictionary_almost_equal(expected_mesh_data, mesh_data)
+
+    def test_extract_mesh_with_multiple_physical_groups(self):
+        """
+        Checks whether a mesh is generated correctly from a gmsh .geo file. A 2D column mesh is generated. Consisting of
+        2 blocks. Each block has its own physical group. The two blocks are also combined in a physical group. Also
+        lines and points are added to the physical groups.
+
+        """
+        geo_file = r"tests/test_data/column_2D_more_groups.geo"
+
+        gmsh_io = GmshIO()
+
+        # read geo file
+        gmsh_io.read_gmsh_geo(geo_file)
+
+        # generate mesh
+        gmsh_io.generate_mesh(2, 1)
+
+        # get mesh data
+        mesh_data = gmsh_io.mesh_data
+
+        # set expected mesh group data
+        expected_groups_in_mesh_data = {'group_1': {"node_ids": [1, 2, 3, 4, 7],
+                                                    "element_ids": [5, 6, 7, 8]},
+                                        'group_2': {"node_ids": [3, 4, 5, 6, 8],
+                                                    "element_ids": [9, 10, 11, 12]},
+                                        "combined_group": {"node_ids": [1, 2, 3, 4, 5, 6, 7, 8],
+                                                           "element_ids": [5, 6, 7, 8, 9, 10, 11, 12]},
+                                        "line_group": {"node_ids": [1, 2, 3, 6],
+                                                       "element_ids": [3, 4]},
+                                        "point_group": {"node_ids": [1, 2],
+                                                        "element_ids": [1, 2]}}
+
+        # check if the coordinates of the points are correct
+        TestUtils.assert_dictionary_almost_equal(expected_groups_in_mesh_data, mesh_data["physical_groups"])
 
     def test_physical_groups_in_geometry_data_2D(self):
         """
