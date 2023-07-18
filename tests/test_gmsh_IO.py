@@ -103,7 +103,7 @@ class TestGmshIO:
                       'Line Track': {"element_size": default_mesh_size,
                                      "coordinates": [(0.8, 4, 0), (1.2, 4, 0), (1.2, 4.1, 0), (0.8, 4.1, 0)],
                                      "ndim": dims}
-                              }
+                      }
 
         # if "True", saves mesh data to separate mdpa files; otherwise "False"
         save_file = False
@@ -116,7 +116,7 @@ class TestGmshIO:
 
         gmsh_io = GmshIO()
 
-        gmsh_io.generate_geometry(input_dict,mesh_output_name)
+        gmsh_io.generate_geometry(input_dict, mesh_output_name)
         gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, save_file, open_gmsh_gui)
 
         mesh_data = gmsh_io.mesh_data
@@ -169,7 +169,7 @@ class TestGmshIO:
                                      "coordinates": [(0.8, 4, 0), (1.2, 4, 0), (1.2, 4.1, 0), (0.8, 4.1, 0)],
                                      "ndim": dims,
                                      "extrusion_length": extrusion_length}
-                              }
+                      }
 
         # if "True", saves mesh data to separate mdpa files; otherwise "False"
         save_file = False
@@ -182,7 +182,7 @@ class TestGmshIO:
 
         gmsh_io = GmshIO()
 
-        gmsh_io.generate_geometry(input_dict,mesh_output_name)
+        gmsh_io.generate_geometry(input_dict, mesh_output_name)
         gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, save_file, open_gmsh_gui)
 
         mesh_data = gmsh_io.mesh_data
@@ -337,7 +337,6 @@ class TestGmshIO:
         # check if expected and actual geo data are equal
         TestUtils.assert_dictionary_almost_equal(geo_data, new_geo_data)
 
-
     def test_generate_geo_from_geo_data_with_shared_group(self, expected_geo_data_3D_with_shared_group):
         """
         Checks if the gmsh geometry is correctly generated from the geo data dictionary. In this test, two volumes
@@ -450,7 +449,6 @@ class TestGmshIO:
                                        "coordinates": [(1, 2, 0), (2, 2, 0), (2, 2.5, 0), (1, 2.5, 0)],
                                        "ndim": dims}}
 
-
         gmsh_io = GmshIO()
 
         gmsh_io.generate_geometry(input_dict, mesh_output_name)
@@ -479,7 +477,6 @@ class TestGmshIO:
         extrusion_length = [0, 0, 3]
         # set a name for mesh output file
         mesh_output_name = "test_3D"
-
 
         # set input dictionary
         input_dict = {'Soil Layer': {"element_size": default_mesh_size,
@@ -662,10 +659,11 @@ class TestGmshIO:
         # generate mesh
         gmsh_io.generate_mesh(1, element_size=0.5)
 
-        expected_filled_mesh_data = {'elements': {'LINE_2N': {'connectivities': [[1, 3], [3, 2]], 'element_ids': [1, 2]},
-                                                  'POINT_1N': {'connectivities': [[1], [2]], 'element_ids': [3, 4]}},
-                                     'nodes': {'coordinates': [[0., 0., 0.], [1., 0., 0.], [0.5, 0., 0.]],
-                                               'ids': [1, 2, 3]}}
+        expected_filled_mesh_data = {
+            'elements': {'LINE_2N': {'connectivities': [[1, 3], [3, 2]], 'element_ids': [1, 2]},
+                         'POINT_1N': {'connectivities': [[1], [2]], 'element_ids': [3, 4]}},
+            'nodes': {'coordinates': [[0., 0., 0.], [1., 0., 0.], [0.5, 0., 0.]],
+                      'ids': [1, 2, 3]}}
 
         # check if mesh data is filled after generating mesh
         TestUtils.assert_dictionary_almost_equal(gmsh_io.mesh_data, expected_filled_mesh_data)
@@ -681,4 +679,128 @@ class TestGmshIO:
         gmsh_io.generate_mesh(1, element_size=0.5)
         TestUtils.assert_dictionary_almost_equal(gmsh_io.mesh_data, expected_filled_mesh_data)
 
+    def test_make_geometry_0D(self):
+        """
+        Checks whether a 0D geometry is created correctly.
+        """
 
+        # define point coordinates
+        point_coordinates = [(0, 0, 0), (1, 0, 0), (2, 1, 0)]
+
+        # initialize gmsh
+        gmsh_io = GmshIO()
+        gmsh.initialize()
+
+        # create multiple points and add to physical group
+        gmsh_io.make_geometry_0d(point_coordinates, "point_group")
+
+        # synchronize gmsh
+        gmsh_io.synchronize_gmsh()
+        gmsh_io.extract_geo_data()
+
+        # check if geo data is filled after synchronizing
+        expected_filled_geo_data = {'points': {1: [0., 0., 0.],
+                                               2: [1., 0., 0.],
+                                               3: [2., 1., 0.]},
+                                    'lines': {},
+                                    'surfaces': {},
+                                    'volumes': {},
+                                    'physical_groups': {'point_group': {'geometry_ids': [1, 2, 3], 'id': 1, 'ndim': 0}}}
+
+        TestUtils.assert_dictionary_almost_equal(gmsh_io.geo_data, expected_filled_geo_data)
+
+    def test_make_geometry_1D(self):
+        """
+        Checks whether a 1D geometry is created correctly.
+        """
+
+        # define point coordinates
+        point_coordinates = [(0, 0, 0), (1, 0, 0), (2, 1, 0)]
+
+        # initialize gmsh
+        gmsh_io = GmshIO()
+        gmsh.initialize()
+
+        # create multiple points and add to physical group
+        gmsh_io.make_geometry_1d(point_coordinates, "line_group")
+
+        # synchronize gmsh
+        gmsh_io.synchronize_gmsh()
+        gmsh_io.extract_geo_data()
+
+        # check if geo data is filled after synchronizing
+        expected_filled_geo_data = {'points': {1: [0., 0., 0.],
+                                               2: [1., 0., 0.],
+                                               3: [2., 1., 0.]},
+                                    'lines': {1: [1, 2], 2: [2, 3]},
+                                    'surfaces': {},
+                                    'volumes': {},
+                                    'physical_groups': {'line_group': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 1}}}
+
+        TestUtils.assert_dictionary_almost_equal(gmsh_io.geo_data, expected_filled_geo_data)
+
+    def test_make_geometry_2D(self):
+        """
+        Checks whether a 2D geometry is created correctly.
+        """
+
+        # define point coordinates
+        point_coordinates = [(0, 0, 0), (1, 0, 0), (2, 1, 0)]
+
+        # initialize gmsh
+        gmsh_io = GmshIO()
+        gmsh.initialize()
+
+        # create multiple points and add to physical group
+        gmsh_io.make_geometry_2d(point_coordinates, "surface_group")
+
+        # synchronize gmsh
+        gmsh_io.synchronize_gmsh()
+        gmsh_io.extract_geo_data()
+
+        # check if geo data is filled after synchronizing
+        expected_filled_geo_data = {'points': {1: [0., 0., 0.],
+                                               2: [1., 0., 0.],
+                                               3: [2., 1., 0.]},
+                                    'lines': {1: [1, 2], 2: [2, 3], 3: [3, 1]},
+                                    'surfaces': {1: [1, 2, 3]},
+                                    'volumes': {},
+                                    'physical_groups': {'surface_group': {'geometry_ids': [1], 'id': 1, 'ndim': 2}}}
+
+        TestUtils.assert_dictionary_almost_equal(gmsh_io.geo_data, expected_filled_geo_data)
+
+    def test_make_geometry_3D_by_extrusion(self):
+        """
+        Checks whether a 3D geometry is created correctly by extruding a 2D geometry.
+        """
+
+        # define point coordinates
+        point_coordinates = [(0, 0, 0), (1, 0, 0), (2, 1, 0)]
+
+        # initialize gmsh
+        gmsh_io = GmshIO()
+        gmsh.initialize()
+
+        extrusion_length = [0, 0, 1]
+        # create multiple points and add to physical group
+        gmsh_io.make_geometry_3d_by_extrusion(point_coordinates, extrusion_length, "volume_group")
+
+        # synchronize gmsh
+        gmsh_io.synchronize_gmsh()
+        gmsh_io.extract_geo_data()
+
+        # check if geo data is filled after synchronizing
+        expected_filled_geo_data = {'points': {1: [0., 0., 0.],
+                                               2: [1., 0., 0.],
+                                               3: [2., 1., 0.],
+                                               4: [0., 0., 1.],
+                                               5: [1., 0., 1.],
+                                               6: [2., 1., 1.]},
+                                    'lines': {1: [1, 2], 2: [2, 3], 3: [3, 1], 4: [1, 4], 5: [2, 5], 6: [4, 5],
+                                              7: [3, 6], 8: [5, 6], 9: [6, 4]},
+                                    'surfaces': {1: [1, 2, 3], 2: [4, 6, -5, -1], 3: [5, 8, -7, -2], 4: [7, 9, -4, -3],
+                                                 5: [6, 8, 9]},
+                                    'volumes': {1: [-2, -3, -4, -1, 5]},
+                                    'physical_groups': {'volume_group': {'geometry_ids': [1], 'id': 1, 'ndim': 3}}}
+
+        TestUtils.assert_dictionary_almost_equal(gmsh_io.geo_data, expected_filled_geo_data)
