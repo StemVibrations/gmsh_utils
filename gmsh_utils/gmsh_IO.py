@@ -678,7 +678,7 @@ class GmshIO:
 
             # get point data
             if entity_ndim == 0:
-                geo_data["points"][entity_id] = gmsh.model.get_value(entity_ndim, entity_id, [])
+                geo_data["points"][entity_id] = gmsh.model.get_value(entity_ndim, entity_id, []).tolist()
             # get line data
             if entity_ndim == 1:
                 geo_data["lines"][entity_id] = self.get_boundary_data(entity_ndim, entity_id)
@@ -703,7 +703,7 @@ class GmshIO:
             # add group to dictionary
             geo_data["physical_groups"][name] = {"ndim": group[0],
                                                  "id": group[1],
-                                                 "geometry_ids": list(entities)}
+                                                 "geometry_ids": entities.tolist()}
 
         self.__geo_data = geo_data
 
