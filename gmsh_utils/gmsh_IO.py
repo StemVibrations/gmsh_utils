@@ -588,10 +588,10 @@ class GmshIO:
             entities = gmsh.model.getEntitiesForPhysicalGroup(group[0], group[1])
 
             element_ids = []
-
             element_type = None
             for entity in entities:
 
+                # gets element ids belonging to physical group
                 element_ids.extend(gmsh.model.mesh.getElements(dim=group[0], tag=entity)[1][0].tolist())
 
                 # gets element type of elements in physical group, note that gmsh makes sure that all elements in a
@@ -600,8 +600,11 @@ class GmshIO:
 
             # store group information in dictionary
             mesh_data["physical_groups"][name] = {"node_ids": node_ids,
-                                                  "element_ids": element_ids,
-                                                  "element_type": ElementType(element_type).name}
+                                                  "element_ids": element_ids}
+
+            # store element type in dictionary if it exists
+            if element_type is not None:
+                mesh_data["physical_groups"][name]["element_type"] = ElementType(element_type).name
 
         self.__mesh_data = mesh_data
 
@@ -899,3 +902,7 @@ class GmshIO:
         """
 
         self.__mesh_data = {}
+
+if __name__ == '__main__':
+
+    tmp = ElementType(None).name
