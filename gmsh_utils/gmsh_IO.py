@@ -528,14 +528,14 @@ class GmshIO:
 
         # fill dictionary with element data
         for elem_type, elem_tag, elem_node_tag in zip(elem_types, elem_tags, elem_node_tags):
-            element_dict = self.extract_element_data(elem_type, elem_tag, elem_node_tag)
+            element_dict: Dict[str, Any] = self.extract_element_data(elem_type, elem_tag, elem_node_tag)
             elements_data.update(element_dict)
 
         return elements_data
 
     def extract_element_data(self, elem_type: int, elem_tags: npt.NDArray[np.int_],
                              element_connectivities: npt.NDArray[np.int_]) -> \
-            Dict[str, Dict[str, npt.NDArray[np.int_]]]:
+            Dict[str, Any]:
         """
         Extracts element data from gmsh mesh
         Gets gmsh data belonging to a single element type
@@ -637,15 +637,15 @@ class GmshIO:
 
         self.finalize_gmsh()
 
-    def get_nodes_in_group(self, group_name: str) -> Dict[str, Union[npt.NDArray[np.int_], npt.NDArray[np.float64]]]:
+    def get_nodes_in_group(self, group_name: str) -> Dict[int, Sequence[float]]:
         """
         Gets all nodes which are part of a certain group
 
         Args:
-            group_name (str): Name of the requested group.
+            - group_name (str): Name of the requested group.
 
         Returns:
-             Dict[str, Union[npt.NDArray[np.int_], npt.NDArray[np.float64]]]: Dictionary which contains nodal data.
+            - Dict[int, Sequence[float]]: Dictionary which contains nodal data.
 
         """
 
