@@ -254,7 +254,8 @@ class TestGmshIO:
 
         mesh_data = gmsh_io.mesh_data
 
-        expected_mesh_data = {'nodes': {1: [0., 0., 0.],
+        expected_mesh_data = {"ndim": 2,
+                              'nodes': {1: [0., 0., 0.],
                                         2: [1., 0., 0.],
                                         3: [1., 1., 0.],
                                         4: [0., 1., 0.]},
@@ -395,7 +396,8 @@ class TestGmshIO:
         mesh_data = gmsh_io.mesh_data
 
         # set expected mesh data
-        expected_mesh_data = {'nodes': {1: [0., 0., 0.],
+        expected_mesh_data = {"ndim": 2,
+                              'nodes': {1: [0., 0., 0.],
                                         2: [1., 0., 0.],
                                         3: [1., 1., 0.],
                                         4: [0., 1., 0.],
@@ -695,6 +697,7 @@ class TestGmshIO:
         gmsh_io.generate_mesh(1, element_size=0.5)
 
         expected_filled_mesh_data = {
+            "ndim": 1,
             'elements': {'LINE_2N': {1: [1, 3],
                                      2: [3, 2]},
                          'POINT_1N': {3: [1],
