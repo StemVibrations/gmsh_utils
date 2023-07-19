@@ -483,7 +483,7 @@ class GmshIO:
 
     def extract_node_data(self, node_tags: npt.NDArray[np.int_],
                           node_coordinates: npt.NDArray[np.float64]) \
-            -> Dict[str, Union[npt.NDArray[np.int_], npt.NDArray[np.float64]]]:
+            -> Dict[int, Sequence[float]]:
         """
         Gets gmsh data belonging to nodal data
 
@@ -492,7 +492,7 @@ class GmshIO:
             node_coordinates (npt.NDArray[float]) : gmsh node coordinates
 
         Returns:
-            Dict[str, Union[npt.NDArray[np.int_], npt.NDArray[np.float64]]]: A dictionary containing node ids and
+            Dict[int, Union[npt.NDArray[np.int_], npt.NDArray[np.float64]]]: A dictionary containing node ids and
             coordinates
 
         """
@@ -501,26 +501,30 @@ class GmshIO:
         num_nodes = len(node_tags)
         node_coordinates = np.reshape(node_coordinates, (num_nodes, 3))
 
-        return {"coordinates": node_coordinates,
-                "ids": node_tags}
+        # create dictionary of nodal data with node ids as keys and coordinates as values
+        nodal_data: Dict[int, Any] = {}
+        for i in range(num_nodes):
+            nodal_data[node_tags[i]] = node_coordinates[i, :].tolist()
+
+        return nodal_data
 
     def extract_elements_data(self, elem_types: npt.NDArray[np.int_], elem_tags: List[npt.NDArray[np.int_]],
-                              elem_node_tags: List[npt.NDArray[np.int_]]) -> Dict[str, Dict[str, npt.NDArray[np.int_]]]:
+                              elem_node_tags: List[npt.NDArray[np.int_]]) -> Dict[str, Any]:
         """
         Extracts element data from gmsh mesh
 
         Args:
-            elem_types (npt.NDArray[np.int_]): Element types.
-            elem_tags (List[npt.NDArray[np.int_]]): Element tags.
-            elem_node_tags (List[npt.NDArray[np.int_]]): Element node tags.
+            - elem_types (npt.NDArray[np.int_]): Element types.
+            - elem_tags (List[npt.NDArray[np.int_]]): Element tags.
+            - elem_node_tags (List[npt.NDArray[np.int_]]): Element node tags.
 
         Returns:
-            Dict (Dict[str, Dict[str, npt.NDArray[np.int_]]]): Dictionary which contains element data.
+            - Dict (Dict[str, Any]): Dictionary which contains element data.
 
         """
 
         # initialize empty dictionary
-        elements_data: Dict[str, Dict[str, npt.NDArray[np.int_]]] = {}
+        elements_data: Dict[str, Any] = {}
 
         # fill dictionary with element data
         for elem_type, elem_tag, elem_node_tag in zip(elem_types, elem_tags, elem_node_tags):
@@ -537,12 +541,12 @@ class GmshIO:
         Gets gmsh data belonging to a single element type
 
         Args:
-            elem_type (int): Element type.
-            elem_tags (npt.NDArray[np.int_]): Element ids.
-            element_connectivities (npt.NDArray[np.int_]): Element node tags.
+            - elem_type (int): Element type.
+            - elem_tags (npt.NDArray[np.int_]): Element ids.
+            - element_connectivities (npt.NDArray[np.int_]): Element node tags.
 
         Returns:
-            dict: Dictionary which contains element data.
+            - Dict: Dictionary which contains element data.
         """
 
         element_name = ElementType(elem_type).name
@@ -550,8 +554,12 @@ class GmshIO:
         num_elements = len(elem_tags)
         connectivities = np.reshape(element_connectivities, (num_elements, n_nodes_per_element))
 
-        return {element_name: {"element_ids": elem_tags,
-                               "connectivities": connectivities}}
+        # add element data to dictionary with key = element id and value = element connectivity
+        element_data: Dict[int, Any] = {}
+        for i in range(num_elements):
+            element_data[elem_tags[i]] = connectivities[i, :].tolist()
+
+        return {element_name: element_data}
 
     def extract_mesh_data(self):
         """
@@ -560,7 +568,7 @@ class GmshIO:
 
         """
 
-        mesh_data: Dict[str, Dict[str, Any]] = {"nodes": {},
+        mesh_data: Dict[str, Any] = {"nodes": {},
                                                 "elements": {},
                                                 "physical_groups": {}}
 

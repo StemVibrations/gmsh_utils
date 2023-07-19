@@ -121,15 +121,16 @@ class TestGmshIO:
 
         mesh_data = gmsh_io.mesh_data
 
-        assert mesh_data["nodes"]["coordinates"].size > 0  # check if node_coords is not empty
-        assert mesh_data["nodes"]["ids"].size > 0  # check if node_tags is not empty
-        assert list(mesh_data["elements"].keys()) == ["LINE_2N", "TRIANGLE_3N",
-                                                      "POINT_1N"]  # check if correct elements are present
+        # check if nodes are not empty
+        assert len(mesh_data["nodes"]) > 0
 
-        # check each element type contains ids and nodes
+        # check if correct element types are present
+        assert list(mesh_data["elements"].keys()) == ["LINE_2N", "TRIANGLE_3N",
+                                                      "POINT_1N"]
+
+        # check elements are not empty
         for value in mesh_data["elements"].values():
-            assert value["element_ids"].size > 0
-            assert value["connectivities"].size > 0
+            assert len(value) > 0
 
     def test_generate_mesh_3D(self):
         """
@@ -187,15 +188,16 @@ class TestGmshIO:
 
         mesh_data = gmsh_io.mesh_data
 
-        assert mesh_data["nodes"]["coordinates"].size > 0  # check if node_coords is not empty
-        assert mesh_data["nodes"]["ids"].size > 0  # check if node_tags is not empty
-        assert list(mesh_data["elements"].keys()) == ["LINE_2N", "TRIANGLE_3N", "TETRAHEDRON_4N",
-                                                      "POINT_1N"]  # check if correct elements are present
+        # check if nodes are not empty
+        assert len(mesh_data["nodes"]) > 0
 
-        # check each element type contains ids and nodes
+        # check if correct element types are present
+        assert list(mesh_data["elements"].keys()) == ["LINE_2N", "TRIANGLE_3N", "TETRAHEDRON_4N",
+                                                      "POINT_1N"]
+
+        # check elements are not empty
         for value in mesh_data["elements"].values():
-            assert value["element_ids"].size > 0
-            assert value["connectivities"].size > 0
+            assert len(value) > 0
 
     def test_read_gmsh_geo_2D(self):
         """
@@ -252,10 +254,13 @@ class TestGmshIO:
 
         mesh_data = gmsh_io.mesh_data
 
-        expected_mesh_data = {'elements': {'TRIANGLE_3N': {'connectivities': [[1, 2, 4], [4, 2, 3]],
-                                                           'element_ids': [1, 2]}},
-                              'nodes': {'coordinates': [[0., 0., 0.], [1., 0., 0.], [1., 1., 0.], [0., 1., 0.]],
-                                        'ids': [1, 2, 3, 4]}}
+        expected_mesh_data = {'nodes': {1: [0., 0., 0.],
+                                        2: [1., 0., 0.],
+                                        3: [1., 1., 0.],
+                                        4: [0., 1., 0.]},
+                              'elements': {'TRIANGLE_3N': {1: [1, 2, 4],
+                                                           2: [4, 2, 3]}}}
+
         # check if the coordinates of the points are correct
         TestUtils.assert_dictionary_almost_equal(expected_mesh_data, mesh_data)
 
@@ -276,22 +281,13 @@ class TestGmshIO:
         mesh_data = gmsh_io.mesh_data
 
         # set expected mesh data
-        expected_mesh_data = {'nodes': {'coordinates': np.array([[0., 0., 0.],
-                                                                 [1., 0., 0.],
-                                                                 [1., 1., 0.],
-                                                                 [0., 1., 0.],
-                                                                 [0., 0., -1.],
-                                                                 [1., 0., -1.],
-                                                                 [1., 1., -1.],
-                                                                 [0., 1., -1.]]),
-                                        'ids': [1, 2, 3, 4, 5, 6, 7, 8]},
-                              'elements': {'TETRAHEDRON_4N': {'element_ids': [1, 2, 3, 4, 5, 6],
-                                                              'connectivities': [[2, 1, 4, 8],
-                                                                                 [5, 6, 8, 2],
-                                                                                 [5, 2, 8, 1],
-                                                                                 [2, 4, 3, 7],
-                                                                                 [8, 6, 7, 2],
-                                                                                 [8, 2, 7, 4]]}}}
+        expected_mesh_data = {'nodes': {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0],
+                                        3: [1.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0],
+                                        5: [0.0, 0.0, -1.0], 6: [1.0, 0.0, -1.0],
+                                        7: [1.0, 1.0, -1.0], 8: [0.0, 1.0, -1.0]},
+                              'elements': {'TETRAHEDRON_4N': {1: [2, 1, 4, 8], 2: [5, 6, 8, 2], 3: [5, 2, 8, 1],
+                                                              4: [2, 4, 3, 7], 5: [8, 6, 7, 2], 6: [8, 2, 7, 4]}}}
+
 
         # check if the coordinates of the points are correct
         TestUtils.assert_dictionary_almost_equal(expected_mesh_data, mesh_data)
@@ -399,27 +395,23 @@ class TestGmshIO:
         mesh_data = gmsh_io.mesh_data
 
         # set expected mesh data
-        expected_mesh_data = {'nodes': {'coordinates': np.array([[0., 0., 0.],
-                                                                 [1., 0., 0.],
-                                                                 [1., 1., 0.],
-                                                                 [0., 1., 0.],
-                                                                 [0.5, 0.5, 0.]]),
-                                        'ids': np.array([1, 2, 3, 4, 5])},
-                              'elements': {'LINE_2N': {'element_ids': np.array([9, 10, 11, 12]),
-                                                       'connectivities': np.array([[1, 2],
-                                                                                   [2, 3],
-                                                                                   [3, 4],
-                                                                                   [4, 1]])},
-                                           'TRIANGLE_3N': {'element_ids': np.array([1, 2, 3, 4]),
-                                                           'connectivities': np.array([[2, 5, 1],
-                                                                                       [1, 5, 4],
-                                                                                       [3, 5, 2],
-                                                                                       [4, 5, 3]])},
-                                           'POINT_1N': {'element_ids': np.array([5, 6, 7, 8]),
-                                                        'connectivities': np.array([[1],
-                                                                                    [2],
-                                                                                    [3],
-                                                                                    [4]])}},
+        expected_mesh_data = {'nodes': {1: [0., 0., 0.],
+                                        2: [1., 0., 0.],
+                                        3: [1., 1., 0.],
+                                        4: [0., 1., 0.],
+                                        5: [0.5, 0.5, 0.]},
+                              'elements': {'LINE_2N': {9: [1, 2],
+                                                       10: [2, 3],
+                                                       11: [3, 4],
+                                                       12: [4, 1]},
+                                           'TRIANGLE_3N': {1: [2, 5, 1],
+                                                           2: [1, 5, 4],
+                                                           3: [3, 5, 2],
+                                                           4: [4, 5, 3]},
+                                           'POINT_1N': {5: [1],
+                                                        6: [2],
+                                                        7: [3],
+                                                        8: [4]}},
                               'physical_groups': {'group_1': {"node_ids": [1, 2, 3, 4, 5],
                                                               "element_ids": [1, 2, 3, 4],
                                                               "element_type": "TRIANGLE_3N"}}}
@@ -703,10 +695,13 @@ class TestGmshIO:
         gmsh_io.generate_mesh(1, element_size=0.5)
 
         expected_filled_mesh_data = {
-            'elements': {'LINE_2N': {'connectivities': [[1, 3], [3, 2]], 'element_ids': [1, 2]},
-                         'POINT_1N': {'connectivities': [[1], [2]], 'element_ids': [3, 4]}},
-            'nodes': {'coordinates': [[0., 0., 0.], [1., 0., 0.], [0.5, 0., 0.]],
-                      'ids': [1, 2, 3]},
+            'elements': {'LINE_2N': {1: [1, 3],
+                                     2: [3, 2]},
+                         'POINT_1N': {3: [1],
+                                      4: [2]}},
+            'nodes': {1: [0., 0., 0.],
+                      2: [1., 0., 0.],
+                      3: [0.5, 0., 0.]},
             'physical_groups': {'test': {'element_ids': [1, 2], "node_ids": [1, 2, 3], "element_type": "LINE_2N"}}}
 
         # check if mesh data is filled after generating mesh
