@@ -568,9 +568,10 @@ class GmshIO:
 
         """
 
-        mesh_data: Dict[str, Any] = {"nodes": {},
-                                                "elements": {},
-                                                "physical_groups": {}}
+        mesh_data: Dict[str, Any] = {"ndim": gmsh.model.getDimension(),
+                                     "nodes": {},
+                                     "elements": {},
+                                     "physical_groups": {}}
 
         # get nodal information
         node_tags, node_coords, node_params = gmsh.model.mesh.getNodes()  # nodes
