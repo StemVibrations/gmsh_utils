@@ -878,6 +878,13 @@ class GmshIO:
             # synchronize the geometry for generating the mesh
             gmsh.model.occ.synchronize()
 
+            # intersect all entities with each other
+            entities = gmsh.model.get_entities()
+            gmsh.model.occ.fragment(entities, entities)
+
+            # synchronize again after intersecting
+            gmsh.model.occ.synchronize()
+
             # synchronize the geo geometry such that physical groups are added, important is that this is done after
             # synchronizing the occ geometry :-D
             gmsh.model.geo.synchronize()

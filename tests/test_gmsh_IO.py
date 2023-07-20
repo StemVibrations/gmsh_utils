@@ -601,6 +601,97 @@ class TestGmshIO:
 
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_filled_geo_data)
 
+    def test_synchronize_gmsh_with_intersection_point_on_line(self):
+        """
+        Checks whether gmsh is synchronized after calling synchronize_gmsh. This test checks whether the geo data
+        is updated with the created points and the physical group after calling synchronize_gmsh.
+
+        This test is for the case where the intersection point is on the line.
+
+        """
+
+        # initialize gmsh
+        gmsh_io = GmshIO()
+        gmsh.initialize()
+
+        # create two points and add to physical group
+        point_id1 = gmsh.model.occ.addPoint(0, 0, 0)
+        point_id2 = gmsh.model.occ.addPoint(1, 0, 0)
+
+        # create a line
+        line_id = gmsh.model.occ.addLine(point_id1, point_id2)
+        gmsh.model.addPhysicalGroup(1, [line_id], name="line")
+
+        point_id3 = gmsh.model.occ.addPoint(0.5, 0, 0)
+        gmsh.model.addPhysicalGroup(0, [point_id3], name="new_point")
+
+        # synchronize gmsh
+        gmsh_io.synchronize_gmsh()
+
+        # extract geo data
+        gmsh_io.extract_geo_data()
+        filled_geo_data = gmsh_io.geo_data
+
+        expected_geo_data = {'points': {1: [0., 0., 0.], 2: [1., 0., 0.], 3: [0.5, 0., 0.]},
+                             'lines': {1: [1, 3], 2: [3, 2]},
+                             'surfaces': {},
+                             'volumes': {},
+                             'physical_groups': {'line': {'geometry_ids': [1], 'id': 1, 'ndim': 1},
+                                                 'new_point': {'geometry_ids': [3], 'id': 2, 'ndim': 0}}}
+
+        TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
+
+    def test_synchronize_gmsh_with_intersection_line_on_surface(self):
+        """
+        Checks whether gmsh is synchronized after calling synchronize_gmsh. This test checks whether the geo data
+        is updated with the created points and the physical group after calling synchronize_gmsh.
+
+        This test is for the case where the intersection line is on the surface.
+        """
+
+        # initialize gmsh
+        gmsh_io = GmshIO()
+        gmsh.initialize()
+
+        # create surface points
+        point_id1 = gmsh.model.occ.addPoint(0, 0, 0)
+        point_id2 = gmsh.model.occ.addPoint(1, 0, 0)
+        point_id3 = gmsh.model.occ.addPoint(1, 1, 0)
+        point_id4 = gmsh.model.occ.addPoint(0, 1, 0)
+
+        # create a surface
+        line_id1 = gmsh.model.occ.addLine(point_id1, point_id2)
+        line_id2 = gmsh.model.occ.addLine(point_id2, point_id3)
+        line_id3 = gmsh.model.occ.addLine(point_id3, point_id4)
+        line_id4 = gmsh.model.occ.addLine(point_id4, point_id1)
+
+        curve_loop_id = gmsh.model.occ.addCurveLoop([line_id1, line_id2, line_id3, line_id4])
+        surface_id: int = gmsh.model.occ.addPlaneSurface([curve_loop_id])
+        gmsh.model.addPhysicalGroup(2, [surface_id], tag=-1, name="surface")
+
+        # create an intersection line
+        point_id5 = gmsh.model.occ.addPoint(0.25, 0.0, 0)
+        point_id6 = gmsh.model.occ.addPoint(0.75, 0.0, 0)
+        line_id5 = gmsh.model.occ.addLine(point_id5, point_id6)
+        gmsh.model.addPhysicalGroup(1, [line_id5], name="new_line")
+
+        # synchronize gmsh
+        gmsh_io.synchronize_gmsh()
+
+        # extract geo data
+        gmsh_io.extract_geo_data()
+        filled_geo_data = gmsh_io.geo_data
+
+        expected_geo_data = {'points': {1: [0., 0., 0.], 2: [1., 0., 0.], 3: [1, 1., 0.],
+                                        4: [0., 1., 0.], 5: [0.25, 0., 0.], 6: [0.75, 0., 0.]},
+                             'lines': {2: [2, 3], 3: [3, 4], 4: [4, 1], 5: [5, 6], 6: [1, 5], 7: [6, 2]},
+                             'surfaces': {1: [6, 5, 7, 2, 3, 4]},
+                             'volumes': {},
+                             'physical_groups': {'surface': {'geometry_ids': [1], 'id': 1, 'ndim': 2},
+                                                 'new_line': {'geometry_ids': [5], 'id': 2, 'ndim': 1}}}
+
+        TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
+
     def test_reset_gmsh(self):
         """
         Checks whether gmsh is reset after calling reset_gmsh.
