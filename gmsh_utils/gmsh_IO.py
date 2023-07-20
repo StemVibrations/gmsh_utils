@@ -608,7 +608,7 @@ class GmshIO:
                 element_type = gmsh.model.mesh.getElements(dim=group[0], tag=entity)[0][0]
 
             # store group information in dictionary
-            mesh_data["physical_groups"][name] = {"node_ids": node_ids,
+            mesh_data["physical_groups"][name] = {"node_ids": node_ids.tolist(),
                                                   "element_ids": element_ids}
 
             # store element type in dictionary if it exists
