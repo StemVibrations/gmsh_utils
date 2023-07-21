@@ -414,7 +414,8 @@ class TestGmshIO:
                                                         6: [2],
                                                         7: [3],
                                                         8: [4]}},
-                              'physical_groups': {'group_1': {"node_ids": [1, 2, 3, 4, 5],
+                              'physical_groups': {'group_1': {"ndim": 2,
+                                                              "node_ids": [1, 2, 3, 4, 5],
                                                               "element_ids": [1, 2, 3, 4],
                                                               "element_type": "TRIANGLE_3N"}}}
 
@@ -442,19 +443,24 @@ class TestGmshIO:
         mesh_data = gmsh_io.mesh_data
 
         # set expected mesh group data
-        expected_groups_in_mesh_data = {'group_1': {"node_ids": [1, 2, 3, 4, 7],
+        expected_groups_in_mesh_data = {'group_1': {"ndim": 2,
+                                                    "node_ids": [1, 2, 3, 4, 7],
                                                     "element_ids": [5, 6, 7, 8],
                                                     "element_type": "TRIANGLE_3N"},
-                                        'group_2': {"node_ids": [3, 4, 5, 6, 8],
+                                        'group_2': {"ndim": 2,
+                                                    "node_ids": [3, 4, 5, 6, 8],
                                                     "element_ids": [9, 10, 11, 12],
                                                     "element_type": "TRIANGLE_3N"},
-                                        "combined_group": {"node_ids": [1, 2, 3, 4, 5, 6, 7, 8],
+                                        "combined_group": {"ndim": 2,
+                                                           "node_ids": [1, 2, 3, 4, 5, 6, 7, 8],
                                                            "element_ids": [5, 6, 7, 8, 9, 10, 11, 12],
                                                            "element_type": "TRIANGLE_3N"},
-                                        "line_group": {"node_ids": [1, 2, 3, 6],
+                                        "line_group": {"ndim": 1,
+                                                       "node_ids": [1, 2, 3, 6],
                                                        "element_ids": [3, 4],
                                                        "element_type": "LINE_2N"},
-                                        "point_group": {"node_ids": [1, 2],
+                                        "point_group": {"ndim": 0,
+                                                        "node_ids": [1, 2],
                                                         "element_ids": [1, 2],
                                                         "element_type": "POINT_1N"}}
 
@@ -1134,7 +1140,7 @@ class TestGmshIO:
             'nodes': {1: [0., 0., 0.],
                       2: [1., 0., 0.],
                       3: [0.5, 0., 0.]},
-            'physical_groups': {'test': {'element_ids': [1, 2], "node_ids": [1, 2, 3], "element_type": "LINE_2N"}}}
+            'physical_groups': {'test': {"ndim": 1, 'element_ids': [1, 2], "node_ids": [1, 2, 3], "element_type": "LINE_2N"}}}
 
         # check if mesh data is filled after generating mesh
         TestUtils.assert_dictionary_almost_equal(gmsh_io.mesh_data, expected_filled_mesh_data)
