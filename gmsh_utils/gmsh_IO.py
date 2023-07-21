@@ -893,9 +893,7 @@ class GmshIO:
         filtered_physical_groups = [dimtag for dimtag in physical_groups if dimtag[0] > 0]
 
         # loop over the filtered physical groups
-        for group in filtered_physical_groups:
-            group_dim = group[0]
-            group_id = group[1]
+        for group_dim, group_id in filtered_physical_groups:
 
             # get name of the group
             name = gmsh.model.getPhysicalName(group_dim, group_id)
@@ -913,7 +911,7 @@ class GmshIO:
             new_geom_ids = [dimtag[1] for new_entity in new_entities_group for dimtag in new_entity]
 
             # remove existing physical group
-            gmsh.model.removePhysicalGroups([group])
+            gmsh.model.removePhysicalGroups([(group_dim, group_id)])
 
             # re-add new physical group
             gmsh.model.addPhysicalGroup(group_dim, new_geom_ids, tag=group_id, name=name)
