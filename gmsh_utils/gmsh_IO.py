@@ -869,18 +869,81 @@ class GmshIO:
             gmsh.finalize()
 
     @staticmethod
+    def __synchronize_intersection():
+        """
+        Synchronizes the intersection of entities. In the intersection of entities, the entities are split into
+        smaller entities. Both of the new entities are then manually added to the existing physical group, as gmsh
+        does not do this automatically.
+
+        """
+
+        # intersect all entities with each other
+        entities = gmsh.model.get_entities()
+        _, new_entities_map = gmsh.model.occ.intersect(entities, entities)
+
+        # get all entities with a dimension higher than 0
+        filtered_entities = [dimtag for dimtag in entities if dimtag[0] > 0]
+
+        # get all entities with a dimension higher than 0
+        filtered_entities_map = new_entities_map[:len(entities)]
+        filtered_entities_map = [dimtag for dimtag in filtered_entities_map if dimtag[0][0] > 0]
+
+        # get all physical groups with a dimension higher than 0
+        physical_groups = gmsh.model.getPhysicalGroups()
+        filtered_physical_groups = [dimtag for dimtag in physical_groups if dimtag[0] > 0]
+
+        # loop over the filtered physical groups
+        for group_dim, group_id in filtered_physical_groups:
+
+            # get name of the group
+            name = gmsh.model.getPhysicalName(group_dim, group_id)
+
+            # gets elements per group
+            entities_group = gmsh.model.getEntitiesForPhysicalGroup(group_dim, group_id)
+
+            # get indices within the filtered entities array of the entities which belong to the group
+            indices = [filtered_entities.index((group_dim, entity_id)) for entity_id in entities_group]
+
+            # get new entities which belong to the group
+            new_entities_group = [filtered_entities_map[index] for index in indices]
+
+            # get all new geometry ids belonging to the group
+            new_geom_ids = [dimtag[1] for new_entity in new_entities_group for dimtag in new_entity]
+
+            # remove existing physical group
+            gmsh.model.removePhysicalGroups([(group_dim, group_id)])
+
+            # re-add new physical group
+            gmsh.model.addPhysicalGroup(group_dim, new_geom_ids, tag=group_id, name=name)
+
+        # synchronize the geometry
+        GmshIO.__synchronize_geometry()
+
+    @staticmethod
+    def __synchronize_geometry():
+        """
+        Synchronizes the geometry.
+        """
+        # synchronize the geometry for generating the mesh
+        gmsh.model.occ.synchronize()
+
+        # synchronize the geo geometry such that physical groups are added, important is that this is done after
+        # synchronizing the occ geometry :-D
+        gmsh.model.geo.synchronize()
+
+    @staticmethod
     def synchronize_gmsh():
         """
-        Synchronizes the gmsh geometry.
+        Synchronizes the gmsh geometry and takes care of the intersections.
 
         """
         if gmsh.isInitialized():
-            # synchronize the geometry for generating the mesh
-            gmsh.model.occ.synchronize()
 
-            # synchronize the geo geometry such that physical groups are added, important is that this is done after
-            # synchronizing the occ geometry :-D
-            gmsh.model.geo.synchronize()
+            # synchronize the geometry for generating the mesh
+            GmshIO.__synchronize_geometry()
+
+            # synchronize intersections of entities
+            GmshIO.__synchronize_intersection()
 
     @staticmethod
     def reset_gmsh_instance():
