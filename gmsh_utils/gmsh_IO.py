@@ -586,29 +586,30 @@ class GmshIO:
         physical_groups = gmsh.model.getPhysicalGroups()
 
         # loop over all physical groups
-        for group in physical_groups:
+        for group_dim, group_id in physical_groups:
             # get name of the group
-            name = gmsh.model.getPhysicalName(group[0], group[1])
+            name = gmsh.model.getPhysicalName(group_dim, group_id)
 
             # get the node ids belonging to the group
-            node_ids = gmsh.model.mesh.get_nodes_for_physical_group(group[0], group[1])[0]
+            node_ids = gmsh.model.mesh.get_nodes_for_physical_group(group_dim, group_id)[0]
 
             # gets elements per group
-            entities = gmsh.model.getEntitiesForPhysicalGroup(group[0], group[1])
+            entities = gmsh.model.getEntitiesForPhysicalGroup(group_dim, group_id)
 
             element_ids = []
             element_type = None
             for entity in entities:
 
                 # gets element ids belonging to physical group
-                element_ids.extend(gmsh.model.mesh.getElements(dim=group[0], tag=entity)[1][0].tolist())
+                element_ids.extend(gmsh.model.mesh.getElements(dim=group_dim, tag=entity)[1][0].tolist())
 
                 # gets element type of elements in physical group, note that gmsh makes sure that all elements in a
                 # physical group are of the same type
-                element_type = gmsh.model.mesh.getElements(dim=group[0], tag=entity)[0][0]
+                element_type = gmsh.model.mesh.getElements(dim=group_dim, tag=entity)[0][0]
 
             # store group information in dictionary
-            mesh_data["physical_groups"][name] = {"node_ids": node_ids.tolist(),
+            mesh_data["physical_groups"][name] = {"ndim": group_dim,
+                                                  "node_ids": node_ids.tolist(),
                                                   "element_ids": element_ids}
 
             # store element type in dictionary if it exists
