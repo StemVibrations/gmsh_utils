@@ -1297,3 +1297,33 @@ class TestGmshIO:
         """
         gmsh_io = GmshIO()
         pytest.raises(FileNotFoundError, gmsh_io.read_gmsh_geo, "not_existing_file.geo")
+
+    def test_add_physical_group(self):
+        """
+        Checks whether physical groups are added correctly. This test checks whether the physical group is added
+        correctly for a 0D geometry, 1D geometry, 2D geometry and 3D geometry.
+
+        """
+
+        # initialize gmsh and create a 3D geometry
+        gmsh_io = GmshIO()
+        gmsh.initialize()
+        gmsh_io.make_geometry_3d_by_extrusion([(0, 0, 0), (1, 0, 0), (2, 1, 0)],[0,0,1] , "volume_group")
+
+        # add physical group for all dimensions
+        gmsh_io.add_physical_group("new_volume_group", 3, [1])
+        gmsh_io.add_physical_group("new_surface_group", 2, [1])
+        gmsh_io.add_physical_group("new_line_group", 1, [1])
+        gmsh_io.add_physical_group("new_point_group", 0, [1])
+
+        geo_data = gmsh_io.geo_data
+
+        # set expected data
+        expected_group_data = {"new_volume_group": {"geometry_ids": [1], "id": 2, "ndim": 3},
+                               "new_surface_group": {"geometry_ids": [1], "id": 3, "ndim": 2},
+                               "new_line_group": {"geometry_ids": [1], "id": 4, "ndim": 1},
+                               "new_point_group": {"geometry_ids": [1], "id": 5, "ndim": 0},
+                               "volume_group": {"geometry_ids": [1], "id": 1, "ndim": 3}}
+
+        # check if physical groups are added correctly
+        TestUtils.assert_dictionary_almost_equal(geo_data["physical_groups"], expected_group_data)

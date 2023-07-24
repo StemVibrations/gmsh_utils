@@ -830,6 +830,26 @@ class GmshIO:
 
         self.synchronize_gmsh()
 
+    def add_physical_group(self, name: str, ndim: int, geometry_ids: Sequence[int]):
+        """
+        Adds a physical group to the existing geometry.
+
+        Args:
+            - name (str): Name of the physical group.
+            - ndim (int): Dimension of the physical group.
+            - geometry_ids (Sequence[int]): Sequence of geometry ids belonging to the physical group.
+        """
+
+        # add physical group to the geometry
+        gmsh.model.addPhysicalGroup(ndim, geometry_ids, name=name)
+
+        # synchronize the geometry
+        self.synchronize_gmsh()
+
+        # extract the geometry data
+        self.extract_geo_data()
+
+
     def generate_mesh(self, ndim: int, element_size: float = 0.0, order: int = 1):
         """
         Generates a mesh from the geometry data.
