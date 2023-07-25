@@ -48,63 +48,58 @@ class GmshIO:
         self.__geo_data = {}
 
     @property
-    def mesh_data(self) -> Dict[str, Dict[str, Any]]:
+    def mesh_data(self) -> Dict[str, Any]:
         """
         Returns the mesh data dictionary
 
         Returns:
-            Dict: Dictionary containing the mesh data, i.e. nodal ids and coordinates; and elemental ids, connectivity's
-            and element types.
+            Dict[str, Any]: Dictionary containing the mesh data, i.e. nodal ids and coordinates; and elemental ids,
+            connectivity's and element types.
         """
 
         return self.__mesh_data
 
     @mesh_data.setter
-    def mesh_data(self, mesh_data: Dict[str, Dict[str, Any]]) -> None:
+    def mesh_data(self, mesh_data: Dict[str, Any]) -> None:
         """
         Sets the mesh data dictionary. For now, an exception is raised if this method is called, this is because the
         mesh data can only be set by internal methods
 
         Args:
-            mesh_data (Dict): Dictionary containing the mesh data, i.e. nodal ids and coordinates; and elemental ids,
-            connectivity's and element types.
+            - mesh_data (Dict[str, Any]): Dictionary containing the mesh data, i.e. nodal ids and coordinates; and
+            elemental ids, connectivity's and element types.
 
         Raises:
-            Exception: Mesh data can only be set by internal methods.
-
-        Returns:
-            None
+            - Exception: Mesh data can only be set by internal methods.
 
         """
         raise Exception("Mesh data can only be set by internal methods.")
 
     @property
-    def geo_data(self) -> Dict[str, Dict[str, Any]]:
+    def geo_data(self) -> Dict[str, Dict[Any, Any]]:
         """
         Returns the geometry data dictionary
 
         Returns:
-            Dict: Dictionary containing the geometry data, the geometry data contains: points, lines, surfaces, volumes
-            and the physical groups.
+            - Dict[str, Dict[Any, Any]]: Dictionary containing the geometry data, the geometry data contains: points,
+            lines, surfaces, volumes and the physical groups.
         """
 
         return self.__geo_data
 
     @geo_data.setter
-    def geo_data(self, geo_data: Dict[str, Dict[str, Any]]) -> None:
+    def geo_data(self, geo_data: Dict[str, Dict[Any, Any]]) -> None:
         """
         Sets the geometry data dictionary. For now, an exception is raised if this method is called, this is because the
         geometry data can only be set by internal method.
 
         Args:
-            geo_data (Dict): Dictionary containing the geometry data, the geometry data contains: points, lines,
-            surfaces, volumes and the physical groups.
+            - geo_data (Dict[str, Dict[Any, Any]]): Dictionary containing the geometry data, the geometry data contains:
+            points, lines, surfaces, volumes and the physical groups.
 
         Raises:
-            Exception: Geometry data can only be set by internal methods.
+            - Exception: Geometry data can only be set by internal methods.
 
-        Returns:
-            None
         """
 
         raise Exception("Geometry data can only be set by internal methods.")
