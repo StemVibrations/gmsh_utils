@@ -53,7 +53,7 @@ class GmshIO:
         Returns the mesh data dictionary
 
         Returns:
-            Dict[str, Any]: Dictionary containing the mesh data, i.e. nodal ids and coordinates; and elemental ids,
+            - Dict[str, Any]: Dictionary containing the mesh data, i.e. nodal ids and coordinates; and elemental ids,
             connectivity's and element types.
         """
 
