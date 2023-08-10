@@ -1337,19 +1337,16 @@ class TestGmshIO:
         gmsh_io = GmshIO()
 
         # create surface input
-        input_surface = {'surface': {
-                                                "coordinates": [(0, 0, 0), (3, 0, 0), (3, 1, 0), (0, 1, 0)],
-                                                "ndim": 2}}
+        input_surface = {'surface': {"coordinates": [(0, 0, 0), (3, 0, 0), (3, 1, 0), (0, 1, 0)],
+                                     "ndim": 2}}
 
         # create point input
-        input_point = {'point': {
-                                                "coordinates": [(0, 0, 0)],
-                                                "ndim": 0}}
+        input_point = {'point': {"coordinates": [(0, 0, 0)],
+                                 "ndim": 0}}
 
         # generate point after surface
         gmsh_io.generate_geometry(input_surface, "")
         gmsh_io.generate_geometry(input_point, "")
-
 
         output_group_names = list(gmsh_io.geo_data["physical_groups"].keys())
         expected_group_names = ['surface', 'point']
