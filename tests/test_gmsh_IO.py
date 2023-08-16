@@ -1355,3 +1355,72 @@ class TestGmshIO:
         for group_name in expected_group_names:
             assert group_name in output_group_names
 
+        assert gmsh_io.geo_data["physical_groups"]["surface"]["geometry_ids"] == [1]
+        assert gmsh_io.geo_data["physical_groups"]["point"]["geometry_ids"] == [1]
+
+    def test_add_multiple_points_at_surface_points(self):
+        """
+        Checks whether multiple points are added at the surface points correctly. Both the physical groups of the
+        surface and the points should be maintained.
+        """
+
+        gmsh_io = GmshIO()
+
+        # create surface input
+        input_surface = {'surface': {"coordinates": [(0, 0, 0), (3, 0, 0), (3, 1, 0), (0, 1, 0)],
+                                     "ndim": 2}}
+
+        # create point input
+        input_point = {'point': {"coordinates": [(3, 1, 0), (0, 1, 0)],
+                                 "ndim": 0}}
+
+        # generate point after surface
+        gmsh_io.generate_geometry(input_surface, "")
+        gmsh_io.generate_geometry(input_point, "")
+
+        output_group_names = list(gmsh_io.geo_data["physical_groups"].keys())
+        expected_group_names = ['surface', 'point']
+
+        # check if all groups are added
+        for group_name in expected_group_names:
+            assert group_name in output_group_names
+
+        assert gmsh_io.geo_data["physical_groups"]["surface"]["geometry_ids"] == [1]
+        assert gmsh_io.geo_data["physical_groups"]["point"]["geometry_ids"] == [3, 4]
+
+    def test_add_multiple_point_groups_to_surface_point(self):
+        """
+        Checks whether multiple points each in a different group added at the surface same points correctly.
+        All the physical groups of the surface and the points should be maintained.
+
+        """
+
+        gmsh_io = GmshIO()
+
+        # create surface input
+        input_surface = {'surface': {"coordinates": [(0, 0, 0), (3, 0, 0), (3, 1, 0), (0, 1, 0)],
+                                     "ndim": 2}}
+
+        # create point input
+        input_point = {'point1': {"coordinates": [(3, 1, 0)],
+                                  "ndim": 0}}
+
+        # create point input
+        input_point2 = {'point2': {"coordinates": [(3, 1, 0)],
+                                   "ndim": 0}}
+
+        # generate point after surface
+        gmsh_io.generate_geometry(input_surface, "")
+        gmsh_io.generate_geometry(input_point, "")
+        gmsh_io.generate_geometry(input_point2, "")
+
+        output_group_names = list(gmsh_io.geo_data["physical_groups"].keys())
+        expected_group_names = ['surface', 'point1','point2']
+
+        # check if all groups are added
+        for group_name in expected_group_names:
+            assert group_name in output_group_names
+
+        assert gmsh_io.geo_data["physical_groups"]["surface"]["geometry_ids"] == [1]
+        assert gmsh_io.geo_data["physical_groups"]["point1"]["geometry_ids"] == [3]
+        assert gmsh_io.geo_data["physical_groups"]["point2"]["geometry_ids"] == [3]
