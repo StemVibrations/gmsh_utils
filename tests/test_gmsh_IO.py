@@ -1555,7 +1555,7 @@ class TestGmshIO:
                                  "ndim": dims,
                                  "extrusion_length": extrusion_length},
                       'soil_3': {"element_size": global_mesh_size,
-                                 "coordinates": [(0, 1, 0), (0, 3, 0), (2, 3, 0), (2, 1, 0)],
+                                 "coordinates": [(0, 1, 0), (2, 1, 0), (2, 3, 0), (0, 3, 0)],
                                  "ndim": dims,
                                  "extrusion_length": extrusion_length}
                       }
@@ -1605,7 +1605,7 @@ class TestGmshIO:
                                  "ndim": dims,
                                  "extrusion_length": extrusion_length},
                       'soil_3': {"element_size": global_mesh_size,
-                                 "coordinates": [(0, 1, 0), (0, 3, 0), (2, 3, 0), (2, 1, 0)],
+                                 "coordinates": [(0, 1, 0), (2, 1, 0), (2, 3, 0), (0, 3, 0)],
                                  "ndim": dims,
                                  "extrusion_length": extrusion_length}
                       }
