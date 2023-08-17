@@ -895,21 +895,16 @@ class GmshIO:
 
         # intersect all entities with each other
         entities = gmsh.model.get_entities()
-        _, new_entities_map = gmsh.model.occ.intersect(entities, entities)
+        new_entities, new_entities_map = gmsh.model.occ.intersect(entities, entities)
 
-        # get all entities with a dimension higher than 0
-        filtered_entities = [dimtag for dimtag in entities if dimtag[0] > 0]
-
-        # get all entities with a dimension higher than 0
+        # get all new entities
         filtered_entities_map = new_entities_map[:len(entities)]
-        filtered_entities_map = [dimtag for dimtag in filtered_entities_map if dimtag[0][0] > 0]
 
-        # get all physical groups with a dimension higher than 0
+        # get all physical groups
         physical_groups = gmsh.model.getPhysicalGroups()
-        filtered_physical_groups = [dimtag for dimtag in physical_groups if dimtag[0] > 0]
 
         # loop over the filtered physical groups
-        for group_dim, group_id in filtered_physical_groups:
+        for group_dim, group_id in physical_groups:
 
             # get name of the group
             name = gmsh.model.getPhysicalName(group_dim, group_id)
@@ -918,7 +913,7 @@ class GmshIO:
             entities_group = gmsh.model.getEntitiesForPhysicalGroup(group_dim, group_id)
 
             # get indices within the filtered entities array of the entities which belong to the group
-            indices = [filtered_entities.index((group_dim, entity_id)) for entity_id in entities_group]
+            indices = [entities.index((group_dim, entity_id)) for entity_id in entities_group]
 
             # get new entities which belong to the group
             new_entities_group = [filtered_entities_map[index] for index in indices]
@@ -990,6 +985,7 @@ class GmshIO:
         """
 
         self.__mesh_data = {}
+
 
 if __name__ == '__main__':
 
