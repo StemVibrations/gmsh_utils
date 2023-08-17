@@ -1,6 +1,5 @@
 # todo group input into geometry, settings, ...
 from gmsh_utils.gmsh_IO import GmshIO
-import pickle
 
 # define a global mesh size, if set to -1 mesh size is logically chosen by Gmsh itself based on the geometry
 global_mesh_size: float = -1

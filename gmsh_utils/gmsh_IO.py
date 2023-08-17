@@ -278,7 +278,7 @@ class GmshIO:
         point_ids = self.make_points(point_coordinates, element_size=element_size)
 
         # create lines
-        line_ids = [self.create_line([point_ids[i],point_ids[i+1]]) for i in range(len(point_ids)-1)]
+        line_ids = [self.create_line([point_ids[i], point_ids[i+1]]) for i in range(len(point_ids)-1)]
 
         # only add physical group if name label is not empty
         if name_label != "":
@@ -287,7 +287,8 @@ class GmshIO:
 
         return line_ids
 
-    def __generate_closed_line_loop(self, point_coordinates: Sequence[Sequence[float]], element_size: float = -1) -> List[int]:
+    def __generate_closed_line_loop(self, point_coordinates: Sequence[Sequence[float]],
+                                    element_size: float = -1) -> List[int]:
         """
         Generates a closed line loop from a list of point coordinates.
 
@@ -324,8 +325,8 @@ class GmshIO:
         return surface_id
 
     def make_geometry_3d_by_extrusion(self, point_coordinates: Sequence[Sequence[float]],
-                         extrusion_length: Sequence[float], name_label: str = "",
-                         element_size: float = -1) -> int:
+                                      extrusion_length: Sequence[float], name_label: str = "",
+                                      element_size: float = -1) -> int:
         """
         Creates 3D geometries by extruding the 2D surface
 
@@ -893,7 +894,6 @@ class GmshIO:
 
         # extract the geometry data
         self.extract_geo_data()
-
 
     def generate_mesh(self, ndim: int, element_size: float = 0.0, order: int = 1):
         """
