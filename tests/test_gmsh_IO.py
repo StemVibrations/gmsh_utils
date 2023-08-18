@@ -1,11 +1,12 @@
-from gmsh_utils.gmsh_IO import GmshIO
-from utils import TestUtils
+from sys import platform
 
 import gmsh
 import numpy as np
-import pytest
 import pickle
+import pytest
 
+from gmsh_utils.gmsh_IO import GmshIO
+from utils import TestUtils
 
 class TestGmshIO:
     """
@@ -1587,6 +1588,7 @@ class TestGmshIO:
         # Assert that the dumped data is the same as the original mesh data
         TestUtils.assert_dictionary_almost_equal(mesh_data, dumped_data)
 
+    @pytest.mark.skipif(platform == "linux", reason="Gmsh works differently on Linux")
     def test_generate_different_mesh_sizes_3D(self):
         """
         Checks whether 3D mesh data generated and expected mesh data are the same.
