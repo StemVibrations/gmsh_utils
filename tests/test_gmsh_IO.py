@@ -1440,6 +1440,7 @@ class TestGmshIO:
         gmsh_io.generate_geo_from_geo_data()
 
         gmsh_io.set_mesh_size_of_group("Line", 1)
+        gmsh.model.mesh.setOrder(1)
         gmsh.model.mesh.generate(1)
         gmsh_io.extract_mesh_data()
         gmsh_io.finalize_gmsh()
@@ -1480,6 +1481,7 @@ class TestGmshIO:
         gmsh_io._GmshIO__geo_data = geo_data
         gmsh_io.generate_geo_from_geo_data()
         gmsh_io.set_mesh_size_of_group("Surface", 2.5)
+        gmsh.model.mesh.setOrder(1)
         gmsh.model.mesh.generate(2)
         gmsh_io.extract_mesh_data()
         gmsh_io.finalize_gmsh()
@@ -1574,6 +1576,7 @@ class TestGmshIO:
         gmsh_io.generate_geometry(input_dict, mesh_output_name)
         # set mesh size of a group by defining the name label of the group and the desired mesh size
         gmsh_io.set_mesh_size_of_group("soil_1", 0.1)
+        gmsh.model.mesh.setOrder(1)
         gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, save_file, open_gmsh_gui)
 
         mesh_data = gmsh_io.mesh_data
@@ -1624,6 +1627,7 @@ class TestGmshIO:
         gmsh_io.generate_geometry(input_dict, mesh_output_name)
         # set mesh size of a group by defining the name label of the group and the desired mesh size
         gmsh_io.set_mesh_size_of_group("soil_1", 0.5)
+        gmsh.model.mesh.setOrder(1)
         gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, save_file, open_gmsh_gui)
 
         mesh_data = gmsh_io.mesh_data
