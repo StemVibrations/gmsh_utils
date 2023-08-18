@@ -14,16 +14,16 @@ extrusion_length = [0, 0, 3]
 # (regardless of clockwise or anticlockwise) and mesh sizes for each layer as a dictionary
 # The global_mesh_size is assigned to all layers if a specific mesh size is not given in the function
 # "set_mesh_size_of_group" below
-input_dict = {'First_left_Soil_Layer': {"element_size": global_mesh_size,
+input_dict = {'soil_1': {"element_size": global_mesh_size,
                                         "coordinates": [(0, 0, 0), (3, 0, 0), (5, 1.5, 0), (2, 1, 0), (0, 1, 0)],
                                         "ndim": dims,
                                         "extrusion_length": extrusion_length},
-              'Second_right_Soil_Layer': {"element_size": global_mesh_size,
+              'soil_2': {"element_size": global_mesh_size,
                                           "coordinates": [(3, 0, 0), (5, 0, 0), (5, 1.5, 0)],
                                           "ndim": dims,
                                           "extrusion_length": extrusion_length},
-              'Third_top_Soil_Layer': {"element_size": global_mesh_size,
-                                       "coordinates": [(0, 1, 0), (0, 3, 0), (2, 3, 0), (2, 1, 0)],
+              'soil_3': {"element_size": global_mesh_size,
+                                       "coordinates": [(0, 1, 0), (2, 1, 0), (2, 3, 0), (0, 3, 0)],
                                        "ndim": dims,
                                        "extrusion_length": extrusion_length}}
 
@@ -39,12 +39,12 @@ mesh_output_dir = "./"
 
 
 gmsh_io = GmshIO()
-coordinates_list, name_label_list = gmsh_io.input_dict_to_list(input_dict)
 
 gmsh_io.generate_geometry(input_dict, mesh_output_name)
 # set mesh size of a group by defining the name label of the group and the desired mesh size
-gmsh_io.set_mesh_size_of_group("First_left_Soil_Layer", 0.1)
+gmsh_io.set_mesh_size_of_group("soil_1", 0.1)
 
 gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, save_file, open_gmsh_gui)
 
 mesh_data = gmsh_io.mesh_data
+

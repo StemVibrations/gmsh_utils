@@ -374,31 +374,6 @@ class GmshIO:
 
         return num_nodes
 
-    def input_dict_to_list(self, input_dict: dict):
-        """
-        Converts the input dictionary to a list of coordinates and name labels
-
-        Args:
-            input_dict (dict): A dictionary of coordinates and name labels
-
-        Returns:
-            point_coordinates (Union[List[List[List[float]]], npt.NDArray[np.float64]]): User input points of the
-            surface as a list or ndarray.
-            name_label (List[str]): A list of name labels provided by user input.
-        """
-
-        point_coordinates = []
-        name_label = []
-        for value in input_dict.values():
-            point_coordinates.append(value["coordinates"])  # Extract the coordinates
-        # Directly access the dictionary keys
-        keys = input_dict.keys()
-        # Print the keys
-        for key in keys:
-            name_label.append(key)  # Extract the name label
-
-        return point_coordinates, name_label
-
     def validate_layer_settings(self, layer_settings: Dict[str, Any]) -> None:
         """
         Validates the layer settings
