@@ -10,8 +10,8 @@ dims = 3
 # if 3D, input depth of geometry to be extruded from 2D surface
 extrusion_length = [0, 0, 3]
 
-# define the name labels of the layers and points coordinates of the surface in order /
-# (regardless of clockwise or anticlockwise) and mesh sizes for each layer as a dictionary
+# define the name labels of the layers; points coordinates of the surface in clockwise or anti-clockwise order;
+# and mesh sizes for each layer as a dictionary
 input_dict = {'First left Soil Layer': {"element_size": default_mesh_size,
                                         "coordinates": [(0, 0, 0), (3, 0, 0), (5, 1.5, 0), (2, 1, 0), (0, 1, 0)],
                                         "ndim": dims,
