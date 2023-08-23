@@ -380,7 +380,8 @@ class GmshIO:
 
         return num_nodes
 
-    def validate_layer_parameters(self, layer_parameters: Dict[str, Any]):
+    @staticmethod
+    def validate_layer_parameters(layer_parameters: Dict[str, Any]):
         """
         Validates the layer parameters
 

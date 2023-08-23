@@ -1,9 +1,14 @@
-from gmsh_utils.gmsh_IO import GmshIO
-from utils import TestUtils
+from typing import Generator, TYPE_CHECKING
 
 import gmsh
 import numpy as np
 import pytest
+
+from gmsh_utils.gmsh_IO import GmshIO
+from utils import TestUtils
+
+if TYPE_CHECKING:
+    from _pytest.capture import CaptureFixture
 
 
 class TestGmshIO:
@@ -1424,3 +1429,77 @@ class TestGmshIO:
         assert gmsh_io.geo_data["physical_groups"]["surface"]["geometry_ids"] == [1]
         assert gmsh_io.geo_data["physical_groups"]["point1"]["geometry_ids"] == [3]
         assert gmsh_io.geo_data["physical_groups"]["point2"]["geometry_ids"] == [3]
+
+    def test_validate_layer_parameters(self, capfd: CaptureFixture[str]):
+        """
+        Checks whether the layer parameters are validated correctly. And errors should be raised if the layer parameters
+        are not valid.
+
+        Args:
+            - capfd: Pytest fixture to capture stdout and stderr.
+
+        """
+
+        gmsh_io = GmshIO()
+
+        # valid layer parameters, no error should be raised
+        layer_parameters = {"layer_1": {"coordinates": [[0,0,0], [1,1,1]],
+                                        "element_size": 1,
+                                        "ndim": 1,
+                                        "extrusion_length": 1}}
+        gmsh_io.validate_layer_parameters(layer_parameters)
+
+        # missing coordinates, error should be raised
+        layer_parameters = {"layer_1": {"element_size": 1,
+                                        "ndim": 1,
+                                        "extrusion_length": 1}}
+
+        with pytest.raises(ValueError, match=r"Layer layer_1 must contain the key 'coordinates'"):
+            gmsh_io.validate_layer_parameters(layer_parameters)
+
+        # missing ndim, error should be raised
+        layer_parameters = {"layer_1": {"coordinates": [[0,0,0], [1,1,1]],
+                                        "element_size": 1,
+                                        "extrusion_length": 1}}
+
+        with pytest.raises(ValueError, match=r"Layer layer_1 must contain the key 'ndim'"):
+            gmsh_io.validate_layer_parameters(layer_parameters)
+
+        # missing extrusion length in 3D, error should be raised
+        layer_parameters = {"layer_1": {"coordinates": [[0,0,0], [1,1,1]],
+                                        "element_size": 1,
+                                        "ndim": 3}}
+
+        with pytest.raises(ValueError, match=r"Layer layer_1 must contain the key 'extrusion_length', "
+                                             r"which is needed for 3D geometries"):
+            gmsh_io.validate_layer_parameters(layer_parameters)
+
+        # missing extrusion length in non-3D, should not raise an error
+        layer_parameters = {"layer_1": {"coordinates": [[0,0,0], [1,1,1]],
+                                        "element_size": 1,
+                                        "ndim": 2}}
+
+        gmsh_io.validate_layer_parameters(layer_parameters)
+
+        # missing element size, warning should be printed
+        layer_parameters = {"layer_1": {"coordinates": [[0,0,0], [1,1,1]],
+                                        "ndim": 1,
+                                        "extrusion_length": 1}}
+
+        gmsh_io.validate_layer_parameters(layer_parameters)
+        console_output, _ = capfd.readouterr()
+
+        assert ("Warning: Layer layer_1 does not contain the key 'element_size'. "
+                "The element size will be determined by gmsh.") == console_output.strip()
+
+        # non supported ndim value, error should be raised
+        layer_parameters = {"layer_1": {"coordinates": [[0, 0, 0], [1, 1, 1]],
+                                        "element_size": 1,
+                                        "extrusion_length": 1,
+                                        "ndim": 4}}
+
+        with pytest.raises(ValueError, match=f"ndim must be 0, 1, 2 or 3. ndim=4"):
+            gmsh_io.validate_layer_parameters(layer_parameters)
+
+
+
