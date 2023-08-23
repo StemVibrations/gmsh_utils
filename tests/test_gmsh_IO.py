@@ -1,3 +1,6 @@
+from pathlib import Path
+import re
+
 import gmsh
 import numpy as np
 import pytest
@@ -1496,6 +1499,52 @@ class TestGmshIO:
 
         with pytest.raises(ValueError, match=f"ndim must be 0, 1, 2 or 3. ndim=4"):
             gmsh_io.validate_layer_parameters(layer_parameters)
+
+    def test_write_mesh(self):
+        """
+        Checks whether the mesh is written correctly to a file.
+        """
+
+        # create line geometry
+        layer_parameters = {"line": {"coordinates": [[0, 0, 0], [1, 1, 1]],
+                                     "element_size": 1,
+                                     "ndim": 1}}
+
+        gmsh_io = GmshIO()
+
+        gmsh_io.generate_geometry(layer_parameters, "")
+
+        gmsh_io.generate_extract_mesh(2, "test_mesh_line.msh", ".", True, False)
+
+        # check if file is created
+        assert Path("test_mesh_line.msh").is_file()
+
+        # open generated mesh file
+        with open("test_mesh_line.msh", "r") as file:
+            generate_mesh = file.readlines()
+
+        # open expected mesh file
+        with open("test_data/expected_mesh_line.msh", "r") as file:
+            expected_mesh = file.readlines()
+
+        # check if generated mesh file is equal to expected mesh file
+        for generated_line, expected_line in zip(generate_mesh, expected_mesh):
+            temp = re.findall(r'\d+', generated_line)
+            generated_numbers = list(map(int, temp))
+
+            temp = re.findall(r'\d+', expected_line)
+            expected_numbers = list(map(int, temp))
+
+            # assert string if line does not contain numbers, else assert numbers
+            if len(expected_numbers) == 0:
+                assert generated_line == expected_line
+            else:
+                np.testing.assert_array_almost_equal(generated_numbers, expected_numbers)
+
+        # remove test file
+        Path("test_mesh_line.msh").unlink()
+
+
 
 
 

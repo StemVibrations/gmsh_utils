@@ -476,7 +476,7 @@ class GmshIO:
             # create directory if it does not exist
             pathlib.Path(mesh_output_dir).mkdir(parents=True, exist_ok=True)
             mesh_output_file = (pathlib.Path(mesh_output_dir)/mesh_name).with_suffix(".msh")
-            gmsh.write(mesh_output_file)
+            gmsh.write(str(mesh_output_file))
 
         # opens Gmsh interface
         if open_gmsh_gui:
@@ -849,7 +849,6 @@ class GmshIO:
 
         # extract the geometry data
         self.extract_geo_data()
-
 
     def generate_mesh(self, ndim: int, element_size: float = 0.0, order: int = 1):
         """
