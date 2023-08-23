@@ -640,65 +640,6 @@ class GmshIO:
 
         self.finalize_gmsh()
 
-    def get_nodes_in_group(self, group_name: str) -> Dict[int, Sequence[float]]:
-        """
-        Gets all nodes which are part of a certain physical group
-
-        Args:
-            - group_name (str): Name of the requested physical group.
-
-        Returns:
-            - Dict[int, Sequence[float]]: Dictionary which contains nodal data.
-
-        """
-
-        groups = gmsh.model.getPhysicalGroups()
-
-        for group in groups:
-            name = gmsh.model.getPhysicalName(group[0], group[1])
-            if name == group_name:
-                # gets nodes per group
-                nodes = gmsh.model.mesh.get_nodes_for_physical_group(group[0], group[1])
-
-                nodes_data = self.create_node_data_dict(nodes[0], nodes[1])
-
-                return nodes_data
-
-        return {}
-
-    def get_elements_in_group(self, group_name: str) -> Dict[str, Dict[str, npt.NDArray[np.int_]]]:
-        """
-        Gets all elements which are part of a certain physical group
-
-        Args:
-            group_name (str): Name of the requested physical group.
-
-        Returns:
-            Dict[str, npt.NDArray[np.int_]]: Dictionary which contains element data.
-
-        """
-
-        # Get group dimensions and ids
-        groups = gmsh.model.getPhysicalGroups()
-
-        for group in groups:
-
-            # get name of the group
-            name = gmsh.model.getPhysicalName(group[0], group[1])
-
-            # if the requested group name is equal to the group, retrieve element data
-            if name == group_name:
-                # gets elements per group
-                entity = gmsh.model.getEntitiesForPhysicalGroup(group[0], group[1])[0]
-                elements = gmsh.model.mesh.getElements(dim=group[0], tag=entity)
-
-                # extract element data
-                element_data = self.extract_all_elements_data(elements[0], elements[1], elements[2])
-
-                return element_data
-
-        return {}
-
     def get_boundary_data(self, entity_ndim: int, entity_id: int) -> List[int]:
         """
         Gets lower entities of a certain entity, i.e. get surfaces from a volume; lines from a surface;
