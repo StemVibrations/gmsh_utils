@@ -1,14 +1,10 @@
-from typing import Generator, TYPE_CHECKING
-
 import gmsh
 import numpy as np
 import pytest
+from _pytest.capture import CaptureFixture
 
 from gmsh_utils.gmsh_IO import GmshIO
 from utils import TestUtils
-
-if TYPE_CHECKING:
-    from _pytest.capture import CaptureFixture
 
 
 class TestGmshIO:
