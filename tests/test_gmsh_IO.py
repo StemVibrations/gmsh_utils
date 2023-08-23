@@ -1524,7 +1524,7 @@ class TestGmshIO:
             generate_mesh = file.readlines()
 
         # open expected mesh file
-        with open("test_data/expected_mesh_line.msh", "r") as file:
+        with open("tests/test_data/expected_mesh_line.msh", "r") as file:
             expected_mesh = file.readlines()
 
         # check if generated mesh file is equal to expected mesh file
@@ -1543,6 +1543,139 @@ class TestGmshIO:
 
         # remove test file
         Path("test_mesh_line.msh").unlink()
+
+    def test_two_point_groups_with_same_name(self):
+        """
+        Checks whether the points are added correctly to the existing physical group.
+        """
+
+        gmsh_io = GmshIO()
+
+        # create first point input
+        input_first_point = {'point': {"coordinates": [(0, 0, 0), (1,0,0), (0,1,0)],
+                                       "ndim": 0}}
+
+        # create second point input, note that one coordinate already exists
+        input_second_point = {'point': {"coordinates": [(3, 0, 0), (2,0,0), (0,1,0)],
+                                        "ndim": 0}}
+
+        # generate points separately
+        gmsh_io.generate_geometry(input_first_point, "")
+        gmsh_io.generate_geometry(input_second_point, "")
+
+        geo_data = gmsh_io.geo_data
+
+        # set expected data
+        expected_group_data = {"point": {"geometry_ids": [1, 2, 3, 4, 5], "id": 1, "ndim": 0}}
+
+        TestUtils.assert_dictionary_almost_equal(geo_data["physical_groups"], expected_group_data)
+
+    def test_two_line_groups_with_same_name(self):
+        """
+        Checks whether the lines are added correctly to the existing physical group.
+        """
+
+        gmsh_io = GmshIO()
+
+        # create first line input
+        input_first_line = {'line': {"coordinates": [(0, 0, 0), (3, 0, 0)],
+                                     "ndim": 1}}
+
+        # create second line input
+        input_second_line = {'line': {"coordinates": [(0, 0, 1), (3, 0, 1)],
+                                      "ndim": 1}}
+
+        # generate lines separately
+        gmsh_io.generate_geometry(input_first_line, "")
+        gmsh_io.generate_geometry(input_second_line, "")
+
+        geo_data = gmsh_io.geo_data
+
+        # set expected data
+        expected_group_data = {"line": {"geometry_ids": [1, 2], "id": 1, "ndim": 1}}
+
+        TestUtils.assert_dictionary_almost_equal(geo_data["physical_groups"], expected_group_data)
+
+    def test_two_surface_groups_with_same_name(self):
+        """
+        Checks whether the surfaces are added correctly to the existing physical group.
+        """
+
+        gmsh_io = GmshIO()
+
+        # create first surface input
+        input_first_surface = {'surface': {"coordinates": [(0, 0, 0), (3, 0, 0), (3, 1, 0), (0, 1, 0)],
+                                           "ndim": 2}}
+
+        # create second surface input
+        input_second_surface = {'surface': {"coordinates": [(0, 0, 1), (3, 0, 1), (3, 1, 1), (0, 1, 1)],
+                                            "ndim": 2}}
+
+        # generate surfaces separately
+        gmsh_io.generate_geometry(input_first_surface, "")
+        gmsh_io.generate_geometry(input_second_surface, "")
+
+        geo_data = gmsh_io.geo_data
+
+        # set expected data
+        expected_group_data = {"surface": {"geometry_ids": [1, 2], "id": 1, "ndim": 2}}
+
+        TestUtils.assert_dictionary_almost_equal(geo_data["physical_groups"], expected_group_data)
+
+    def test_two_volume_groups_with_same_name(self):
+        """
+        Checks whether the volumes are added correctly to the existing physical group.
+        """
+
+        gmsh_io = GmshIO()
+
+        # create first volume input
+        input_first_volume = {'volume': {"coordinates": [(0, 0, 0), (3, 0, 0), (3, 1, 0), (0, 1, 0)],
+                                            "ndim": 3,
+                                            "extrusion_length": [0, 0, 1]}}
+
+        # create second volume input
+        input_second_volume = {'volume': {"coordinates": [(0, 0, 2), (3, 0, 2), (3, 1, 2), (0, 1, 2)],
+                                            "ndim": 3,
+                                            "extrusion_length": [0, 0, 1]}}
+
+        # generate volumes separately
+        gmsh_io.generate_geometry(input_first_volume, "")
+        gmsh_io.generate_geometry(input_second_volume, "")
+
+        geo_data = gmsh_io.geo_data
+
+        # set expected data
+        expected_group_data = {"volume": {"geometry_ids": [1, 2], "id": 1, "ndim": 3}}
+
+        TestUtils.assert_dictionary_almost_equal(geo_data["physical_groups"], expected_group_data)
+
+    def test_two_different_dimension_groups_with_same_name(self):
+        """
+        Checks whether an exception is raised that all items in a physical group must have the same dimension.
+        """
+
+        gmsh_io = GmshIO()
+
+        # create first line input
+        input_first_line = {'group_1': {"coordinates": [(0, 0, 0), (3, 0, 0)],
+                                        "ndim": 1}}
+
+        # create first point input
+        input_first_point = {'group_1': {"coordinates": [(0, 0, 0)],
+                                         "ndim": 0}}
+
+        # generate groups separately, exception is raised
+        gmsh_io.generate_geometry(input_first_line, "")
+        with pytest.raises(ValueError, match=r"Cannot add geometry ids to physical group group_1 with dimension 0 as "
+                                             r"the physical group already exists with dimension 1."):
+            gmsh_io.generate_geometry(input_first_point, "")
+
+
+
+
+
+
 
 
 

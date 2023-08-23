@@ -254,7 +254,7 @@ class GmshIO:
         # only add physical group if name label is not empty
         if name_label != "":
             point_ndim = 0
-            gmsh.model.addPhysicalGroup(point_ndim, point_ids, tag=-1, name=name_label)
+            self.__add_or_append_to_physical_group(name_label, point_ndim, point_ids)
 
         return point_ids
 
@@ -280,7 +280,7 @@ class GmshIO:
         # only add physical group if name label is not empty
         if name_label != "":
             line_ndim = 1
-            gmsh.model.addPhysicalGroup(line_ndim, line_ids, tag=-1, name=name_label)
+            self.__add_or_append_to_physical_group(name_label, line_ndim, line_ids)
 
         return line_ids
 
@@ -318,11 +318,10 @@ class GmshIO:
         lined_ids = self.__generate_closed_line_loop(point_coordinates, element_size=element_size)
         surface_id = self.create_surface(lined_ids)
 
-        surface_ndim = 2
-
         # only add physical group if name label is not empty
         if name_label != "":
-            gmsh.model.addPhysicalGroup(surface_ndim, [surface_id], tag=-1, name=name_label)
+            surface_ndim = 2
+            self.__add_or_append_to_physical_group(name_label, surface_ndim, [surface_id])
 
         return surface_id
 
@@ -346,9 +345,9 @@ class GmshIO:
         surface_id = self.make_geometry_2d(point_coordinates, element_size=element_size)
         volume_id = self.create_volume_by_extruding_surface(surface_id, extrusion_length)
 
-        volume_dim = 3
         if name_label != "":
-            gmsh.model.addPhysicalGroup(volume_dim, [volume_id], tag=-1, name=name_label)
+            volume_dim = 3
+            self.__add_or_append_to_physical_group(name_label, volume_dim, [volume_id])
 
         return volume_id
 
@@ -772,6 +771,44 @@ class GmshIO:
 
         self.synchronize_gmsh()
 
+    def __add_or_append_to_physical_group(self, name: str, ndim: int, geometry_ids: Sequence[int]):
+        """
+        Adds or appends geometry ids to a physical group. If the physical group does not exist, it is created.
+        If the physical group already exists, the dimension of the physical group is checked. If the dimension of the
+        physical group is different from the dimension of the geometry ids, an error is raised. Otherwise, the
+        geometry ids are appended to the existing physical group.
+
+        Args:
+            - name (str): Name of the physical group.
+            - ndim (int): Dimension of the physical group.
+            - geometry_ids (Sequence[int]): Sequence of geometry ids belonging to the physical group.
+
+        Raises:
+            - ValueError: If the dimension of the existing physical group is different from the dimension of the
+            new physical group in case the names of the physical groups are the same.
+        """
+
+        if "physical_groups" in self.__geo_data.keys() and name in self.__geo_data["physical_groups"]:
+            ndim_existing_group = self.__geo_data["physical_groups"][name]["ndim"]
+            if ndim != ndim_existing_group:
+                raise ValueError(f"Cannot add geometry ids to physical group {name} with dimension {ndim} as the "
+                                 f"physical group already exists with dimension "
+                                 f"{ndim_existing_group}.")
+
+            existing_geometry_ids = self.__geo_data["physical_groups"][name]["geometry_ids"]
+            new_geometry_ids = existing_geometry_ids + geometry_ids
+
+            # remove existing physical group
+            gmsh.model.removePhysicalGroups([(ndim_existing_group, self.__geo_data["physical_groups"][name]["id"])])
+
+            # re-add new physical group
+            gmsh.model.addPhysicalGroup(ndim_existing_group, new_geometry_ids,
+                                        tag=self.__geo_data["physical_groups"][name]["id"], name=name)
+
+        else:
+            # add physical group to the geometry
+            gmsh.model.addPhysicalGroup(ndim, geometry_ids, name=name)
+
     def add_physical_group(self, name: str, ndim: int, geometry_ids: Sequence[int]):
         """
         Adds a physical group to the existing geometry.
@@ -783,7 +820,7 @@ class GmshIO:
         """
 
         # add physical group to the geometry
-        gmsh.model.addPhysicalGroup(ndim, geometry_ids, name=name)
+        self.__add_or_append_to_physical_group(name, ndim, geometry_ids)
 
         # synchronize the geometry
         self.synchronize_gmsh()
