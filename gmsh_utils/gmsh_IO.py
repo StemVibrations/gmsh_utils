@@ -512,7 +512,10 @@ class GmshIO:
     def extract_all_elements_data(self, elem_types: npt.NDArray[np.int_], elem_tags: List[npt.NDArray[np.int_]],
                               elem_node_tags: List[npt.NDArray[np.int_]]) -> Dict[str, Any]:
         """
-        Extracts element data for all the elements in the gmsh mesh
+        Extracts element data for all the elements in the gmsh mesh. Element data is defined as:
+            - element type
+            - element ids
+            - element node connectivities
 
         Args:
             - elem_types (npt.NDArray[np.int_]): Element types.
@@ -538,8 +541,10 @@ class GmshIO:
                              element_connectivities: npt.NDArray[np.int_]) -> \
             Dict[str, Any]:
         """
-        Extracts element data from gmsh mesh
-        Gets gmsh data belonging to a single element type
+        Extracts element data from gmsh mesh belonging to a single element type. Element data is defined as:
+            - element type
+            - element ids
+            - element node connectivities
 
         Args:
             - elem_type (int): Element type.
