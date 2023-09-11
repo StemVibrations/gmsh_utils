@@ -10,8 +10,8 @@ dims = 3
 # if 3D, input depth of geometry to be extruded from 2D surface
 extrusion_length = [0, 0, 3]
 
-# define the name labels of the layers and points coordinates of the surface in order /
-# (regardless of clockwise or anticlockwise) and mesh sizes for each layer as a dictionary
+# define the name labels of the layers; points coordinates of the surface in clockwise or anti-clockwise order;
+# # and mesh sizes for each layer as a dictionary
 # The global_mesh_size is assigned to all layers if a specific mesh size is not given in the function
 # "set_mesh_size_of_group" below
 input_dict = {'soil_1': {"element_size": global_mesh_size,
@@ -47,4 +47,3 @@ gmsh_io.set_mesh_size_of_group("soil_1", 0.1)
 gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, save_file, open_gmsh_gui)
 
 mesh_data = gmsh_io.mesh_data
-

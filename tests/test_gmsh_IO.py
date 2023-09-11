@@ -1,12 +1,16 @@
+from pathlib import Path
+import re
 from sys import platform
 
 import gmsh
 import numpy as np
 import pickle
 import pytest
+from _pytest.capture import CaptureFixture
 
 from gmsh_utils.gmsh_IO import GmshIO
 from utils import TestUtils
+
 
 class TestGmshIO:
     """
@@ -290,7 +294,9 @@ class TestGmshIO:
                                         7: [1.0, 1.0, -1.0], 8: [0.0, 1.0, -1.0]},
                               'elements': {'TETRAHEDRON_4N': {1: [2, 1, 4, 8], 2: [5, 6, 8, 2], 3: [5, 2, 8, 1],
                                                               4: [2, 4, 3, 7], 5: [8, 6, 7, 2], 6: [8, 2, 7, 4]}}}
-# check if the coordinates of the points are correct
+
+
+        # check if the coordinates of the points are correct
         TestUtils.assert_dictionary_almost_equal(expected_mesh_data, mesh_data)
 
     def test_generate_geo_from_geo_data(self, expected_geo_data_3D):
@@ -643,7 +649,7 @@ class TestGmshIO:
         gmsh_io.extract_geo_data()
         filled_geo_data = gmsh_io.geo_data
 
-        expected_geo_data = {'points': {1: [0., 0., 0.], 2: [1., 0., 0.], 3: [2.0, 0.0, 0.0],
+        expected_geo_data = {'points': {1: [0., 0., 0.], 2: [1., 0., 0.], 3: [2.0, 0.0,0.0],
                                         4: [0.5, 0., 0.], 5: [1.5, 0., 0.]},
                              'lines': {1: [1, 4], 2: [4, 2], 3: [2, 5], 4: [5, 3]},
                              'surfaces': {},
@@ -955,7 +961,8 @@ class TestGmshIO:
         point_id7 = gmsh.model.occ.addPoint(1, 1, 1)
         point_id8 = gmsh.model.occ.addPoint(0, 1, 1)
 
-# create a volume
+
+        # create a volume
         line_id1 = gmsh.model.occ.addLine(point_id1, point_id2)
         line_id2 = gmsh.model.occ.addLine(point_id2, point_id3)
         line_id3 = gmsh.model.occ.addLine(point_id3, point_id4)
@@ -998,7 +1005,7 @@ class TestGmshIO:
         line_id14 = gmsh.model.occ.addLine(point_id2, point_id7)
 
         # create surface
-        curve_loop_id7 = gmsh.model.occ.addCurveLoop([line_id1, line_id14, line_id7, line_id13])
+        curve_loop_id7 = gmsh.model.occ.addCurveLoop([line_id1, line_id14, line_id7,line_id13])
         surface_id_7: int = gmsh.model.occ.addPlaneSurface([curve_loop_id7])
         gmsh.model.addPhysicalGroup(2, [surface_id_7], name="new_surface")
 
@@ -1424,6 +1431,249 @@ class TestGmshIO:
         assert gmsh_io.geo_data["physical_groups"]["surface"]["geometry_ids"] == [1]
         assert gmsh_io.geo_data["physical_groups"]["point1"]["geometry_ids"] == [3]
         assert gmsh_io.geo_data["physical_groups"]["point2"]["geometry_ids"] == [3]
+
+    def test_validate_layer_parameters(self, capfd: CaptureFixture[str]):
+        """
+        Checks whether the layer parameters are validated correctly. And errors should be raised if the layer parameters
+        are not valid.
+
+        Args:
+            - capfd: Pytest fixture to capture stdout and stderr.
+
+        """
+
+        gmsh_io = GmshIO()
+
+        # valid layer parameters, no error should be raised
+        layer_parameters = {"layer_1": {"coordinates": [[0,0,0], [1,1,1]],
+                                        "element_size": 1,
+                                        "ndim": 1,
+                                        "extrusion_length": 1}}
+        gmsh_io.validate_layer_parameters(layer_parameters)
+
+        # missing coordinates, error should be raised
+        layer_parameters = {"layer_1": {"element_size": 1,
+                                        "ndim": 1,
+                                        "extrusion_length": 1}}
+
+        with pytest.raises(ValueError, match=r"Layer layer_1 must contain the key 'coordinates'"):
+            gmsh_io.validate_layer_parameters(layer_parameters)
+
+        # missing ndim, error should be raised
+        layer_parameters = {"layer_1": {"coordinates": [[0,0,0], [1,1,1]],
+                                        "element_size": 1,
+                                        "extrusion_length": 1}}
+
+        with pytest.raises(ValueError, match=r"Layer layer_1 must contain the key 'ndim'"):
+            gmsh_io.validate_layer_parameters(layer_parameters)
+
+        # missing extrusion length in 3D, error should be raised
+        layer_parameters = {"layer_1": {"coordinates": [[0,0,0], [1,1,1]],
+                                        "element_size": 1,
+                                        "ndim": 3}}
+
+        with pytest.raises(ValueError, match=r"Layer layer_1 must contain the key 'extrusion_length', "
+                                             r"which is needed for 3D geometries"):
+            gmsh_io.validate_layer_parameters(layer_parameters)
+
+        # missing extrusion length in non-3D, should not raise an error
+        layer_parameters = {"layer_1": {"coordinates": [[0,0,0], [1,1,1]],
+                                        "element_size": 1,
+                                        "ndim": 2}}
+
+        gmsh_io.validate_layer_parameters(layer_parameters)
+
+        # missing element size, warning should be printed
+        layer_parameters = {"layer_1": {"coordinates": [[0,0,0], [1,1,1]],
+                                        "ndim": 1,
+                                        "extrusion_length": 1}}
+
+        gmsh_io.validate_layer_parameters(layer_parameters)
+        console_output, _ = capfd.readouterr()
+
+        assert ("Warning: Layer layer_1 does not contain the key 'element_size'. "
+                "The element size will be determined by gmsh.") == console_output.strip()
+
+        # non supported ndim value, error should be raised
+        layer_parameters = {"layer_1": {"coordinates": [[0, 0, 0], [1, 1, 1]],
+                                        "element_size": 1,
+                                        "extrusion_length": 1,
+                                        "ndim": 4}}
+
+        with pytest.raises(ValueError, match=f"ndim must be 0, 1, 2 or 3. ndim=4"):
+            gmsh_io.validate_layer_parameters(layer_parameters)
+
+    def test_write_mesh(self):
+        """
+        Checks whether the mesh is written correctly to a file.
+        """
+
+        # create line geometry
+        layer_parameters = {"line": {"coordinates": [[0, 0, 0], [1, 1, 1]],
+                                     "element_size": 1,
+                                     "ndim": 1}}
+
+        gmsh_io = GmshIO()
+
+        gmsh_io.generate_geometry(layer_parameters, "")
+
+        gmsh_io.generate_extract_mesh(2, "test_mesh_line.msh", ".", True, False)
+
+        # check if file is created
+        assert Path("test_mesh_line.msh").is_file()
+
+        # open generated mesh file
+        with open("test_mesh_line.msh", "r") as file:
+            generate_mesh = file.readlines()
+
+        # open expected mesh file
+        with open("tests/test_data/expected_mesh_line.msh", "r") as file:
+            expected_mesh = file.readlines()
+
+        # check if generated mesh file is equal to expected mesh file
+        for generated_line, expected_line in zip(generate_mesh, expected_mesh):
+            temp = re.findall(r'\d+', generated_line)
+            generated_numbers = list(map(int, temp))
+
+            temp = re.findall(r'\d+', expected_line)
+            expected_numbers = list(map(int, temp))
+
+            # assert string if line does not contain numbers, else assert numbers
+            if len(expected_numbers) == 0:
+                assert generated_line == expected_line
+            else:
+                np.testing.assert_array_almost_equal(generated_numbers, expected_numbers)
+
+        # remove test file
+        Path("test_mesh_line.msh").unlink()
+
+    def test_two_point_groups_with_same_name(self):
+        """
+        Checks whether the points are added correctly to the existing physical group.
+        """
+
+        gmsh_io = GmshIO()
+
+        # create first point input
+        input_first_point = {'point': {"coordinates": [(0, 0, 0), (1,0,0), (0,1,0)],
+                                       "ndim": 0}}
+
+        # create second point input, note that one coordinate already exists
+        input_second_point = {'point': {"coordinates": [(3, 0, 0), (2,0,0), (0,1,0)],
+                                        "ndim": 0}}
+
+        # generate points separately
+        gmsh_io.generate_geometry(input_first_point, "")
+        gmsh_io.generate_geometry(input_second_point, "")
+
+        geo_data = gmsh_io.geo_data
+
+        # set expected data
+        expected_group_data = {"point": {"geometry_ids": [1, 2, 3, 4, 5], "id": 1, "ndim": 0}}
+
+        TestUtils.assert_dictionary_almost_equal(geo_data["physical_groups"], expected_group_data)
+
+    def test_two_line_groups_with_same_name(self):
+        """
+        Checks whether the lines are added correctly to the existing physical group.
+        """
+
+        gmsh_io = GmshIO()
+
+        # create first line input
+        input_first_line = {'line': {"coordinates": [(0, 0, 0), (3, 0, 0)],
+                                     "ndim": 1}}
+
+        # create second line input
+        input_second_line = {'line': {"coordinates": [(0, 0, 1), (3, 0, 1)],
+                                      "ndim": 1}}
+
+        # generate lines separately
+        gmsh_io.generate_geometry(input_first_line, "")
+        gmsh_io.generate_geometry(input_second_line, "")
+
+        geo_data = gmsh_io.geo_data
+
+        # set expected data
+        expected_group_data = {"line": {"geometry_ids": [1, 2], "id": 1, "ndim": 1}}
+
+        TestUtils.assert_dictionary_almost_equal(geo_data["physical_groups"], expected_group_data)
+
+    def test_two_surface_groups_with_same_name(self):
+        """
+        Checks whether the surfaces are added correctly to the existing physical group.
+        """
+
+        gmsh_io = GmshIO()
+
+        # create first surface input
+        input_first_surface = {'surface': {"coordinates": [(0, 0, 0), (3, 0, 0), (3, 1, 0), (0, 1, 0)],
+                                           "ndim": 2}}
+
+        # create second surface input
+        input_second_surface = {'surface': {"coordinates": [(0, 0, 1), (3, 0, 1), (3, 1, 1), (0, 1, 1)],
+                                            "ndim": 2}}
+
+        # generate surfaces separately
+        gmsh_io.generate_geometry(input_first_surface, "")
+        gmsh_io.generate_geometry(input_second_surface, "")
+
+        geo_data = gmsh_io.geo_data
+
+        # set expected data
+        expected_group_data = {"surface": {"geometry_ids": [1, 2], "id": 1, "ndim": 2}}
+
+        TestUtils.assert_dictionary_almost_equal(geo_data["physical_groups"], expected_group_data)
+
+    def test_two_volume_groups_with_same_name(self):
+        """
+        Checks whether the volumes are added correctly to the existing physical group.
+        """
+
+        gmsh_io = GmshIO()
+
+        # create first volume input
+        input_first_volume = {'volume': {"coordinates": [(0, 0, 0), (3, 0, 0), (3, 1, 0), (0, 1, 0)],
+                                            "ndim": 3,
+                                            "extrusion_length": [0, 0, 1]}}
+
+        # create second volume input
+        input_second_volume = {'volume': {"coordinates": [(0, 0, 2), (3, 0, 2), (3, 1, 2), (0, 1, 2)],
+                                            "ndim": 3,
+                                            "extrusion_length": [0, 0, 1]}}
+
+        # generate volumes separately
+        gmsh_io.generate_geometry(input_first_volume, "")
+        gmsh_io.generate_geometry(input_second_volume, "")
+
+        geo_data = gmsh_io.geo_data
+
+        # set expected data
+        expected_group_data = {"volume": {"geometry_ids": [1, 2], "id": 1, "ndim": 3}}
+
+        TestUtils.assert_dictionary_almost_equal(geo_data["physical_groups"], expected_group_data)
+
+    def test_two_different_dimension_groups_with_same_name(self):
+        """
+        Checks whether an exception is raised that all items in a physical group must have the same dimension.
+        """
+
+        gmsh_io = GmshIO()
+
+        # create first line input
+        input_first_line = {'group_1': {"coordinates": [(0, 0, 0), (3, 0, 0)],
+                                        "ndim": 1}}
+
+        # create first point input
+        input_first_point = {'group_1': {"coordinates": [(0, 0, 0)],
+                                         "ndim": 0}}
+
+        # generate groups separately, exception is raised
+        gmsh_io.generate_geometry(input_first_line, "")
+        with pytest.raises(ValueError, match=r"Cannot add geometry ids to physical group group_1 with dimension 0 as "
+                                             r"the physical group already exists with dimension 1."):
+            gmsh_io.generate_geometry(input_first_point, "")
+
 
     def test_set_mesh_size_of_group_1D(self):
         """
