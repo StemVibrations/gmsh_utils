@@ -512,40 +512,6 @@ class GmshIO:
 
         self.finalize_gmsh()
 
-    def generate_extract_mesh(self, dims: int, mesh_name: str, mesh_output_dir: str,
-                              save_file: bool = False, open_gmsh_gui: bool = False) -> None:
-        """
-        Generates and extracts mesh for the geometry
-
-        Args:
-            - dims (int): The dimension of geometry (2=2D or 3=3D).
-            - mesh_name (str): Name of gmsh model and mesh output file.
-            - mesh_output_dir (str): Output directory of mesh file.
-            - save_file (bool, optional): If True, saves mesh data to gmsh msh file. (default is False)
-            - open_gmsh_gui (bool, optional): User indicates whether to open gmsh interface (default is False)
-
-        Returns:
-            None
-        """
-
-        gmsh.model.mesh.generate(dims)
-
-        self.extract_mesh_data()
-
-        if save_file:
-            # writes mesh file output in .msh format
-
-            # create directory if it does not exist
-            pathlib.Path(mesh_output_dir).mkdir(parents=True, exist_ok=True)
-            mesh_output_file = (pathlib.Path(mesh_output_dir) / mesh_name).with_suffix(".msh")
-            gmsh.write(str(mesh_output_file))
-
-        # opens Gmsh interface
-        if open_gmsh_gui:
-            gmsh.fltk.run()
-
-        self.finalize_gmsh()
-
     def create_node_data_dict(self, node_tags: npt.NDArray[np.int_],
                               node_coordinates: npt.NDArray[np.float64]) -> Dict[int, Sequence[float]]:
         """
