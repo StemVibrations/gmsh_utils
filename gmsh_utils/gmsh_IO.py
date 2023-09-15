@@ -673,7 +673,7 @@ class GmshIO:
         """
 
         # get all entities
-        entities = gmsh.model.get_entities()
+        entities = gmsh.model.occ.get_entities()
 
         geo_data: Dict[str, Dict[str, Any]] = {"points": {},
                                                "lines": {},
@@ -881,8 +881,12 @@ class GmshIO:
         """
 
         # intersect all entities with each other
-        entities = gmsh.model.occ.get_entities()
-        new_entities, new_entities_map = gmsh.model.occ.intersect(entities, entities)
+        entities = gmsh.model.get_entities()
+
+        # remove duplicates after fragmentation, else wrong geometries can be created
+        new_entities, new_entities_map = gmsh.model.occ.intersect(entities, entities,
+                                                                  removeObject=False, removeTool=False)
+        gmsh.model.occ.removeAllDuplicates()
 
         # get all new entities
         filtered_entities_map = new_entities_map[:len(entities)]
