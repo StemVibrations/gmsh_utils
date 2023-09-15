@@ -673,7 +673,7 @@ class GmshIO:
         """
 
         # get all entities
-        entities = gmsh.model.occ.get_entities()
+        entities = gmsh.model.get_entities()
 
         geo_data: Dict[str, Dict[str, Any]] = {"points": {},
                                                "lines": {},
@@ -709,12 +709,12 @@ class GmshIO:
             name = gmsh.model.getPhysicalName(group[0], group[1])
 
             # gets entity per group
-            entities = gmsh.model.getEntitiesForPhysicalGroup(group[0], group[1])
+            geometry_ids = gmsh.model.getEntitiesForPhysicalGroup(group[0], group[1])
 
             # add group to dictionary
             geo_data["physical_groups"][name] = {"ndim": group[0],
                                                  "id": group[1],
-                                                 "geometry_ids": entities.tolist()}
+                                                 "geometry_ids": geometry_ids.tolist()}
 
         self.__geo_data = geo_data
 
@@ -883,14 +883,16 @@ class GmshIO:
         # intersect all entities with each other
         entities = gmsh.model.get_entities()
 
-        # remove duplicates after fragmentation, else wrong geometries can be created
-        new_entities, new_entities_map = gmsh.model.occ.intersect(entities, entities,
-                                                                  removeObject=False, removeTool=False)
-        gmsh.model.occ.removeAllDuplicates()
+        new_entities, new_entities_map = gmsh.model.occ.fragment(entities, entities,
+                                                                  removeObject=True, removeTool=True)
+        # fix degenerated entities
+        gmsh.model.occ.healShapes(fixDegenerated=True, fixSmallEdges=False, fixSmallFaces=False, sewFaces=False,
+                                  makeSolids=False)
 
         # get all new entities
         filtered_entities_map = new_entities_map[:len(entities)]
 
+        # gmsh.model.geo.synchronize()
         # get all physical groups
         physical_groups = gmsh.model.getPhysicalGroups()
 
