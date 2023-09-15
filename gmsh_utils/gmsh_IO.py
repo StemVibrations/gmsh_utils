@@ -881,7 +881,7 @@ class GmshIO:
         """
 
         # intersect all entities with each other
-        entities = gmsh.model.get_entities()
+        entities = gmsh.model.occ.get_entities()
         new_entities, new_entities_map = gmsh.model.occ.intersect(entities, entities)
 
         # get all new entities
