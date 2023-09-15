@@ -647,9 +647,9 @@ class TestGmshIO:
         gmsh_io.extract_geo_data()
         filled_geo_data = gmsh_io.geo_data
 
-        expected_geo_data = {'points': {1: [0., 0., 0.], 2: [1., 0., 0.], 3: [2.0, 0.0,0.0],
-                                        4: [0.5, 0., 0.], 5: [1.5, 0., 0.]},
-                             'lines': {1: [1, 4], 2: [4, 2], 3: [2, 5], 4: [5, 3]},
+        expected_geo_data = {'points': {1: [0., 0., 0.], 3: [1., 0., 0.], 5: [2.0, 0.0,0.0],
+                                        2: [0.5, 0., 0.], 4: [1.5, 0., 0.]},
+                             'lines': {1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [4, 5]},
                              'surfaces': {},
                              'volumes': {},
                              'physical_groups': {'line': {'geometry_ids': [1, 2, 3, 4], 'id': 1, 'ndim': 1},
@@ -667,6 +667,9 @@ class TestGmshIO:
 
         # check if geo data hasn't changed after re-synchronizing
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
+
+        # check if mesh can be generated
+        gmsh.model.mesh.generate(2)
 
     def test_synchronize_gmsh_with_intersection_line_on_surface(self):
         """
@@ -1090,18 +1093,18 @@ class TestGmshIO:
         gmsh_io.extract_geo_data()
         filled_geo_data = gmsh_io.geo_data
 
-        expected_geo_data = {'points': {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0],
-                                        5: [0.0, 0.0, 1.0], 6: [1.0, 0.0, 1.0], 7: [1.0, 1.0, 1.0], 8: [0.0, 1.0, 1.0],
-                                        9: [0.25, 1.0, 0.0], 10: [0.25, 1.0, 1.0]},
-                             'lines': {1: [1, 2], 2: [2, 3], 4: [4, 1], 5: [1, 5], 6: [2, 6],
-                                       7: [5, 6], 8: [3, 7], 9: [6, 7], 10: [4, 8], 12: [8, 5],
-                                       13: [9, 10], 14: [3, 9], 15: [7, 10], 16: [9, 4], 17: [10, 8]},
-                             'surfaces': {2: [5, 7, -6, -1], 3: [6, 9, -8, -2], 5: [10, 12, -5, -4],
-                                          7: [-14, 8, 15, -13], 8: [-16, 13, 17, -10], 9: [1, 2, 14, 16, 4],
-                                          10: [7, 9, 15, 17, 12]},
-                             'volumes': {2: [-2, -3, -7, -8, -5, -9, 10]},
+        expected_geo_data = {'points': {1: [0.0, 0.0, 0.0], 2: [0.0, 0.0, 1.0], 3: [1.0, 0.0, 1.0], 4: [1.0, 0.0, 0.0],
+                                        5: [1.0, 1.0, 1.0], 6: [1.0, 1.0, 0.0], 7: [0.25, 1.0, 0.0],
+                                        8: [0.25, 1.0, 1.0], 9: [0.0, 1.0, 0.0], 10: [0.0, 1.0, 1.0]},
+                             'lines': {1: [1, 2], 2: [2, 3], 3: [4, 3], 4: [1, 4], 5: [3, 5], 6: [6, 5],
+                                       7: [4, 6], 8: [6, 7], 9: [7, 8], 10: [5, 8], 11: [7, 9], 12: [9, 10],
+                                       13: [8, 10], 14: [10, 2], 15: [9, 1]},
+                             'surfaces': {1: [1, 2, -3, -4], 2: [3, 5, -6, -7], 3: [-8, 6, 10, -9],
+                                          4: [-11, 9, 13, -12], 5: [12, 14, -1, -15], 6: [4, 7, 8, 11, 15],
+                                          7: [2, 5, 10, 13, 14]},
+                             'volumes': {1: [-1, -2, -3, -4, -5, -6, 7]},
                              'physical_groups': {'new_line': {'geometry_ids': [13], 'id': 2, 'ndim': 1},
-                                                 'volume': {'geometry_ids': [2], 'id': 1, 'ndim': 3}}}
+                                                 'volume': {'geometry_ids': [1], 'id': 1, 'ndim': 3}}}
 
         # check if geo data is as expected
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
@@ -1115,6 +1118,10 @@ class TestGmshIO:
 
         # check if geo data hasn't changed after re-synchronizing
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
+
+        # check if mesh can be generated
+        gmsh.model.mesh.generate(3)
+
 
     def test_reset_gmsh(self):
         """
@@ -1438,6 +1445,9 @@ class TestGmshIO:
 
         assert gmsh_io.geo_data["physical_groups"]["surface"]["geometry_ids"] == [1]
         assert gmsh_io.geo_data["physical_groups"]["point"]["geometry_ids"] == [1]
+
+        # check if mesh can be generated
+        gmsh.model.mesh.generate(2)
 
     def test_add_multiple_points_at_surface_points(self):
         """
