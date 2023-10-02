@@ -833,7 +833,8 @@ class GmshIO:
         # extract the geometry data
         self.extract_geo_data()
 
-    def generate_mesh(self, ndim: int, element_size: float = 0.0, order: int = 1):
+    def generate_mesh(self, ndim: int, element_size: float = 0.0, order: int = 1, save_file:bool=False,
+                      mesh_output_dir="./", mesh_name:str="mesh_file", open_gmsh_gui:bool=False):
         """
         Generates a mesh from the geometry data.
 
@@ -841,6 +842,10 @@ class GmshIO:
             ndim (int): Dimension of the mesh.
             element_size (float, optional): Element size. Defaults to 0.0.
             order (int, optional): Order of the mesh. Defaults to 1.
+            save_file (bool, optional): If True, saves mesh data to gmsh msh file. (default is False)
+            mesh_name (str): Name of gmsh model and mesh output file.  (default is working directory)
+            mesh_output_dir (str): Output directory of mesh file. (default is `mesh_file`)
+            open_gmsh_gui (bool, optional): User indicates whether to open gmsh interface (default is False)
 
         """
 
@@ -858,6 +863,18 @@ class GmshIO:
 
         # parses gmsh mesh data into a mesh data dictionary
         self.extract_mesh_data()
+
+        if save_file:
+            # writes mesh file output in .msh format
+
+            # create directory if it does not exist
+            pathlib.Path(mesh_output_dir).mkdir(parents=True, exist_ok=True)
+            mesh_output_file = (pathlib.Path(mesh_output_dir)/mesh_name).with_suffix(".msh")
+            gmsh.write(str(mesh_output_file))
+
+        # opens Gmsh interface
+        if open_gmsh_gui:
+            gmsh.fltk.run()
 
         # finalize gmsh
         self.finalize_gmsh()
