@@ -18,10 +18,10 @@ Line(8) = {4, 1};
 
 // create surface
 Line Loop(9) = {5, 6, 7, 8};
-Plane Surface(10) = 9;
+Plane Surface(1) = 9;
 
 
-Transfinite Surface{10};
+Transfinite Surface{1};
 
 // Define the physical groups
-Physical Surface("group_1") = 10;
+Physical Surface("group_1") = 1;

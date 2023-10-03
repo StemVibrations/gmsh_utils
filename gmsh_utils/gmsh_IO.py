@@ -736,7 +736,6 @@ class GmshIO:
             gmsh.open(filename)
 
             self.extract_geo_data()
-
             self.finalize_gmsh()
         else:
             raise FileNotFoundError(f"File {filename} does not exist!")

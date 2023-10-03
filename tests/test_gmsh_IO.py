@@ -23,8 +23,9 @@ class TestGmshIO:
         if gmsh.is_initialized():
             gmsh.finalize()
 
+
     @pytest.fixture
-    def expected_geo_data_3D(self):
+    def expected_geo_data_from_geo(self):
         """
         Expected geometry data for a 3D geometry. The geometry is 2 stacked blocks, where the top and bottom blocks
         are in different groups.
@@ -44,27 +45,40 @@ class TestGmshIO:
         expected_physical_groups = {'group_1': {'geometry_ids': [1], 'id': 1, 'ndim': 3},
                                     'group_2': {'geometry_ids': [2], 'id': 2, 'ndim': 3}}
 
-        # expected_points = {1: [0.0, 0.0, 0.0], 2: [0.5, 0.0, 0.0], 3: [0.5, 1.0, 0.0], 4: [0.0, 1.0, 0.0],
-        #                    5: [0.5, 0.0, -0.5], 6: [0.0, 0.0, -0.5], 7: [0.5, 1.0, -0.5], 8: [0.0, 1.0, -0.5],
-        #                    9: [0.0, 2.0, 0.0], 10: [0.5, 2.0, 0.0], 11: [0.0, 2.0, -0.5], 12: [0.5, 2.0, -0.5]}
-        # expected_lines = {1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [4, 1], 5: [2, 5], 6: [6, 5], 7: [1, 6], 8: [5, 7],
-        #                   9: [7, 8], 10: [8, 6], 11: [3, 7], 12: [4, 8], 13: [4, 9], 14: [9, 10], 15: [10, 3],
-        #                   16: [9, 11], 17: [11, 8], 18: [7, 12], 19: [12, 11], 20: [10, 12]}
-        # expected_surfaces = {1: [1, 2, 3, 4],
-        #              2: [1, 5, -6, -7],
-        #              3: [6, 8, 9, 10],
-        #              4: [2, 11, -8, -5],
-        #              5: [3, 12, -9, -11],
-        #              6: [4, 7, -10, -12],
-        #              7: [13, 14, 15, 3],
-        #              8: [13, 16, 17, -12],
-        #              9: [17, -9, 18, 19],
-        #              10: [15, 11, 18, -20],
-        #              11: [14, 20, 19, -16]}
-        # expected_volumes={1: [1, -2, -3, -4, -5, -6], 2: [-7, 8, -9, 5, 10, 11]}
-        # expected_physical_groups = {'group_1': {'geometry_ids': [1], 'id': 1, 'ndim': 3},
-        #                             'group_2': {'geometry_ids': [2], 'id': 2, 'ndim': 3}}
+        return {"points": expected_points,
+                "lines": expected_lines,
+                "surfaces": expected_surfaces,
+                "volumes": expected_volumes,
+                "physical_groups": expected_physical_groups}
 
+
+    @pytest.fixture
+    def expected_geo_data_3D(self):
+        """
+        Expected geometry data for a 3D geometry. The geometry is 2 stacked blocks, where the top and bottom blocks
+        are in different groups.
+        """
+
+        expected_points = {1: [0.0, 0.0, 0.0], 2: [0.5, 0.0, 0.0], 3: [0.5, 1.0, 0.0], 4: [0.0, 1.0, 0.0],
+                           5: [0.5, 0.0, -0.5], 6: [0.0, 0.0, -0.5], 7: [0.5, 1.0, -0.5], 8: [0.0, 1.0, -0.5],
+                           9: [0.0, 2.0, 0.0], 10: [0.5, 2.0, 0.0], 11: [0.0, 2.0, -0.5], 12: [0.5, 2.0, -0.5]}
+        expected_lines = {1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [4, 1], 5: [2, 5], 6: [6, 5], 7: [1, 6], 8: [5, 7],
+                          9: [7, 8], 10: [8, 6], 11: [3, 7], 12: [4, 8], 13: [4, 9], 14: [9, 10], 15: [10, 3],
+                          16: [9, 11], 17: [11, 8], 18: [7, 12], 19: [12, 11], 20: [10, 12]}
+        expected_surfaces = {1: [1, 2, 3, 4],
+                     2: [1, 5, -6, -7],
+                     3: [6, 8, 9, 10],
+                     4: [2, 11, -8, -5],
+                     5: [3, 12, -9, -11],
+                     6: [4, 7, -10, -12],
+                     7: [13, 14, 15, 3],
+                     8: [13, 16, 17, -12],
+                     9: [17, -9, 18, 19],
+                     10: [15, 11, 18, -20],
+                     11: [14, 20, 19, -16]}
+        expected_volumes={1: [1, -2, -3, -4, -5, -6], 2: [-7, 8, -9, 5, 10, 11]}
+        expected_physical_groups = {'group_1': {'geometry_ids': [1], 'id': 1, 'ndim': 3},
+                                    'group_2': {'geometry_ids': [2], 'id': 2, 'ndim': 3}}
         return {"points": expected_points,
                 "lines": expected_lines,
                 "surfaces": expected_surfaces,
@@ -77,21 +91,21 @@ class TestGmshIO:
         Expected geometry data for a 3D geometry. The geometry is 2 stacked blocks, where the top and bottom blocks
         are in different groups.
         """
-        expected_points = {1: [0., 0., 0.], 2: [0.5, 0., 0.], 3: [0.5, 1., 0.], 4: [0., 1., 0.], 11: [0., 2., 0.],
-                           12: [0.5, 2., 0.], 13: [0., 0., -0.5], 14: [0.5, 0., -0.5], 18: [0.5, 1., -0.5],
-                           22: [0., 1., -0.5], 23: [0., 2., -0.5], 32: [0.5, 2., -0.5]}
-        expected_lines = {5: [1, 2], 6: [2, 3], 7: [3, 4], 8: [4, 1], 13: [4, 11], 14: [11, 12], 15: [12, 3],
-                          19: [13, 14], 20: [14, 18], 21: [18, 22], 22: [22, 13], 24: [1, 13], 25: [2, 14],
-                          29: [3, 18], 33: [4, 22], 41: [23, 22], 43: [18, 32], 44: [32, 23], 46: [11, 23],
-                          55: [12, 32]}
-        expected_surfaces = {10: [5, 6, 7, 8], 17: [-13, -7, -15, -14], 26: [5, 25, -19, -24], 30: [6, 29, -20, -25],
-                             34: [7, 33, -21, -29], 38: [8, 24, -22, -33], 39: [19, 20, 21, 22],
-                             48: [-13, 33, -41, -46], 56: [-15, 55, -43, -29], 60: [-14, 46, -44, -55],
-                             61: [41, -21, 43, 44]}
-        expected_volumes = {1: [-10, 39, 26, 30, 34, 38], 2: [-17, 61, -48, -34, -56, -60]}
-        expected_physical_groups = {'group_1': {'geometry_ids': [1], 'id': 1, 'ndim': 3},
-                                    'group_2': {'geometry_ids': [2], 'id': 2, 'ndim': 3},
-                                    'gravity': {'geometry_ids': [1, 2], 'id': 3, 'ndim': 3}}
+
+        expected_points = {1: [0.0, 0.0, 0.0], 2: [0.5, 0.0, 0.0], 3: [0.5, 1.0, 0.0], 4: [0.0, 1.0, 0.0],
+                           5: [0.5, 0.0, -0.5], 6: [0.0, 0.0, -0.5], 7: [0.5, 1.0, -0.5], 8: [0.0, 1.0, -0.5],
+                           9: [0.0, 2.0, 0.0], 10: [0.5, 2.0, 0.0], 11: [0.0, 2.0, -0.5], 12: [0.5, 2.0, -0.5]}
+        expected_lines = {1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [4, 1], 5: [2, 5], 6: [6, 5], 7: [1, 6],
+                          8: [5, 7], 9: [7, 8], 10: [8, 6], 11: [3, 7], 12: [4, 8], 13: [4, 9], 14: [9, 10],
+                          15: [10, 3], 16: [9, 11], 17: [11, 8], 18: [7, 12], 19: [12, 11], 20: [10, 12]}
+        expected_surfaces = {1: [1, 2, 3, 4], 2: [1, 5, -6, -7], 3: [6, 8, 9, 10], 4: [2, 11, -8, -5],
+                             5: [3, 12, -9, -11], 6: [4, 7, -10, -12], 7: [13, 14, 15, 3], 8: [13, 16, 17, -12],
+                             9: [17, -9, 18, 19], 10: [15, 11, 18, -20], 11: [14, 20, 19, -16]}
+        expected_volumes = {1: [1, -2, -3, -4, -5, -6], 2: [-7, 8, -9, 5, 10, 11]}
+        expected_physical_groups = {'gravity': {'geometry_ids': [1, 2], 'id': 3, 'ndim': 3},
+                             'group_1': {'geometry_ids': [1], 'id': 1, 'ndim': 3},
+                             'group_2': {'geometry_ids': [2], 'id': 2, 'ndim': 3}}
+
 
         return {"points": expected_points,
                 "lines": expected_lines,
@@ -252,7 +266,7 @@ class TestGmshIO:
         # check if expected and actual geo data are equal
         TestUtils.assert_dictionary_almost_equal(expected_geo_data, geo_data)
 
-    def test_read_gmsh_geo_3D(self, expected_geo_data_3D):
+    def test_read_gmsh_geo_3D(self, expected_geo_data_from_geo):
         """
         Checks whether a gmsh .geo file is read correctly. For a 3d geometry
         """
@@ -264,7 +278,7 @@ class TestGmshIO:
         geo_data = gmsh_io.geo_data
 
         # check if expected and actual geo data are equal
-        TestUtils.assert_dictionary_almost_equal(expected_geo_data_3D, geo_data)
+        TestUtils.assert_dictionary_almost_equal(expected_geo_data_from_geo, geo_data)
 
     def test_read_gmsh_msh_2D(self):
         """
@@ -427,18 +441,18 @@ class TestGmshIO:
                                         3: [1., 1., 0.],
                                         4: [0., 1., 0.],
                                         5: [0.5, 0.5, 0.]},
-                              'elements': {'LINE_2N': {9: [1, 2],
-                                                       10: [2, 3],
-                                                       11: [3, 4],
-                                                       12: [4, 1]},
-                                           'TRIANGLE_3N': {1: [2, 5, 1],
-                                                           2: [1, 5, 4],
-                                                           3: [3, 5, 2],
-                                                           4: [4, 5, 3]},
-                                           'POINT_1N': {5: [1],
-                                                        6: [2],
-                                                        7: [3],
-                                                        8: [4]}},
+                              'elements': {'LINE_2N': {5: [1, 2],
+                                                       6: [2, 3],
+                                                       7: [3, 4],
+                                                       8: [4, 1]},
+                                           'TRIANGLE_3N': {9: [2, 5, 1],
+                                                           10: [1, 5, 4],
+                                                           11: [3, 5, 2],
+                                                           12: [4, 5, 3]},
+                                           'POINT_1N': {1: [1],
+                                                        2: [2],
+                                                        3: [3],
+                                                        4: [4]}},
                               'physical_groups': {'group_1': {"ndim": 2,
                                                               "node_ids": [1, 2, 3, 4, 5],
                                                               "element_ids": [1, 2, 3, 4],
