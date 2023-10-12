@@ -121,7 +121,8 @@ class TestGmshIO:
         gmsh_io = GmshIO()
 
         gmsh_io.generate_geometry(input_dict, mesh_output_name)
-        gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, save_file, open_gmsh_gui)
+        gmsh_io.generate_mesh(dims, mesh_name=mesh_output_name, mesh_output_dir=mesh_output_dir, save_file=save_file,
+                              open_gmsh_gui=open_gmsh_gui)
 
         mesh_data = gmsh_io.mesh_data
 
@@ -188,7 +189,8 @@ class TestGmshIO:
         gmsh_io = GmshIO()
 
         gmsh_io.generate_geometry(input_dict, mesh_output_name)
-        gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, save_file, open_gmsh_gui)
+        gmsh_io.generate_mesh(dims, mesh_name=mesh_output_name, mesh_output_dir=mesh_output_dir, save_file=save_file,
+                              open_gmsh_gui=open_gmsh_gui)
 
         mesh_data = gmsh_io.mesh_data
 
@@ -1514,8 +1516,11 @@ class TestGmshIO:
 
         gmsh_io.generate_geometry(layer_parameters, "")
 
-        gmsh_io.generate_extract_mesh(2, "test_mesh_line.msh", ".", True, False)
-
+        # gmsh_io.generate_extract_mesh(2, "test_mesh_line.msh", ".", True, False)
+        gmsh_io.generate_mesh(
+            2, element_size=1, mesh_name="test_mesh_line.msh", mesh_output_dir=".", save_file=True,
+            open_gmsh_gui=False
+        )
         # check if file is created
         assert Path("test_mesh_line.msh").is_file()
 
