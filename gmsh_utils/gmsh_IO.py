@@ -823,8 +823,8 @@ class GmshIO:
         element_size: float = 0.0,
         order: int = 1,
         save_file: bool = False,
-        mesh_output_dir: str = "./",
         mesh_name: str = "mesh_file",
+        mesh_output_dir: str = "./",
         open_gmsh_gui: bool = False,
     ):
         """
