@@ -1711,7 +1711,6 @@ class TestGmshIO:
 
         gmsh.model.addPhysicalGroup(3, [volume_id], tag=-1, name="volume")
 
-
         # create intersection line
         point_id_5 = gmsh.model.occ.addPoint(0.25, 1, 0,0.1)
         point_id_6 = gmsh.model.occ.addPoint(0.25, 1, 1,0.1)

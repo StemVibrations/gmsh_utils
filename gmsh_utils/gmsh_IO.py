@@ -930,9 +930,17 @@ class GmshIO:
         # re-add physical groups on split entities
         self.__readd_physical_group_on_split_entities(geo_entities, filtered_entities_map)
 
-
     def __readd_physical_group_on_split_entities(self, original_entities: List[Tuple[int, int]],
                                                  split_entities: List[List[Tuple[int, int]]]):
+        """
+        Re-adds physical groups on split entities. The physical groups are removed and then re-added with the new
+        entities.
+
+        Args:
+            - original_entities (List[Tuple[int, int]]): List of original entities.
+            - split_entities (List[List[Tuple[int, int]]]): List of the new split entities.
+        """
+
         # get all physical groups
         physical_groups = gmsh.model.getPhysicalGroups()
 
