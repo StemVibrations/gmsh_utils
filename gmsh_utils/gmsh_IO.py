@@ -45,7 +45,11 @@ class GmshIO:
 
         """
         self.__mesh_data = {}
-        self.__geo_data = {}
+        self.__geo_data = {"points": {},
+                           "lines": {},
+                           "surfaces": {},
+                           "volumes": {},
+                           "physical_groups": {}}
 
     @property
     def mesh_data(self) -> Dict[str, Any]:
@@ -447,7 +451,12 @@ class GmshIO:
 
         self.extract_geo_data()
 
-    def set_mesh_size_of_group(self, group_name: str, mesh_size=-1) -> None:
+        # add element size to geo data
+        for layer_name, layer in layer_parameters.items():
+            if "element_size" in layer and layer["element_size"] > 0:
+                self.__geo_data["physical_groups"][layer_name]["element_size"] = layer["element_size"]
+
+    def set_mesh_size_of_group(self, group_name: str, mesh_size: float) -> None:
         """
         Sets the customized mesh size of a specific group
 
@@ -456,13 +465,17 @@ class GmshIO:
              - mesh_size (float): The customized mesh size provided by user for a specific group.
 
         Returns:
-            None
+            - None
         """
 
         if mesh_size <= 0:
             raise ValueError(f"The mesh size of {group_name} is smaller than or equal to zero. "
                              f"Please provide a mesh size larger than zero.")
         group = self.geo_data["physical_groups"][group_name]
+
+        # add data to physical group
+        group["element_size"] = mesh_size
+
         geometry_ids = group["geometry_ids"]
         for geometry_id in geometry_ids:
             ndim = group["ndim"]
@@ -704,6 +717,12 @@ class GmshIO:
                                                  "id": group[1],
                                                  "geometry_ids": entities.tolist()}
 
+            # add previously defined element size to physical group
+            if name in self.geo_data["physical_groups"]:
+                if "element_size" in self.geo_data["physical_groups"][name]:
+                    geo_data["physical_groups"][name]["mesh_size"] = (
+                        self.geo_data)["physical_groups"][name]["element_size"]
+
         self.__geo_data = geo_data
 
     def read_gmsh_geo(self, filename: str):
@@ -821,22 +840,14 @@ class GmshIO:
         # extract the geometry data
         self.extract_geo_data()
 
-    def generate_mesh(
-        self,
-        ndim: int,
-        element_size: float = 0.0,
-        order: int = 1,
-        save_file: bool = False,
-        mesh_name: str = "mesh_file",
-        mesh_output_dir: str = "./",
-        open_gmsh_gui: bool = False,
-    ):
+    def generate_mesh(self, ndim: int, element_size: float = -1, order: int = 1, save_file: bool = False,
+                      mesh_name: str = "mesh_file", mesh_output_dir: str = "./", open_gmsh_gui: bool = False):
         """
         Generates a mesh from the geometry data.
 
         Args:
             - ndim (int): Dimension of the mesh.
-            - element_size (float): Element size. Defaults to 0.0.
+            - element_size (float): Element size. Defaults to -1, which lets gmsh choose the element size.
             - order (int, optional): Order of the mesh. Defaults to 1.
             - save_file (bool): If True, saves mesh data to gmsh msh file. Defaults to False.
             - mesh_name (str): Name of gmsh model and mesh output file. Defaults to `mesh_file`.
@@ -848,8 +859,34 @@ class GmshIO:
         # sets gmsh geometry from a geometry data dictionary
         self.generate_geo_from_geo_data()
 
-        if element_size > 0.0:
-            gmsh.model.mesh.setSize(gmsh.model.getEntities(), element_size)
+        # get all physical groups from geo data
+        group_names, groups = self.geo_data["physical_groups"].keys(), self.geo_data["physical_groups"].values()
+
+        # get group names and groups which contain explicit element size information
+        # group_names_with_info, groups_with_info = zip(*[(group_name, group) for group_name, group in zip(group_names, groups)
+        #                             if "element_size" in group])
+
+        group_with_info = zip(*[(group_name, group) for group_name, group in zip(group_names, groups)
+                                    if "element_size" in group])
+
+        if len(list(group_with_info)) > 0:
+            # sort groups and group names by element size, where the highest element size is first
+            group_names_with_info, groups_with_info = zip(*[(group_name, group) for group_name, group in zip(group_names, groups)
+                                    if "element_size" in group])
+            # sort groups and group names by element size, where the highest element size is first
+            sorted_groups, sorted_group_names = zip(*sorted(zip(groups_with_info, group_names_with_info),
+                                                       key=lambda x: x[0]["element_size"], reverse=True))
+        else:
+            sorted_groups, sorted_group_names = [], []
+
+
+
+        # set mesh size per group, if element size is provided in group, else use the global element size
+        for group_name, group in zip(sorted_group_names, sorted_groups):
+            if "element_size" in group:
+                self.set_mesh_size_of_group(group_name, group["element_size"])
+            elif element_size > 0.0:
+                self.set_mesh_size_of_group(group_name, element_size)
 
         # set mesh order
         gmsh.model.mesh.setOrder(order)
