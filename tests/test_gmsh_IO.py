@@ -1718,43 +1718,31 @@ class TestGmshIO:
 
         line_id5 = gmsh.model.occ.addLine(point_id_5, point_id_6)
         gmsh.model.addPhysicalGroup(1, [line_id5], name="new_line")
-        # gmsh.model.occ.synchronize()
-        # gmsh.model.geo.synchronize()
-        # #
-        #
-        # entities = gmsh.model.occ.get_entities()
-        # volumes = [entity for entity in entities if entity[0] == 3]
-        # lines = [entity for entity in entities if entity[0] == 1]
-        #
-        # gmsh.model.occ.fragment(volumes, lines, removeObject=True, removeTool=True)
 
         # synchronize gmsh
-        # gmsh.model.occ.synchronize()
         gmsh_io.synchronize_gmsh()
-        # gmsh.model.mesh.generate(3)
 
         # extract geo data
         gmsh_io.extract_geo_data()
         filled_geo_data = gmsh_io.geo_data
 
-        expected_geo_data = {'points': {1: [0.0, 0.0, 0.0], 2: [0.0, 0.0, 1.0], 3: [1.0, 0.0, 1.0], 4: [1.0, 0.0, 0.0],
-                                        5: [1.0, 1.0, 1.0], 6: [1.0, 1.0, 0.0], 7: [0.25, 1.0, 0.0],
-                                        8: [0.25, 1.0, 1.0], 9: [0.0, 1.0, 0.0], 10: [0.0, 1.0, 1.0]},
-                             'lines': {1: [1, 2], 2: [2, 3], 3: [4, 3], 4: [1, 4], 5: [3, 5], 6: [6, 5],
-                                       7: [4, 6], 8: [6, 7], 9: [7, 8], 10: [5, 8], 11: [7, 9], 12: [9, 10],
-                                       13: [8, 10], 14: [10, 2], 15: [9, 1]},
-                             'surfaces': {1: [1, 2, -3, -4], 2: [3, 5, -6, -7], 3: [-8, 6, 10, -9],
-                                          4: [-11, 9, 13, -12], 5: [12, 14, -1, -15], 6: [4, 7, 8, 11, 15],
-                                          7: [2, 5, 10, 13, 14]},
-                             'volumes': {1: [-1, -2, -3, -4, -5, -6, 7]},
-                             'physical_groups': {'new_line': {'geometry_ids': [13], 'id': 2, 'ndim': 1},
-                                                 'volume': {'geometry_ids': [1], 'id': 1, 'ndim': 3}}}
+        expected_geo_data = {'points': {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0],
+                                        5: [0.0, 0.0, 1.0], 6: [1.0, 0.0, 1.0], 7: [1.0, 1.0, 1.0], 8: [0.0, 1.0, 1.0],
+                                        9: [0.25, 1.0, 0.0], 10: [0.25, 1.0, 1.0]},
+                             'lines': {1: [1, 2], 2: [2, 3], 4: [4, 1], 5: [1, 5], 6: [2, 6], 7: [5, 6],
+                                       8: [3, 7], 9: [6, 7], 10: [4, 8], 12: [8, 5], 13: [9, 10], 14: [3, 9],
+                                       15: [7, 10], 16: [9, 4], 17: [10, 8]},
+                             'surfaces': {1: [1, 2, 14, 16, 4], 2: [5, 7, -6, -1], 3: [6, 9, -8, -2],
+                                          5: [10, 12, -5, -4], 6: [7, 9, 15, 17, 12], 7: [-14, 8, 15, -13],
+                                          8: [-16, 13, 17, -10]},
+                             'volumes': {1: [-2, -3, -7, -8, -5, -1, 6]},
+                             'physical_groups': {'new_line': {'ndim': 1, 'id': 2, 'geometry_ids': [13]},
+                                                 'volume': {'ndim': 3, 'id': 1, 'geometry_ids': [1]}}}
 
-        assert len(filled_geo_data['lines']) == 15
         gmsh.model.mesh.generate(3)
-        gmsh.fltk.run()
+
         # check if geo data is as expected
-        # TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
+        TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
 
         # synchronize gmsh
         gmsh_io.synchronize_gmsh()
@@ -1764,11 +1752,10 @@ class TestGmshIO:
         filled_geo_data = gmsh_io.geo_data
 
         # check if geo data hasn't changed after re-synchronizing
-        # TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
+        TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
 
         # check if mesh can be generated
         gmsh.model.mesh.generate(3)
-        gmsh.fltk.run()
 
 
 
