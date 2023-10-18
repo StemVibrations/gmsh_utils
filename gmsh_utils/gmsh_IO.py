@@ -1,5 +1,5 @@
 import pathlib
-from typing import Dict, List, Union, Type, Any, Sequence
+from typing import Dict, List, Union, Type, Any, Sequence, Tuple
 from enum import Enum
 import re
 
@@ -931,8 +931,8 @@ class GmshIO:
         self.__readd_physical_group_on_split_entities(geo_entities, filtered_entities_map)
 
 
-    def __readd_physical_group_on_split_entities(self, original_entities: Sequence[Sequence[int]],
-                                                 split_entities: Sequence[Sequence[Sequence[int]]]):
+    def __readd_physical_group_on_split_entities(self, original_entities: List[Tuple[int, int]],
+                                                 split_entities: List[List[Tuple[int, int]]]):
         # get all physical groups
         physical_groups = gmsh.model.getPhysicalGroups()
 

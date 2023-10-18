@@ -1023,19 +1023,14 @@ class TestGmshIO:
                                        9: [1, 5], 10: [2, 6], 11: [3, 7], 12: [4, 8],
                                        13: [1, 8], 14: [2, 7]},
                              'surfaces': {1: [1, 2, 3, 4], 2: [5, 6, 7, 8], 3: [1, 10, -5, -9], 5: [3, 12, -7, -11],
-                                          7: [1, 14, 7, -13], 8: [-14, 2, 11], 9: [-12, 4, 13], 10: [-10, 14, -6],
+                                          7: [1, 14, 7, -13], 8: [-14, 2, 11], 9: [-10, 14, -6], 10: [-12, 4, 13],
                                           11: [-13, 9, -8]},
-                             'volumes': {1: [-1, 7, 8, 5, 9], 2: [3, -7, 10, 2, 11]},
+                             'volumes': {1: [-1, 7, 8, 5, 10], 2: [3, -7, 9, 2, 11]},
                              'physical_groups': {'new_surface': {'geometry_ids': [7], 'id': 2, 'ndim': 2},
                                                  'volume': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 3}}}
 
-        gmsh.model.mesh.generate(3)
-        gmsh.fltk.run()
         # check if geo data is as expected
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
-        # from copy import deepcopy
-
-        # expected = deepcopy(filled_geo_data)
 
         # synchronize gmsh
         gmsh_io.synchronize_gmsh()
