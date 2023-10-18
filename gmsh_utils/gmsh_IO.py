@@ -31,15 +31,11 @@ class GmshIO:
     """
     Class for reading and writing mesh data to and from Gmsh
 
-    Attributes
-    ----------
-    mesh_data : Dict
-        Dictionary containing the mesh data, i.e. nodal ids and coordinates; and elemental ids, connectivity's
-        and element types.
-    geo_data : Dict
-        Dictionary containing the geometry data, the geometry data contains: points, lines, surfaces, volumes
-        and the physical groups.
-
+    Attributes:
+        - mesh_data (dict): Dictionary containing the mesh data, i.e. nodal ids and coordinates; and elemental ids, \
+            connectivity's and element types.
+        - geo_data (dict): Dictionary containing the geometry data, the geometry data contains: points, lines, \
+            surfaces, volumes and the physical groups.
 
     """
 
@@ -57,8 +53,8 @@ class GmshIO:
         Returns the mesh data dictionary
 
         Returns:
-            - Dict[str, Any]: Dictionary containing the mesh data, i.e. nodal ids and coordinates; and elemental ids,
-            connectivity's and element types.
+            - Dict[str, Any]: Dictionary containing the mesh data, i.e. nodal ids and coordinates; and elemental ids, \
+                connectivity's and element types.
         """
 
         return self.__mesh_data
@@ -70,8 +66,8 @@ class GmshIO:
         mesh data can only be set by internal methods
 
         Args:
-            - mesh_data (Dict[str, Any]): Dictionary containing the mesh data, i.e. nodal ids and coordinates; and
-            elemental ids, connectivity's and element types.
+            - mesh_data (Dict[str, Any]): Dictionary containing the mesh data, i.e. nodal ids and coordinates; and \
+                elemental ids, connectivity's and element types.
 
         Raises:
             - Exception: Mesh data can only be set by internal methods.
@@ -113,8 +109,8 @@ class GmshIO:
 
         Args:
             - coordinates (Sequence[float]): A list of point tags in order.
-            - mesh_size (float): The element size provided by user input (default is -1,
-            which let gmsh choose the size).
+            - mesh_size (float): The element size provided by user input (default is -1, \
+                which let gmsh choose the size).
 
         Returns:
             - int: point tag
@@ -158,8 +154,7 @@ class GmshIO:
 
         return surface_id
 
-    def create_volume_by_extruding_surface(self, surface_id: int,
-                                           extrusion_length: Sequence[float]) -> int:
+    def create_volume_by_extruding_surface(self, surface_id: int, extrusion_length: Sequence[float]) -> int:
         """
         Creates volume by extruding a 2D surface
 
@@ -181,7 +176,7 @@ class GmshIO:
 
     def __generate_point_pairs_for_closed_loop(self, point_ids: List[int]) -> List[List[int]]:
         """
-        Generates list of consecutive pairs of point tags which is needed to form the lines and closed surfaces
+        Generates list of consecutive pairs of point tags which is needed to form the lines and closed surfaces.
 
         Args:
             - point_ids (List[int]): A list of two ordered point tags
@@ -205,8 +200,7 @@ class GmshIO:
 
         return point_pairs
 
-    def make_points(self, point_coordinates: Sequence[Sequence[float]], element_size: float = -1) \
-            -> List[int]:
+    def make_points(self, point_coordinates: Sequence[Sequence[float]], element_size: float = -1) -> List[int]:
         """
         Makes points with point tags from coordinates.
 
@@ -221,8 +215,7 @@ class GmshIO:
         list_point_ids = [self.create_point(point, element_size) for point in point_coordinates]
         return list_point_ids
 
-    def make_lines(self, point_pairs: Sequence[Sequence[int]]) \
-            -> List[int]:
+    def make_lines(self, point_pairs: Sequence[Sequence[int]]) -> List[int]:
         """
         Makes lines with line tags by getting point pairs.
 
@@ -277,7 +270,7 @@ class GmshIO:
         point_ids = self.make_points(point_coordinates, element_size=element_size)
 
         # create lines
-        line_ids = [self.create_line([point_ids[i],point_ids[i+1]]) for i in range(len(point_ids)-1)]
+        line_ids = [self.create_line([point_ids[i], point_ids[i + 1]]) for i in range(len(point_ids) - 1)]
 
         # only add physical group if name label is not empty
         if name_label != "":
@@ -379,7 +372,7 @@ class GmshIO:
         element_name = ElementType(elem_type).name
 
         # get number of nodes from the enum name
-        num_nodes = int(re.findall(r'\d+', element_name)[0])
+        num_nodes = int(re.findall(r"\d+", element_name)[0])
 
         return num_nodes
 
@@ -394,7 +387,6 @@ class GmshIO:
         """
 
         for key, layer in layer_parameters.items():
-
             if "coordinates" not in layer:
                 raise ValueError(f"Layer {key} must contain the key 'coordinates'")
             if "ndim" not in layer:
@@ -479,38 +471,6 @@ class GmshIO:
             else:
                 entities_list = gmsh.model.getBoundary([(ndim, geometry_id)], recursive=True)
                 gmsh.model.mesh.setSize(entities_list, mesh_size)
-
-    def generate_extract_mesh(self, dims: int, mesh_name: str, mesh_output_dir: str, save_file: bool = False,
-                              open_gmsh_gui: bool = False):
-        """
-        Generates mesh
-
-        Args:
-            - dims (int): The dimension of geometry (2=2D or 3=3D).
-            - mesh_name (str): Name of gmsh model and mesh output file.
-            - mesh_output_dir (str): Output directory of mesh file.
-            - save_file (bool, optional): If True, saves mesh data to gmsh msh file. (default is False)
-            - open_gmsh_gui (bool, optional): User indicates whether to open gmsh interface (default is False)
-
-        """
-
-        gmsh.model.mesh.generate(dims)
-
-        self.extract_mesh_data()
-
-        if save_file:
-            # writes mesh file output in .msh format
-
-            # create directory if it does not exist
-            pathlib.Path(mesh_output_dir).mkdir(parents=True, exist_ok=True)
-            mesh_output_file = (pathlib.Path(mesh_output_dir)/mesh_name).with_suffix(".msh")
-            gmsh.write(str(mesh_output_file))
-
-        # opens Gmsh interface
-        if open_gmsh_gui:
-            gmsh.fltk.run()
-
-        self.finalize_gmsh()
 
     def create_node_data_dict(self, node_tags: npt.NDArray[np.int_],
                               node_coordinates: npt.NDArray[np.float64]) -> Dict[int, Sequence[float]]:
@@ -712,7 +672,6 @@ class GmshIO:
 
         # loop over all entities
         for entity in entities:
-
             # get dimension and id of entity
             entity_ndim, entity_id = entity[0], entity[1]
 
@@ -862,15 +821,27 @@ class GmshIO:
         # extract the geometry data
         self.extract_geo_data()
 
-
-    def generate_mesh(self, ndim: int, element_size: float = 0.0, order: int = 1):
+    def generate_mesh(
+        self,
+        ndim: int,
+        element_size: float = 0.0,
+        order: int = 1,
+        save_file: bool = False,
+        mesh_name: str = "mesh_file",
+        mesh_output_dir: str = "./",
+        open_gmsh_gui: bool = False,
+    ):
         """
         Generates a mesh from the geometry data.
 
         Args:
             - ndim (int): Dimension of the mesh.
-            - element_size (float, optional): Element size. Defaults to 0.0.
+            - element_size (float): Element size. Defaults to 0.0.
             - order (int, optional): Order of the mesh. Defaults to 1.
+            - save_file (bool): If True, saves mesh data to gmsh msh file. Defaults to False.
+            - mesh_name (str): Name of gmsh model and mesh output file. Defaults to `mesh_file`.
+            - mesh_output_dir (str): Output directory of mesh file. Defaults to working directory.
+            - open_gmsh_gui (bool): User indicates whether to open gmsh interface. Defaults to False.
 
         """
 
@@ -888,6 +859,18 @@ class GmshIO:
 
         # parses gmsh mesh data into a mesh data dictionary
         self.extract_mesh_data()
+
+        if save_file:
+            # writes mesh file output in .msh format
+
+            # create directory if it does not exist
+            pathlib.Path(mesh_output_dir).mkdir(parents=True, exist_ok=True)
+            mesh_output_file = (pathlib.Path(mesh_output_dir) / mesh_name).with_suffix(".msh")
+            gmsh.write(str(mesh_output_file))
+
+        # opens Gmsh interface
+        if open_gmsh_gui:
+            gmsh.fltk.run()
 
         # finalize gmsh
         self.finalize_gmsh()
@@ -915,14 +898,13 @@ class GmshIO:
         new_entities, new_entities_map = gmsh.model.occ.intersect(entities, entities)
 
         # get all new entities
-        filtered_entities_map = new_entities_map[:len(entities)]
+        filtered_entities_map = new_entities_map[: len(entities)]
 
         # get all physical groups
         physical_groups = gmsh.model.getPhysicalGroups()
 
         # loop over the filtered physical groups
         for group_dim, group_id in physical_groups:
-
             # get name of the group
             name = gmsh.model.getPhysicalName(group_dim, group_id)
 
@@ -965,7 +947,6 @@ class GmshIO:
 
         """
         if gmsh.isInitialized():
-
             # synchronize the geometry for generating the mesh
             self.__synchronize_geometry()
 
