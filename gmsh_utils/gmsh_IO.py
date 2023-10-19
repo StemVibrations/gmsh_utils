@@ -45,11 +45,11 @@ class GmshIO:
 
         """
         self.__mesh_data = {}
-        self.__geo_data = {"points": {},
-                           "lines": {},
-                           "surfaces": {},
-                           "volumes": {},
-                           "physical_groups": {}}
+        self.__geo_data: Dict[str, Any] = {"points": {},
+                                           "lines": {},
+                                           "surfaces": {},
+                                           "volumes": {},
+                                           "physical_groups": {}}
 
     @property
     def mesh_data(self) -> Dict[str, Any]:
