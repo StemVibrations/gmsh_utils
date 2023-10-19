@@ -1,5 +1,5 @@
 import pathlib
-from typing import Dict, List, Union, Type, Any, Sequence
+from typing import Dict, List, Union, Type, Any, Sequence, Tuple
 from enum import Enum
 import re
 
@@ -840,6 +840,40 @@ class GmshIO:
         # extract the geometry data
         self.extract_geo_data()
 
+    def __sort_groups_by_element_size(self) -> Tuple[List[Dict[str, Any]], List[str]]:
+        """
+        Sorts physical groups by element size in descending order. Physical groups without element size information
+        are sorted by their original order and are placed at the beginning of the list.
+
+        Returns:
+            - Tuple[List[Dict[str, Any]], List[str]]: Tuple of sorted groups and sorted group names.
+        """
+
+        # get all physical groups from geo data
+        group_names, groups = self.geo_data["physical_groups"].keys(), self.geo_data["physical_groups"].values()
+
+        # Filter groups with element_size information
+        groups_with_info = [(name, group) for name, group in zip(group_names, groups) if "element_size" in group]
+
+        if len(list(groups_with_info)) > 0:
+
+            # Sort groups by element_size in descending order
+            sorted_groups_with_info = sorted(groups_with_info, key=lambda x: x[1]["element_size"], reverse=True)
+            sorted_group_names_with_info, sorted_groups_with_info = zip(*sorted_groups_with_info)
+
+            # Find groups without element_size information
+            groups_without_info = [(name, group) for name, group in zip(group_names, groups) if
+                                   "element_size" not in group]
+
+            # Combine groups with and without info, preserving their original order
+            sorted_groups = [group for _, group in groups_without_info] + list(sorted_groups_with_info)
+            sorted_group_names = [name for name, _ in groups_without_info] + list(sorted_group_names_with_info)
+
+        else:
+            sorted_groups, sorted_group_names = list(groups), list(group_names)
+
+        return sorted_groups, sorted_group_names
+
     def generate_mesh(self, ndim: int, element_size: float = -1, order: int = 1, save_file: bool = False,
                       mesh_name: str = "mesh_file", mesh_output_dir: str = "./", open_gmsh_gui: bool = False):
         """
@@ -859,27 +893,8 @@ class GmshIO:
         # sets gmsh geometry from a geometry data dictionary
         self.generate_geo_from_geo_data()
 
-        # get all physical groups from geo data
-        group_names, groups = self.geo_data["physical_groups"].keys(), self.geo_data["physical_groups"].values()
-
-        # get group names and groups which contain explicit element size information
-        # group_names_with_info, groups_with_info = zip(*[(group_name, group) for group_name, group in zip(group_names, groups)
-        #                             if "element_size" in group])
-
-        group_with_info = zip(*[(group_name, group) for group_name, group in zip(group_names, groups)
-                                    if "element_size" in group])
-
-        if len(list(group_with_info)) > 0:
-            # sort groups and group names by element size, where the highest element size is first
-            group_names_with_info, groups_with_info = zip(*[(group_name, group) for group_name, group in zip(group_names, groups)
-                                    if "element_size" in group])
-            # sort groups and group names by element size, where the highest element size is first
-            sorted_groups, sorted_group_names = zip(*sorted(zip(groups_with_info, group_names_with_info),
-                                                       key=lambda x: x[0]["element_size"], reverse=True))
-        else:
-            sorted_groups, sorted_group_names = [], []
-
-
+        # sort physical groups by element size in descending order
+        sorted_groups, sorted_group_names = self.__sort_groups_by_element_size()
 
         # set mesh size per group, if element size is provided in group, else use the global element size
         for group_name, group in zip(sorted_group_names, sorted_groups):

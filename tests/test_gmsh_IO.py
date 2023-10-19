@@ -555,6 +555,8 @@ class TestGmshIO:
         # check if expected and actual geo data are equal
         TestUtils.assert_dictionary_almost_equal(expected_physical_groups, geo_data["physical_groups"])
 
+        # gmsh_io.generate_mesh(3, open_gmsh_gui=True)
+
     def test_finalize_gmsh(self):
         """
         Checks whether gmsh is finalized after calling finalize_gmsh
@@ -1794,46 +1796,40 @@ class TestGmshIO:
 
     def test_generate_different_mesh_sizes_2D(self):
         """
-        Checks whether 2D mesh data generated and expected mesh data are the same.
+        Checks a 2D mesh with different mesh sizes. Where the mesh size for one physical group is set after the geometry
+        is generated.
+
         """
 
-        # define a global mesh size, if set to -1 mesh size is logically chosen by Gmsh itself based on the geometry
-        global_mesh_size: float = -1
         # define geometry dimension; input "3" for 3D to extrude the 2D surface, input "2" for 2D
         dims = 2
         # if 3D, input depth of geometry to be extruded from 2D surface
         extrusion_length = [0, 0, 3]
+
         # define the points of the surface as a list of tuples
-        input_dict = {'soil_1': {"element_size": global_mesh_size,
+        input_dict = {'soil_1': {"element_size": 1,
                                  "coordinates": [(0, 0, 0), (3, 0, 0), (5, 1.5, 0), (2, 1, 0), (0, 1, 0)],
                                  "ndim": dims,
                                  "extrusion_length": extrusion_length},
-                      'soil_2': {"element_size": global_mesh_size,
-                                 "coordinates": [(3, 0, 0), (5, 0, 0), (5, 1.5, 0)],
+                      'soil_2': {"coordinates": [(3, 0, 0), (5, 0, 0), (5, 1.5, 0)],
                                  "ndim": dims,
                                  "extrusion_length": extrusion_length},
-                      'soil_3': {"element_size": global_mesh_size,
+                      'soil_3': {"element_size": 0.5,
                                  "coordinates": [(0, 1, 0), (2, 1, 0), (2, 3, 0), (0, 3, 0)],
                                  "ndim": dims,
                                  "extrusion_length": extrusion_length}
                       }
 
-        # if "True", saves mesh data to separate mdpa files; otherwise "False"
-        save_file = False
-        # if "True", opens gmsh interface; otherwise "False"
-        open_gmsh_gui = False
         # set a name for mesh output file
         mesh_output_name = "test_mesh_2D"
-        # set output directory
-        mesh_output_dir = "."
 
         gmsh_io = GmshIO()
-
         gmsh_io.generate_geometry(input_dict, mesh_output_name)
+
         # set mesh size of a group by defining the name label of the group and the desired mesh size
         gmsh_io.set_mesh_size_of_group("soil_1", 0.1)
-        gmsh.model.mesh.setOrder(1)
-        gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, save_file, open_gmsh_gui)
+
+        gmsh_io.generate_mesh(dims, open_gmsh_gui=False)
 
         mesh_data = gmsh_io.mesh_data
 
@@ -1888,6 +1884,8 @@ class TestGmshIO:
         gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, save_file, open_gmsh_gui)
 
         mesh_data = gmsh_io.mesh_data
+
+
 
         with open('tests/test_data/mesh_data_3D.pkl', 'rb') as file:
             dumped_data = pickle.load(file)
