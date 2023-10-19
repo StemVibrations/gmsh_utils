@@ -1823,21 +1823,23 @@ class TestGmshIO:
         # set a name for mesh output file
         mesh_output_name = "test_mesh_2D"
 
+        # generate geometry
         gmsh_io = GmshIO()
         gmsh_io.generate_geometry(input_dict, mesh_output_name)
 
         # set mesh size of a group by defining the name label of the group and the desired mesh size
         gmsh_io.set_mesh_size_of_group("soil_1", 0.1)
 
+        # generate mesh
         gmsh_io.generate_mesh(dims, open_gmsh_gui=False)
 
         mesh_data = gmsh_io.mesh_data
 
         with open('tests/test_data/mesh_data_2D.pkl', 'rb') as file:
-            dumped_data = pickle.load(file)
+            expected_mesh_data = pickle.load(file)
 
         # Assert that the dumped data is the same as the original mesh data
-        TestUtils.assert_dictionary_almost_equal(mesh_data, dumped_data)
+        TestUtils.assert_dictionary_almost_equal(mesh_data, expected_mesh_data)
 
     @pytest.mark.skipif(platform == "linux", reason="Gmsh works differently on Linux")
     def test_generate_different_mesh_sizes_3D(self):
@@ -1852,43 +1854,34 @@ class TestGmshIO:
         # if 3D, input depth of geometry to be extruded from 2D surface
         extrusion_length = [0, 0, 3]
         # define the points of the surface as a list of tuples
-        input_dict = {'soil_1': {"element_size": global_mesh_size,
-                                 "coordinates": [(0, 0, 0), (3, 0, 0), (5, 1.5, 0), (2, 1, 0), (0, 1, 0)],
+        input_dict = {'soil_1': {"coordinates": [(0, 0, 0), (3, 0, 0), (5, 1.5, 0), (2, 1, 0), (0, 1, 0)],
                                  "ndim": dims,
                                  "extrusion_length": extrusion_length},
-                      'soil_2': {"element_size": global_mesh_size,
-                                 "coordinates": [(3, 0, 0), (5, 0, 0), (5, 1.5, 0)],
+                      'soil_2': {"coordinates": [(3, 0, 0), (5, 0, 0), (5, 1.5, 0)],
                                  "ndim": dims,
                                  "extrusion_length": extrusion_length},
-                      'soil_3': {"element_size": global_mesh_size,
-                                 "coordinates": [(0, 1, 0), (2, 1, 0), (2, 3, 0), (0, 3, 0)],
+                      'soil_3': {"coordinates": [(0, 1, 0), (2, 1, 0), (2, 3, 0), (0, 3, 0)],
                                  "ndim": dims,
                                  "extrusion_length": extrusion_length}
                       }
 
-        # if "True", saves mesh data to separate mdpa files; otherwise "False"
-        save_file = False
-        # if "True", opens gmsh interface; otherwise "False"
-        open_gmsh_gui = False
         # set a name for mesh output file
         mesh_output_name = "test_mesh_3D"
-        # set output directory
-        mesh_output_dir = "."
 
+        # generate geometry
         gmsh_io = GmshIO()
-
         gmsh_io.generate_geometry(input_dict, mesh_output_name)
+
         # set mesh size of a group by defining the name label of the group and the desired mesh size
         gmsh_io.set_mesh_size_of_group("soil_1", 0.5)
-        gmsh.model.mesh.setOrder(1)
-        gmsh_io.generate_extract_mesh(dims, mesh_output_name, mesh_output_dir, save_file, open_gmsh_gui)
+
+        # generate mesh
+        gmsh_io.generate_mesh(3, element_size=global_mesh_size, open_gmsh_gui=False)
 
         mesh_data = gmsh_io.mesh_data
 
-
-
         with open('tests/test_data/mesh_data_3D.pkl', 'rb') as file:
-            dumped_data = pickle.load(file)
+            expected_mesh_data = pickle.load(file)
 
         # Assert that the dumped data is the same as the original mesh data
-        TestUtils.assert_dictionary_almost_equal(mesh_data, dumped_data)
+        TestUtils.assert_dictionary_almost_equal(mesh_data, expected_mesh_data)
