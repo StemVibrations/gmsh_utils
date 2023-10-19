@@ -1694,14 +1694,15 @@ class TestGmshIO:
                     'physical_groups': {'Line': {'ndim': 1, 'id': 1, 'geometry_ids': [1]}}}
 
         gmsh_io = GmshIO()
+
+        # manually set geo data
         gmsh_io._GmshIO__geo_data = geo_data
         gmsh_io.generate_geo_from_geo_data()
 
+        # set mesh size of group
         gmsh_io.set_mesh_size_of_group("Line", 1)
-        gmsh.model.mesh.setOrder(1)
-        gmsh.model.mesh.generate(1)
-        gmsh_io.extract_mesh_data()
-        gmsh_io.finalize_gmsh()
+
+        gmsh_io.generate_mesh(1)
 
         expected_mesh_data = {"ndim": 1,
                               'nodes': {1: [0., 0., 0.],
@@ -1736,15 +1737,15 @@ class TestGmshIO:
                     'physical_groups': {'Surface': {'ndim': 2, 'id': 1, 'geometry_ids': [1]}}}
 
         gmsh_io = GmshIO()
+
+        # manually set geo data
         gmsh_io._GmshIO__geo_data = geo_data
         gmsh_io.generate_geo_from_geo_data()
-        gmsh_io.set_mesh_size_of_group("Surface", 2.5)
-        gmsh.model.mesh.setOrder(1)
-        gmsh.model.mesh.generate(2)
-        gmsh_io.extract_mesh_data()
-        gmsh_io.finalize_gmsh()
 
-        mesh_data = gmsh_io.mesh_data
+        # set mesh size of group
+        gmsh_io.set_mesh_size_of_group("Surface", 2.5)
+
+        gmsh_io.generate_mesh(2)
 
         expected_mesh_data = {"ndim": 2,
                               'nodes': {1: [0., 0., 0.],
