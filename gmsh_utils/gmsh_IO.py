@@ -858,9 +858,10 @@ class GmshIO:
         if len(list(groups_with_info)) > 0:
 
             # Sort groups by element_size in descending order
-            sorted_groups_with_info: List[Tuple[str, Dict[Any,Any]]] = sorted(groups_with_info,
-                                                                              key=lambda x: x[1]["element_size"],
-                                                                              reverse=True)
+            sorted_groups_with_info: List[Tuple[str, Dict[Any, Any]]] = sorted(groups_with_info,
+                                                                               key=lambda x:
+                                                                               x[1].get("element_size", -1),
+                                                                               reverse=True)
 
             sorted_group_names_with_info, sorted_groups_with_info = zip(*sorted_groups_with_info)
 
