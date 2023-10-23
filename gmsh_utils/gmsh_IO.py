@@ -1,5 +1,5 @@
 import pathlib
-from typing import Dict, List, Union, Type, Any, Sequence
+from typing import Dict, List, Union, Type, Any, Sequence, Tuple
 from enum import Enum
 import re
 
@@ -889,12 +889,57 @@ class GmshIO:
 
         """
 
-        # intersect all entities with each other
-        entities = gmsh.model.get_entities()
-        new_entities, new_entities_map = gmsh.model.occ.intersect(entities, entities)
+        # in 3D geometries, firstly intersect surfaces with lines
+        if gmsh.model.getDimension() == 3:
 
-        # get all new entities
-        filtered_entities_map = new_entities_map[: len(entities)]
+            # get all entities
+            occ_entities = gmsh.model.occ.get_entities()
+            geo_entities = gmsh.model.getEntities()
+
+            # get all lines and surfaces
+            lines = [entity for entity in occ_entities if entity[0] == 1]
+            surfaces = [entity for entity in occ_entities if entity[0] == 2]
+
+            # intersect all lines with all surfaces
+            new_entities, new_entities_map = gmsh.model.occ.fragment(surfaces, lines, removeTool=True,
+                                                                     removeObject=True)
+
+            # create the new entities map in the correct order, including all points, lines, surfaces and volumes
+            new_surfaces = new_entities_map[:len(surfaces)]
+            new_lines = new_entities_map[len(surfaces):]
+
+            new_occ_entities = gmsh.model.occ.get_entities()
+            points = [[entity] for entity in new_occ_entities if entity[0] == 0]
+            volumes = [[entity] for entity in occ_entities if entity[0] == 3]
+            new_entities_map = points + new_lines + new_surfaces + volumes
+
+            # re-add physical groups on split entities
+            self.__readd_physical_group_on_split_entities(geo_entities, new_entities_map)
+
+        # get all entities
+        occ_entities = gmsh.model.occ.get_entities()
+        geo_entities = gmsh.model.get_entities()
+
+        # intersect all entities with each other
+        new_entities, new_entities_map = gmsh.model.occ.fragment(occ_entities, occ_entities, removeTool=True,
+                                                                 removeObject=True)
+
+        # the new entities map duplicates the entities, therefore only the first half of the entities map is used
+        filtered_entities_map = new_entities_map[: len(geo_entities)]
+
+        # re-add physical groups on split entities
+        self.__readd_physical_group_on_split_entities(geo_entities, filtered_entities_map)
+
+    def __readd_physical_group_on_split_entities(self, original_entities: List[Tuple[int, int]],
+                                                 split_entities: List[List[Tuple[int, int]]]):
+        """
+        Re-adds physical groups on split entities. The physical groups are removed and then re-added with the new
+        entities.
+
+        Args:
+            - original_entities (List[Tuple[int, int]]): List of original entities.
+            - split_entities (List[List[Tuple[int, int]]]): List of the new split entities.
+        """
 
         # get all physical groups
         physical_groups = gmsh.model.getPhysicalGroups()
@@ -907,11 +952,11 @@ class GmshIO:
             # gets elements per group
             entities_group = gmsh.model.getEntitiesForPhysicalGroup(group_dim, group_id)
 
-            # get indices within the filtered entities array of the entities which belong to the group
-            indices = [entities.index((group_dim, entity_id)) for entity_id in entities_group]
+            # get indices within the entities array of the entities which belong to the group
+            indices = [original_entities.index((group_dim, entity_id)) for entity_id in entities_group]
 
             # get new entities which belong to the group
-            new_entities_group = [filtered_entities_map[index] for index in indices]
+            new_entities_group = [split_entities[index] for index in indices]
 
             # get all new geometry ids belonging to the group
             new_geom_ids = [dimtag[1] for new_entity in new_entities_group for dimtag in new_entity]
@@ -922,7 +967,6 @@ class GmshIO:
             # re-add new physical group
             gmsh.model.addPhysicalGroup(group_dim, new_geom_ids, tag=group_id, name=name)
 
-        # synchronize the geometry
         self.__synchronize_geometry()
 
     @staticmethod
