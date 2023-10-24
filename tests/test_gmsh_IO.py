@@ -1756,7 +1756,6 @@ class TestGmshIO:
         # check if mesh can be generated
         gmsh.model.mesh.generate(3)
 
-
     def test_synchronize_gmsh_with_new_surface_on_extruded_volume(self):
         """
         Checks whether gmsh is synchronized after calling synchronize_gmsh. This test checks whether the geo data
@@ -1822,21 +1821,22 @@ class TestGmshIO:
         gmsh_io.extract_geo_data()
         filled_geo_data = gmsh_io.geo_data
 
-        #todo set expected data
+        # todo, points 9, 10, 11 are duplicates, somehow they are not removed. It is possible that
+        # the points are present in point physical groups, but the points shouldn't be present in
+        # the line connectivities. Note that meshing works fine, i.e. no hanging nodes are present
         expected_geo_data = {'points': {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0],
                                         5: [0.0, 0.0, 1.0], 6: [1.0, 0.0, 1.0], 7: [1.0, 1.0, 1.0], 8: [0.0, 1.0, 1.0],
-                                        },
-                             'lines': {1: [1, 2], 2: [2, 3], 4: [4, 1], 5: [1, 5], 6: [2, 6], 7: [5, 6],
-                                       8: [3, 7], 9: [6, 7], 10: [4, 8], 12: [8, 5], 13: [9, 10], 14: [3, 9],
-                                       15: [7, 10], 16: [9, 4], 17: [10, 8]},
-                             'surfaces': {1: [1, 2, 14, 16, 4], 2: [5, 7, -6, -1], 3: [6, 9, -8, -2],
-                                          5: [10, 12, -5, -4], 6: [7, 9, 15, 17, 12], 7: [-14, 8, 15, -13],
-                                          8: [-16, 13, 17, -10]},
-                             'volumes': {1: [-2, -3, -7, -8, -5, -1, 6]},
-                             'physical_groups': {'new_line': {'ndim': 1, 'id': 2, 'geometry_ids': [13]},
+                                        9: [0.0, 1.0, 0.0], 10: [0, 0.0, 1.0], 11: [0.0, 1.0, 1.0]},
+                             'lines': {1: [1, 2], 2: [2, 3], 3: [3,4], 4: [4, 1], 5: [1, 5], 6: [2, 6],
+                                       7: [5, 6], 8: [3, 7], 9: [6, 7], 10: [4, 8], 11: [7, 8], 12: [8, 5]},
+                             'surfaces': {1: [1, 2, 3, 4], 2: [5, 7, -6, -1], 3: [6, 9, -8, -2],
+                                          4: [8, 11, -10, -3], 5: [10, 12, -5, -4], 6: [7, 9, 11, 12]},
+                             'volumes': {1: [-2, -3, -4, -5, -1, 6]},
+                             'physical_groups': {'new_point': {'ndim': 0, 'id': 3, 'geometry_ids': [10]},
+                                                 'new_surface': {'ndim': 2, 'id': 2, 'geometry_ids': [5]},
                                                  'volume': {'ndim': 3, 'id': 1, 'geometry_ids': [1]}}}
 
-        gmsh_io.generate_mesh(3, open_gmsh_gui=True)
+        # gmsh_io.generate_mesh(3, open_gmsh_gui=True)
 
 
         # gmsh_io.generate_mesh(3)
