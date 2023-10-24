@@ -1759,9 +1759,9 @@ class TestGmshIO:
     def test_synchronize_gmsh_with_new_surface_on_extruded_volume(self):
         """
         Checks whether gmsh is synchronized after calling synchronize_gmsh. This test checks whether the geo data
-        is updated with the created points and the physical group after calling synchronize_gmsh.
-        This test is for the case where the intersection line is going through an edge surface of a volume, which is
-         created by extruding.
+        is updated with the newly created points, surface and the physical groups after calling synchronize_gmsh.
+        This test is for the case where a new surface and a new point is created on an edge surface of a volume, which
+        is created by extruding.
         """
 
         # initialize gmsh
@@ -1770,10 +1770,10 @@ class TestGmshIO:
 
         # create first surface
         # create surface points
-        point_id1 = gmsh.model.occ.addPoint(0, 0, 0,0.1)
-        point_id2 = gmsh.model.occ.addPoint(1, 0, 0,0.1)
-        point_id3 = gmsh.model.occ.addPoint(1, 1, 0,0.1)
-        point_id4 = gmsh.model.occ.addPoint(0, 1, 0,0.1)
+        point_id1 = gmsh.model.occ.addPoint(0, 0, 0)
+        point_id2 = gmsh.model.occ.addPoint(1, 0, 0)
+        point_id3 = gmsh.model.occ.addPoint(1, 1, 0)
+        point_id4 = gmsh.model.occ.addPoint(0, 1, 0)
 
         # create surface lines
         line_id1 = gmsh.model.occ.addLine(point_id1, point_id2)
@@ -1792,29 +1792,27 @@ class TestGmshIO:
         gmsh.model.addPhysicalGroup(3, [volume_id], tag=-1, name="volume")
         gmsh_io.synchronize_gmsh()
 
-        # # create intersection line
-        point_id_5 = gmsh.model.occ.addPoint(0.0, 0, 0,0.1)
-        point_id_6 = gmsh.model.occ.addPoint(0, 0, 1, 0.1)
-        point_id_7 = gmsh.model.occ.addPoint(0, 1, 1, 0.1)
-        point_id_8 = gmsh.model.occ.addPoint(0, 1, 0, 0.1)
-        #
-        #
-        line_id5 = gmsh.model.occ.addLine(point_id_5, point_id_6)
+        # add new surface group
+        point_id_5 = gmsh.model.occ.addPoint(0.0, 0, 0)
+        point_id_6 = gmsh.model.occ.addPoint(0, 0, 1)
+        point_id_7 = gmsh.model.occ.addPoint(0, 1, 1)
+        point_id_8 = gmsh.model.occ.addPoint(0, 1, 0)
 
+        line_id5 = gmsh.model.occ.addLine(point_id_5, point_id_6)
         line_id6 = gmsh.model.occ.addLine(point_id_6, point_id_7)
         line_id7 = gmsh.model.occ.addLine(point_id_7, point_id_8)
         line_id8 = gmsh.model.occ.addLine(point_id_8, point_id_5)
-        #
+
         curve_loop_id2 = gmsh.model.occ.addCurveLoop([line_id5, line_id6, line_id7, line_id8])
         surface_id2 = gmsh.model.occ.addPlaneSurface([curve_loop_id2])
+
         gmsh.model.addPhysicalGroup(2, [surface_id2], name="new_surface")
-        # gmsh.model.addPhysicalGroup(1, [line_id5], name="new_line")
         gmsh_io.synchronize_gmsh()
 
-        point_id_9 = gmsh.model.occ.addPoint(0, 0, 1,0.1)
-        gmsh.model.addPhysicalGroup(0, [point_id_9], name="new_point")
+        # add new point group
+        point_id_9 = gmsh.model.occ.addPoint(0, 0, 1)
 
-        # synchronize gmsh
+        gmsh.model.addPhysicalGroup(0, [point_id_9], name="new_point")
         gmsh_io.synchronize_gmsh()
 
         # extract geo data
@@ -1835,12 +1833,6 @@ class TestGmshIO:
                              'physical_groups': {'new_point': {'ndim': 0, 'id': 3, 'geometry_ids': [10]},
                                                  'new_surface': {'ndim': 2, 'id': 2, 'geometry_ids': [5]},
                                                  'volume': {'ndim': 3, 'id': 1, 'geometry_ids': [1]}}}
-
-        # gmsh_io.generate_mesh(3, open_gmsh_gui=True)
-
-
-        # gmsh_io.generate_mesh(3)
-        # gmsh.model.mesh.generate(3)
 
         # check if geo data is as expected
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)

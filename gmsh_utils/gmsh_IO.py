@@ -915,8 +915,8 @@ class GmshIO:
             volumes = [[entity] for entity in occ_entities if entity[0] == 3]
             new_entities_map = points + new_lines + new_surfaces + volumes
 
-            unique_original_entities = []
             # remove deleted points from the original entities
+            unique_original_entities = []
             for entity in geo_entities:
                 if entity[0] == 0 and [entity] not in points:
                     continue
@@ -984,12 +984,10 @@ class GmshIO:
         Synchronizes the geometry.
         """
         # synchronize the geometry for generating the mesh
-        # gmsh.model.occ.removeAllDuplicates()
         gmsh.model.occ.synchronize()
 
         # synchronize the geo geometry such that physical groups are added, important is that this is done after
         # synchronizing the occ geometry :-D
-        # gmsh.model.geo.removeAllDuplicates()
         gmsh.model.geo.synchronize()
 
     def synchronize_gmsh(self):
