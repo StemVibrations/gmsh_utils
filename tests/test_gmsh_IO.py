@@ -1756,6 +1756,99 @@ class TestGmshIO:
         # check if mesh can be generated
         gmsh.model.mesh.generate(3)
 
+    def test_synchronize_gmsh_with_new_surface_on_extruded_volume(self):
+        """
+        Checks whether gmsh is synchronized after calling synchronize_gmsh. This test checks whether the geo data
+        is updated with the newly created points, surface and the physical groups after calling synchronize_gmsh.
+        This test is for the case where a new surface and a new point is created on an edge surface of a volume, which
+        is created by extruding.
+        """
+
+        # initialize gmsh
+        gmsh_io = GmshIO()
+        gmsh.initialize()
+
+        # create first surface
+        # create surface points
+        point_id1 = gmsh.model.occ.addPoint(0, 0, 0)
+        point_id2 = gmsh.model.occ.addPoint(1, 0, 0)
+        point_id3 = gmsh.model.occ.addPoint(1, 1, 0)
+        point_id4 = gmsh.model.occ.addPoint(0, 1, 0)
+
+        # create surface lines
+        line_id1 = gmsh.model.occ.addLine(point_id1, point_id2)
+        line_id2 = gmsh.model.occ.addLine(point_id2, point_id3)
+        line_id3 = gmsh.model.occ.addLine(point_id3, point_id4)
+        line_id4 = gmsh.model.occ.addLine(point_id4, point_id1)
+
+        # create a surface
+        curve_loop_id = gmsh.model.occ.addCurveLoop([line_id1, line_id2, line_id3, line_id4])
+        surface_id = gmsh.model.occ.addPlaneSurface([curve_loop_id])
+
+        # create a volume by extruding the surface
+        new_dim_ids = gmsh.model.occ.extrude([(2, surface_id)], 0, 0, 1)
+        volume_id: int = next((dim_tag[1] for dim_tag in new_dim_ids if dim_tag[0] == 3))
+
+        gmsh.model.addPhysicalGroup(3, [volume_id], tag=-1, name="volume")
+        gmsh_io.synchronize_gmsh()
+
+        # add new surface group
+        point_id_5 = gmsh.model.occ.addPoint(0.0, 0, 0)
+        point_id_6 = gmsh.model.occ.addPoint(0, 0, 1)
+        point_id_7 = gmsh.model.occ.addPoint(0, 1, 1)
+        point_id_8 = gmsh.model.occ.addPoint(0, 1, 0)
+
+        line_id5 = gmsh.model.occ.addLine(point_id_5, point_id_6)
+        line_id6 = gmsh.model.occ.addLine(point_id_6, point_id_7)
+        line_id7 = gmsh.model.occ.addLine(point_id_7, point_id_8)
+        line_id8 = gmsh.model.occ.addLine(point_id_8, point_id_5)
+
+        curve_loop_id2 = gmsh.model.occ.addCurveLoop([line_id5, line_id6, line_id7, line_id8])
+        surface_id2 = gmsh.model.occ.addPlaneSurface([curve_loop_id2])
+
+        gmsh.model.addPhysicalGroup(2, [surface_id2], name="new_surface")
+        gmsh_io.synchronize_gmsh()
+
+        # add new point group
+        point_id_9 = gmsh.model.occ.addPoint(0, 0, 1)
+
+        gmsh.model.addPhysicalGroup(0, [point_id_9], name="new_point")
+        gmsh_io.synchronize_gmsh()
+
+        # extract geo data
+        gmsh_io.extract_geo_data()
+        filled_geo_data = gmsh_io.geo_data
+
+        # todo, points 9, 10, 11 are duplicates, somehow they are not removed. It is possible that
+        # the points are present in point physical groups, but the points shouldn't be present in
+        # the line connectivities. Note that meshing works fine, i.e. no hanging nodes are present
+        expected_geo_data = {'points': {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0],
+                                        5: [0.0, 0.0, 1.0], 6: [1.0, 0.0, 1.0], 7: [1.0, 1.0, 1.0], 8: [0.0, 1.0, 1.0],
+                                        9: [0.0, 1.0, 0.0], 10: [0, 0.0, 1.0], 11: [0.0, 1.0, 1.0]},
+                             'lines': {1: [1, 2], 2: [2, 3], 3: [3,4], 4: [4, 1], 5: [1, 5], 6: [2, 6],
+                                       7: [5, 6], 8: [3, 7], 9: [6, 7], 10: [4, 8], 11: [7, 8], 12: [8, 5]},
+                             'surfaces': {1: [1, 2, 3, 4], 2: [5, 7, -6, -1], 3: [6, 9, -8, -2],
+                                          4: [8, 11, -10, -3], 5: [10, 12, -5, -4], 6: [7, 9, 11, 12]},
+                             'volumes': {1: [-2, -3, -4, -5, -1, 6]},
+                             'physical_groups': {'new_point': {'ndim': 0, 'id': 3, 'geometry_ids': [10]},
+                                                 'new_surface': {'ndim': 2, 'id': 2, 'geometry_ids': [5]},
+                                                 'volume': {'ndim': 3, 'id': 1, 'geometry_ids': [1]}}}
+
+        # check if geo data is as expected
+        TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
+
+        # synchronize gmsh
+        gmsh_io.synchronize_gmsh()
+
+        # extract geo data
+        gmsh_io.extract_geo_data()
+        filled_geo_data = gmsh_io.geo_data
+
+        # check if geo data hasn't changed after re-synchronizing
+        TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
+
+        # check if mesh can be generated
+        gmsh.model.mesh.generate(3)
 
 
 

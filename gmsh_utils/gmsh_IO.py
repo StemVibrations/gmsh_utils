@@ -665,6 +665,8 @@ class GmshIO:
             "physical_groups": {},
         }
 
+        #todo, it is possible that duplicated points exist
+
         # loop over all entities
         for entity in entities:
             # get dimension and id of entity
@@ -894,7 +896,7 @@ class GmshIO:
 
             # get all entities
             occ_entities = gmsh.model.occ.get_entities()
-            geo_entities = gmsh.model.getEntities()
+            geo_entities = gmsh.model.get_entities()
 
             # get all lines and surfaces
             lines = [entity for entity in occ_entities if entity[0] == 1]
@@ -913,22 +915,29 @@ class GmshIO:
             volumes = [[entity] for entity in occ_entities if entity[0] == 3]
             new_entities_map = points + new_lines + new_surfaces + volumes
 
+            # remove deleted points from the original entities
+            unique_original_entities = []
+            for entity in geo_entities:
+                if entity[0] == 0 and [entity] not in points:
+                    continue
+                unique_original_entities.append(entity)
+
             # re-add physical groups on split entities
-            self.__readd_physical_group_on_split_entities(geo_entities, new_entities_map)
+            self.__readd_physical_group_on_split_entities(unique_original_entities, new_entities_map)
 
         # get all entities
         occ_entities = gmsh.model.occ.get_entities()
-        geo_entities = gmsh.model.get_entities()
 
         # intersect all entities with each other
         new_entities, new_entities_map = gmsh.model.occ.fragment(occ_entities, occ_entities, removeTool=True,
                                                                  removeObject=True)
 
         # the new entities map duplicates the entities, therefore only the first half of the entities map is used
-        filtered_entities_map = new_entities_map[: len(geo_entities)]
+        filtered_entities_map = new_entities_map[: len(occ_entities)]
 
         # re-add physical groups on split entities
-        self.__readd_physical_group_on_split_entities(geo_entities, filtered_entities_map)
+        if len(filtered_entities_map) > 0:
+            self.__readd_physical_group_on_split_entities(occ_entities, filtered_entities_map)
 
     def __readd_physical_group_on_split_entities(self, original_entities: List[Tuple[int, int]],
                                                  split_entities: List[List[Tuple[int, int]]]):
