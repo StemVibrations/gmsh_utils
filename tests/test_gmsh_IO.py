@@ -1720,6 +1720,45 @@ class TestGmshIO:
 
         line_id5 = gmsh.model.occ.addLine(point_id_5, point_id_6)
         gmsh.model.addPhysicalGroup(1, [line_id5], name="new_line")
+
+        # synchronize gmsh
+        gmsh_io.synchronize_gmsh()
+
+        # extract geo data
+        gmsh_io.extract_geo_data()
+        filled_geo_data = gmsh_io.geo_data
+
+        expected_geo_data = {'points': {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0],
+                                        5: [0.0, 0.0, 1.0], 6: [1.0, 0.0, 1.0], 7: [1.0, 1.0, 1.0], 8: [0.0, 1.0, 1.0],
+                                        9: [0.25, 1.0, 0.0], 10: [0.25, 1.0, 1.0]},
+                             'lines': {1: [1, 2], 2: [2, 3], 4: [4, 1], 5: [1, 5], 6: [2, 6], 7: [5, 6],
+                                       8: [3, 7], 9: [6, 7], 10: [4, 8], 12: [8, 5], 13: [9, 10], 14: [3, 9],
+                                       15: [7, 10], 16: [9, 4], 17: [10, 8]},
+                             'surfaces': {1: [1, 2, 14, 16, 4], 2: [5, 7, -6, -1], 3: [6, 9, -8, -2],
+                                          5: [10, 12, -5, -4], 6: [7, 9, 15, 17, 12], 7: [-14, 8, 15, -13],
+                                          8: [-16, 13, 17, -10]},
+                             'volumes': {1: [-2, -3, -7, -8, -5, -1, 6]},
+                             'physical_groups': {'new_line': {'ndim': 1, 'id': 2, 'geometry_ids': [13]},
+                                                 'volume': {'ndim': 3, 'id': 1, 'geometry_ids': [1]}}}
+
+        gmsh.model.mesh.generate(3)
+
+        # check if geo data is as expected
+        TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
+
+        # synchronize gmsh
+        gmsh_io.synchronize_gmsh()
+
+        # extract geo data
+        gmsh_io.extract_geo_data()
+        filled_geo_data = gmsh_io.geo_data
+
+        # check if geo data hasn't changed after re-synchronizing
+        TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
+
+        # check if mesh can be generated
+        gmsh.model.mesh.generate(3)
+
     def test_set_mesh_size_of_group_1D(self):
         """
         Checks whether the mesh size of a group is set correctly for a 1D mesh.
@@ -1827,7 +1866,8 @@ class TestGmshIO:
                                                         18: [4]}},
                               'physical_groups': {'Surface': {"ndim": 2,
                                                               "node_ids": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-                                                              "element_ids": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
+                                                              "element_ids": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+                                                                              13,
                                                                               14],
                                                               "element_type": "TRIANGLE_3N"}}}
 
@@ -1837,44 +1877,6 @@ class TestGmshIO:
         """
         Checks a 2D mesh with different mesh sizes. Where the mesh size for one physical group is set after the geometry
         is generated.
-
-        # synchronize gmsh
-        gmsh_io.synchronize_gmsh()
-
-        # extract geo data
-        gmsh_io.extract_geo_data()
-        filled_geo_data = gmsh_io.geo_data
-
-        expected_geo_data = {'points': {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0],
-                                        5: [0.0, 0.0, 1.0], 6: [1.0, 0.0, 1.0], 7: [1.0, 1.0, 1.0], 8: [0.0, 1.0, 1.0],
-                                        9: [0.25, 1.0, 0.0], 10: [0.25, 1.0, 1.0]},
-                             'lines': {1: [1, 2], 2: [2, 3], 4: [4, 1], 5: [1, 5], 6: [2, 6], 7: [5, 6],
-                                       8: [3, 7], 9: [6, 7], 10: [4, 8], 12: [8, 5], 13: [9, 10], 14: [3, 9],
-                                       15: [7, 10], 16: [9, 4], 17: [10, 8]},
-                             'surfaces': {1: [1, 2, 14, 16, 4], 2: [5, 7, -6, -1], 3: [6, 9, -8, -2],
-                                          5: [10, 12, -5, -4], 6: [7, 9, 15, 17, 12], 7: [-14, 8, 15, -13],
-                                          8: [-16, 13, 17, -10]},
-                             'volumes': {1: [-2, -3, -7, -8, -5, -1, 6]},
-                             'physical_groups': {'new_line': {'ndim': 1, 'id': 2, 'geometry_ids': [13]},
-                                                 'volume': {'ndim': 3, 'id': 1, 'geometry_ids': [1]}}}
-
-        gmsh.model.mesh.generate(3)
-
-        # check if geo data is as expected
-        TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
-
-        # synchronize gmsh
-        gmsh_io.synchronize_gmsh()
-
-        # extract geo data
-        gmsh_io.extract_geo_data()
-        filled_geo_data = gmsh_io.geo_data
-
-        # check if geo data hasn't changed after re-synchronizing
-        TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
-
-        # check if mesh can be generated
-        gmsh.model.mesh.generate(3)
         """
 
         # define geometry dimension; input "3" for 3D to extrude the 2D surface, input "2" for 2D
