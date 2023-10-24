@@ -461,7 +461,7 @@ class GmshIO:
         Sets the customized mesh size of a specific group
 
         Args:
-             - group_name: The name of the group provided by user input
+             - group_name (str): The name of the group provided by user input
              - mesh_size (float): The customized mesh size provided by user for a specific group.
 
         Returns:
@@ -512,7 +512,7 @@ class GmshIO:
         return nodal_data
 
     def extract_all_elements_data(self, elem_types: npt.NDArray[np.int_], elem_tags: List[npt.NDArray[np.int_]],
-                              elem_node_tags: List[npt.NDArray[np.int_]]) -> Dict[str, Any]:
+                                  elem_node_tags: List[npt.NDArray[np.int_]]) -> Dict[str, Any]:
         """
         Extracts element data for all the elements in the gmsh mesh. Element data is defined as:
             - element type
