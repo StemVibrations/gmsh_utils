@@ -915,7 +915,7 @@ class GmshIO:
             volumes = [[entity] for entity in occ_entities if entity[0] == 3]
             new_entities_map = points + new_lines + new_surfaces + volumes
 
-            # remove deleted points from the original entities
+            # in the original entities list, exchange original points with new points, other entities remain the same
             unique_original_entities = ([entity for entity in new_occ_entities if entity[0] == 0] +
                                         [entity for entity in geo_entities if entity[0] != 0])
 
