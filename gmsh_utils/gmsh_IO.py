@@ -916,11 +916,8 @@ class GmshIO:
             new_entities_map = points + new_lines + new_surfaces + volumes
 
             # remove deleted points from the original entities
-            unique_original_entities = []
-            for entity in geo_entities:
-                if entity[0] == 0 and [entity] not in points:
-                    continue
-                unique_original_entities.append(entity)
+            unique_original_entities = ([entity for entity in new_occ_entities if entity[0] == 0] +
+                                        [entity for entity in geo_entities if entity[0] != 0])
 
             # re-add physical groups on split entities
             self.__readd_physical_group_on_split_entities(unique_original_entities, new_entities_map)
