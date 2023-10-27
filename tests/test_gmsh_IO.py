@@ -1924,7 +1924,7 @@ class TestGmshIO:
                                                 'new_surface': {'geometry_ids': [7, 8], 'id': 2, 'ndim': 2},
                                                 'volume': {'geometry_ids': [1], 'id': 1, 'ndim': 3}}}
 
-        # check if geo data hasn't changed after re-synchronizing
+        # check if geo data is as expected
         TestUtils.assert_dictionary_almost_equal(gmsh_io.geo_data, expected_geo_data)
 
         # check if mesh can be generated
