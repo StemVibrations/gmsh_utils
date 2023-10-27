@@ -45,7 +45,11 @@ class GmshIO:
 
         """
         self.__mesh_data = {}
-        self.__geo_data = {}
+        self.__geo_data: Dict[str, Any] = {"points": {},
+                                           "lines": {},
+                                           "surfaces": {},
+                                           "volumes": {},
+                                           "physical_groups": {}}
 
     @property
     def mesh_data(self) -> Dict[str, Any]:
@@ -71,8 +75,8 @@ class GmshIO:
 
         Raises:
             - Exception: Mesh data can only be set by internal methods.
-
         """
+
         raise Exception("Mesh data can only be set by internal methods.")
 
     @property
@@ -81,8 +85,8 @@ class GmshIO:
         Returns the geometry data dictionary
 
         Returns:
-            - Dict[str, Dict[Any, Any]]: Dictionary containing the geometry data, the geometry data that contains \
-                points, lines, surfaces, volumes and the physical groups.
+            - Dict[str, Dict[Any, Any]]: Dictionary containing the geometry data, the geometry data contains: points,
+            lines, surfaces, volumes and the physical groups.
         """
 
         return self.__geo_data
@@ -94,12 +98,11 @@ class GmshIO:
         geometry data can only be set by internal method.
 
         Args:
-            - geo_data (Dict[str, Dict[Any, Any]]): Dictionary containing the geometry data, the geometry data \
-                that contains: points, lines, surfaces, volumes and the physical groups.
+            - geo_data (Dict[str, Dict[Any, Any]]): Dictionary containing the geometry data, the geometry data contains:
+            points, lines, surfaces, volumes and the physical groups.
 
         Raises:
             - Exception: Geometry data can only be set by internal methods.
-
         """
 
         raise Exception("Geometry data can only be set by internal methods.")
@@ -168,9 +171,8 @@ class GmshIO:
 
         surface_dim = 2
         volume_dim = 3
-        new_dim_tags = gmsh.model.occ.extrude(
-            [(surface_dim, surface_id)], extrusion_length[0], extrusion_length[1], extrusion_length[2]
-        )
+        new_dim_tags = gmsh.model.occ.extrude([(surface_dim, surface_id)], extrusion_length[0], extrusion_length[1],
+                                              extrusion_length[2])
         # gets the first volume tag from the list of new dimension tags
         volume_tag: int = next((dim_tag[1] for dim_tag in new_dim_tags if dim_tag[0] == volume_dim))
 
@@ -181,9 +183,10 @@ class GmshIO:
         Generates list of consecutive pairs of point tags which is needed to form the lines and closed surfaces.
 
         Args:
-            - point_ids (List[int]): A list of two ordered point tags.
+            - point_ids (List[int]): A list of two ordered point tags
+
         Returns:
-            - List[List[int]]: A list of pairs of point tags which is needed to create a line.
+            - List[List[int]]: A list of pairs of point tags which is needed to create a line
         """
 
         first_point_tag = 0
@@ -206,8 +209,8 @@ class GmshIO:
         Makes points with point tags from coordinates.
 
         Args:
-            - point_coordinates (Sequence[Sequence[float]]): An Iterable of point x,y,z coordinates.
-            - element_size (float): The element size (default is -1, which let gmsh choose the size).
+           - point_coordinates (Sequence[Sequence[float]]): An Iterable of point x,y,z coordinates.
+           - element_size (float): The element size (default is -1, which let gmsh choose the size).
 
         Returns:
             - List[int]: A list of point tags.
@@ -230,9 +233,8 @@ class GmshIO:
         line_ids = [self.create_line(point_pair) for point_pair in point_pairs]
         return line_ids
 
-    def make_geometry_0d(
-        self, point_coordinates: Sequence[Sequence[float]], name_label: str = "", element_size: float = -1
-    ) -> List[int]:
+    def make_geometry_0d(self, point_coordinates: Sequence[Sequence[float]], name_label: str = "",
+                         element_size: float = -1) -> List[int]:
         """
         Makes 0D geometry by creating points in gmsh.
 
@@ -244,6 +246,7 @@ class GmshIO:
         Returns:
             - List[int]: A list of point tags.
         """
+
         point_ids = self.make_points(point_coordinates, element_size)
 
         # only add physical group if name label is not empty
@@ -253,9 +256,8 @@ class GmshIO:
 
         return point_ids
 
-    def make_geometry_1d(
-        self, point_coordinates: Sequence[Sequence[float]], name_label: str = "", element_size: float = -1
-    ) -> List[int]:
+    def make_geometry_1d(self, point_coordinates: Sequence[Sequence[float]],
+                         name_label: str = "", element_size: float = -1) -> List[int]:
         """
         Makes 1D geometry by creating points and lines in gmsh.
 
@@ -267,6 +269,7 @@ class GmshIO:
         Returns:
             - List[int]: A list of line tags.
         """
+
         # create point ids
         point_ids = self.make_points(point_coordinates, element_size=element_size)
 
@@ -280,9 +283,8 @@ class GmshIO:
 
         return line_ids
 
-    def __generate_closed_line_loop(
-        self, point_coordinates: Sequence[Sequence[float]], element_size: float = -1
-    ) -> List[int]:
+    def __generate_closed_line_loop(self, point_coordinates: Sequence[Sequence[float]],
+                                    element_size: float = -1) -> List[int]:
         """
         Generates a closed line loop from a list of point coordinates.
 
@@ -293,14 +295,14 @@ class GmshIO:
         Returns:
             - List[int]: A list of line tags.
         """
+
         point_ids = self.make_points(point_coordinates, element_size=element_size)
         pair_list = self.__generate_point_pairs_for_closed_loop(point_ids)
         line_ids = self.make_lines(pair_list)
         return line_ids
 
-    def make_geometry_2d(
-        self, point_coordinates: Sequence[Sequence[float]], name_label: str = "", element_size: float = -1
-    ) -> int:
+    def make_geometry_2d(self, point_coordinates: Sequence[Sequence[float]],
+                         name_label: str = "", element_size: float = -1) -> int:
         """
         Takes point_pairs and puts their tags as the beginning and end of line in gmsh to create line,
         then creates surface to make 2D geometry.
@@ -324,13 +326,9 @@ class GmshIO:
 
         return surface_id
 
-    def make_geometry_3d_by_extrusion(
-        self,
-        point_coordinates: Sequence[Sequence[float]],
-        extrusion_length: Sequence[float],
-        name_label: str = "",
-        element_size: float = -1,
-    ) -> int:
+    def make_geometry_3d_by_extrusion(self, point_coordinates: Sequence[Sequence[float]],
+                                      extrusion_length: Sequence[float], name_label: str = "",
+                                      element_size: float = -1) -> int:
         """
         Creates 3D geometries by extruding the 2D surface
 
@@ -399,16 +397,13 @@ class GmshIO:
                 raise ValueError(f"Layer {key} must contain the key 'ndim'")
 
             if layer["ndim"] == 3 and "extrusion_length" not in layer:
-                raise ValueError(
-                    f"Layer {key} must contain the key 'extrusion_length', which is needed " f"for 3D geometries."
-                )
+                raise ValueError(f"Layer {key} must contain the key 'extrusion_length', which is needed "
+                                 f"for 3D geometries.")
 
             if "element_size" not in layer:
                 layer["element_size"] = -1
-                print(
-                    f"Warning: Layer {key} does not contain the key 'element_size'. The element size will be "
-                    "determined by gmsh."
-                )
+                print(f"Warning: Layer {key} does not contain the key 'element_size'. The element size will be "
+                      "determined by gmsh.")
 
             if layer["ndim"] not in [0, 1, 2, 3]:
                 raise ValueError(f"ndim must be 0, 1, 2 or 3. ndim={layer['ndim']}")
@@ -448,28 +443,60 @@ class GmshIO:
             elif ndim == 2:
                 self.make_geometry_2d(layer["coordinates"], layer_name, layer["element_size"])
             elif ndim == 3:
-                self.make_geometry_3d_by_extrusion(
-                    layer["coordinates"], layer["extrusion_length"], layer_name, layer["element_size"]
-                )
+                self.make_geometry_3d_by_extrusion(layer["coordinates"], layer["extrusion_length"], layer_name,
+                                                   layer["element_size"])
 
         self.remove_duplicate_entities_from_geometry()
         self.synchronize_gmsh()
 
         self.extract_geo_data()
 
-    def create_node_data_dict(
-        self, node_tags: npt.NDArray[np.int_], node_coordinates: npt.NDArray[np.float64]
-    ) -> Dict[int, Sequence[float]]:
+        # add element size to geo data
+        for layer_name, layer in layer_parameters.items():
+            if "element_size" in layer and layer["element_size"] > 0:
+                self.__geo_data["physical_groups"][layer_name]["element_size"] = layer["element_size"]
+
+    def set_mesh_size_of_group(self, group_name: str, mesh_size: float) -> None:
+        """
+        Sets the customized mesh size of a specific group
+
+        Args:
+             - group_name (str): The name of the group provided by user input
+             - mesh_size (float): The customized mesh size provided by user for a specific group.
+
+        Returns:
+            - None
+        """
+
+        if mesh_size <= 0:
+            raise ValueError(f"The mesh size of {group_name} is smaller than or equal to zero. "
+                             f"Please provide a mesh size larger than zero.")
+        group = self.geo_data["physical_groups"][group_name]
+
+        # add data to physical group
+        group["element_size"] = mesh_size
+
+        geometry_ids = group["geometry_ids"]
+        for geometry_id in geometry_ids:
+            ndim = group["ndim"]
+            if ndim == 0:
+                gmsh.model.mesh.setSize([(ndim, geometry_id)], mesh_size)
+            else:
+                entities_list = gmsh.model.getBoundary([(ndim, geometry_id)], recursive=True)
+                gmsh.model.mesh.setSize(entities_list, mesh_size)
+
+    def create_node_data_dict(self, node_tags: npt.NDArray[np.int_],
+                              node_coordinates: npt.NDArray[np.float64]) -> Dict[int, Sequence[float]]:
         """
         Creates a dictionary containing node ids as keys and coordinates as values
 
         Args:
-            - node_tags (npt.NDArray[np.int_]): gmsh node ids
-            - node_coordinates (npt.NDArray[float]) : gmsh node coordinates
+           - node_tags (npt.NDArray[np.int_]): gmsh node ids
+           - node_coordinates (npt.NDArray[float]) : gmsh node coordinates
 
         Returns:
-            - Dict[int, Sequence[float]]: A dictionary containing node ids and \
-                coordinates
+           - Dict[int, Sequence[float]]: A dictionary containing node ids and
+            coordinates
 
         """
 
@@ -484,12 +511,8 @@ class GmshIO:
 
         return nodal_data
 
-    def extract_all_elements_data(
-        self,
-        elem_types: npt.NDArray[np.int_],
-        elem_tags: List[npt.NDArray[np.int_]],
-        elem_node_tags: List[npt.NDArray[np.int_]],
-    ) -> Dict[str, Any]:
+    def extract_all_elements_data(self, elem_types: npt.NDArray[np.int_], elem_tags: List[npt.NDArray[np.int_]],
+                                  elem_node_tags: List[npt.NDArray[np.int_]]) -> Dict[str, Any]:
         """
         Extracts element data for all the elements in the gmsh mesh. Element data is defined as:
             - element type
@@ -516,9 +539,9 @@ class GmshIO:
 
         return elements_data
 
-    def extract_element_data(
-        self, elem_type: int, elem_tags: npt.NDArray[np.int_], element_connectivities: npt.NDArray[np.int_]
-    ) -> Dict[str, Any]:
+    def extract_element_data(self, elem_type: int, elem_tags: npt.NDArray[np.int_],
+                             element_connectivities: npt.NDArray[np.int_]) -> \
+            Dict[str, Any]:
         """
         Extracts element data from gmsh mesh belonging to a single element type. Element data is defined as:
             - element type
@@ -553,12 +576,10 @@ class GmshIO:
 
         """
 
-        mesh_data: Dict[str, Any] = {
-            "ndim": gmsh.model.getDimension(),
-            "nodes": {},
-            "elements": {},
-            "physical_groups": {},
-        }
+        mesh_data: Dict[str, Any] = {"ndim": gmsh.model.getDimension(),
+                                     "nodes": {},
+                                     "elements": {},
+                                     "physical_groups": {}}
 
         # get nodal information
         node_tags, node_coords, node_params = gmsh.model.mesh.getNodes()
@@ -585,6 +606,7 @@ class GmshIO:
             element_ids = []
             element_type = None
             for entity in entities:
+
                 # gets element ids belonging to physical group
                 element_ids.extend(gmsh.model.mesh.getElements(dim=group_dim, tag=entity)[1][0].tolist())
 
@@ -593,11 +615,9 @@ class GmshIO:
                 element_type = gmsh.model.mesh.getElements(dim=group_dim, tag=entity)[0][0]
 
             # store group information in dictionary
-            mesh_data["physical_groups"][name] = {
-                "ndim": group_dim,
-                "node_ids": node_ids.tolist(),
-                "element_ids": element_ids,
-            }
+            mesh_data["physical_groups"][name] = {"ndim": group_dim,
+                                                  "node_ids": node_ids.tolist(),
+                                                  "element_ids": element_ids}
 
             # store element type in dictionary if it exists
             if element_type is not None:
@@ -636,7 +656,7 @@ class GmshIO:
             - entity_id (int): Id of the entity.
 
         Returns:
-            List[int]: List of lower entities.
+            - List[int]: List of lower entities.
 
         """
 
@@ -657,13 +677,11 @@ class GmshIO:
         # get all entities
         entities = gmsh.model.get_entities()
 
-        geo_data: Dict[str, Dict[str, Any]] = {
-            "points": {},
-            "lines": {},
-            "surfaces": {},
-            "volumes": {},
-            "physical_groups": {},
-        }
+        geo_data: Dict[str, Dict[str, Any]] = {"points": {},
+                                               "lines": {},
+                                               "surfaces": {},
+                                               "volumes": {},
+                                               "physical_groups": {}}
 
         #todo, it is possible that duplicated points exist
 
@@ -697,7 +715,15 @@ class GmshIO:
             entities = gmsh.model.getEntitiesForPhysicalGroup(group[0], group[1])
 
             # add group to dictionary
-            geo_data["physical_groups"][name] = {"ndim": group[0], "id": group[1], "geometry_ids": entities.tolist()}
+            geo_data["physical_groups"][name] = {"ndim": group[0],
+                                                 "id": group[1],
+                                                 "geometry_ids": entities.tolist()}
+
+            # add previously defined element size to physical group
+            if name in self.geo_data["physical_groups"]:
+                if "element_size" in self.geo_data["physical_groups"][name]:
+                    geo_data["physical_groups"][name]["mesh_size"] = (
+                        self.geo_data)["physical_groups"][name]["element_size"]
 
         self.__geo_data = geo_data
 
@@ -779,11 +805,9 @@ class GmshIO:
         if "physical_groups" in self.__geo_data.keys() and name in self.__geo_data["physical_groups"]:
             ndim_existing_group = self.__geo_data["physical_groups"][name]["ndim"]
             if ndim != ndim_existing_group:
-                raise ValueError(
-                    f"Cannot add geometry ids to physical group {name} with dimension {ndim} as the "
-                    f"physical group already exists with dimension "
-                    f"{ndim_existing_group}."
-                )
+                raise ValueError(f"Cannot add geometry ids to physical group {name} with dimension {ndim} as the "
+                                 f"physical group already exists with dimension "
+                                 f"{ndim_existing_group}.")
 
             existing_geometry_ids = self.__geo_data["physical_groups"][name]["geometry_ids"]
             new_geometry_ids = existing_geometry_ids + geometry_ids
@@ -792,9 +816,8 @@ class GmshIO:
             gmsh.model.removePhysicalGroups([(ndim_existing_group, self.__geo_data["physical_groups"][name]["id"])])
 
             # re-add new physical group
-            gmsh.model.addPhysicalGroup(
-                ndim_existing_group, new_geometry_ids, tag=self.__geo_data["physical_groups"][name]["id"], name=name
-            )
+            gmsh.model.addPhysicalGroup(ndim_existing_group, new_geometry_ids,
+                                        tag=self.__geo_data["physical_groups"][name]["id"], name=name)
 
         else:
             # add physical group to the geometry
@@ -819,22 +842,52 @@ class GmshIO:
         # extract the geometry data
         self.extract_geo_data()
 
-    def generate_mesh(
-        self,
-        ndim: int,
-        element_size: float = 0.0,
-        order: int = 1,
-        save_file: bool = False,
-        mesh_name: str = "mesh_file",
-        mesh_output_dir: str = "./",
-        open_gmsh_gui: bool = False,
-    ):
+    def __sort_groups_by_element_size(self) -> Tuple[List[Dict[str, Any]], List[str]]:
+        """
+        Sorts physical groups by element size in descending order. Physical groups without element size information
+        are sorted by their original order and are placed at the beginning of the list.
+
+        Returns:
+            - Tuple[List[Dict[str, Any]], List[str]]: Tuple of sorted groups and sorted group names.
+        """
+
+        # get all physical groups from geo data
+        group_names, groups = self.geo_data["physical_groups"].keys(), self.geo_data["physical_groups"].values()
+
+        # Filter groups with element_size information
+        groups_with_info = [(name, group) for name, group in zip(group_names, groups) if "element_size" in group]
+
+        if len(list(groups_with_info)) > 0:
+
+            # Sort groups by element_size in descending order
+            sorted_groups_with_info: List[Tuple[str, Dict[Any, Any]]] = sorted(groups_with_info,
+                                                                               key=lambda x:
+                                                                               x[1].get("element_size", -1),
+                                                                               reverse=True)
+
+            sorted_group_names_with_info, sorted_groups_with_info = zip(*sorted_groups_with_info)
+
+            # Find groups without element_size information
+            groups_without_info = [(name, group) for name, group in zip(group_names, groups) if
+                                   "element_size" not in group]
+
+            # Combine groups with and without info, preserving their original order
+            sorted_groups = [group for _, group in groups_without_info] + list(sorted_groups_with_info)
+            sorted_group_names = [name for name, _ in groups_without_info] + list(sorted_group_names_with_info)
+
+        else:
+            sorted_groups, sorted_group_names = list(groups), list(group_names)
+
+        return sorted_groups, sorted_group_names
+
+    def generate_mesh(self, ndim: int, element_size: float = -1, order: int = 1, save_file: bool = False,
+                      mesh_name: str = "mesh_file", mesh_output_dir: str = "./", open_gmsh_gui: bool = False):
         """
         Generates a mesh from the geometry data.
 
         Args:
             - ndim (int): Dimension of the mesh.
-            - element_size (float): Element size. Defaults to 0.0.
+            - element_size (float): Element size. Defaults to -1, which lets gmsh choose the element size.
             - order (int, optional): Order of the mesh. Defaults to 1.
             - save_file (bool): If True, saves mesh data to gmsh msh file. Defaults to False.
             - mesh_name (str): Name of gmsh model and mesh output file. Defaults to `mesh_file`.
@@ -846,8 +899,15 @@ class GmshIO:
         # sets gmsh geometry from a geometry data dictionary
         self.generate_geo_from_geo_data()
 
-        if element_size > 0.0:
-            gmsh.model.mesh.setSize(gmsh.model.getEntities(), element_size)
+        # sort physical groups by element size in descending order
+        sorted_groups, sorted_group_names = self.__sort_groups_by_element_size()
+
+        # set mesh size per group, if element size is provided in group, else use the global element size
+        for group_name, group in zip(sorted_group_names, sorted_groups):
+            if "element_size" in group:
+                self.set_mesh_size_of_group(group_name, group["element_size"])
+            elif element_size > 0.0:
+                self.set_mesh_size_of_group(group_name, element_size)
 
         # set mesh order
         gmsh.model.mesh.setOrder(order)
@@ -1018,7 +1078,11 @@ class GmshIO:
 
         """
 
-        self.__geo_data = {"points": {}, "lines": {}, "surfaces": {}, "volumes": {}, "physical_groups": {}}
+        self.__geo_data = {"points": {},
+                           "lines": {},
+                           "surfaces": {},
+                           "volumes": {},
+                           "physical_groups": {}}
 
     def clear_mesh_data(self):
         """

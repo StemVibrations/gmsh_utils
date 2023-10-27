@@ -1,8 +1,10 @@
 from pathlib import Path
 import re
+from sys import platform
 
 import gmsh
 import numpy as np
+import pickle
 import pytest
 from _pytest.capture import CaptureFixture
 
@@ -1146,7 +1148,8 @@ class TestGmshIO:
             'nodes': {1: [0., 0., 0.],
                       2: [1., 0., 0.],
                       3: [0.5, 0., 0.]},
-            'physical_groups': {'test': {"ndim": 1, 'element_ids': [1, 2], "node_ids": [1, 2, 3], "element_type": "LINE_2N"}}}
+            'physical_groups': {'test': {"ndim": 1, 'element_ids': [1, 2],
+                                         "node_ids": [1, 2, 3], "element_type": "LINE_2N"}}}
 
         # check if mesh data is filled after generating mesh
         TestUtils.assert_dictionary_almost_equal(gmsh_io.mesh_data, expected_filled_mesh_data)
@@ -1314,7 +1317,7 @@ class TestGmshIO:
         # initialize gmsh and create a 3D geometry
         gmsh_io = GmshIO()
         gmsh.initialize()
-        gmsh_io.make_geometry_3d_by_extrusion([(0, 0, 0), (1, 0, 0), (2, 1, 0)],[0,0,1] , "volume_group")
+        gmsh_io.make_geometry_3d_by_extrusion([(0, 0, 0), (1, 0, 0), (2, 1, 0)], [0, 0, 1], "volume_group")
 
         # add physical group for all dimensions
         gmsh_io.add_physical_group("new_volume_group", 3, [1])
@@ -1421,7 +1424,7 @@ class TestGmshIO:
         gmsh_io.generate_geometry(input_point2, "")
 
         output_group_names = list(gmsh_io.geo_data["physical_groups"].keys())
-        expected_group_names = ['surface', 'point1','point2']
+        expected_group_names = ['surface', 'point1', 'point2']
 
         # check if all groups are added
         for group_name in expected_group_names:
@@ -1756,6 +1759,211 @@ class TestGmshIO:
         # check if mesh can be generated
         gmsh.model.mesh.generate(3)
 
+    def test_set_mesh_size_of_group_1D(self):
+        """
+        Checks whether the mesh size of a group is set correctly for a 1D mesh.
+
+        """
+        geo_data = {'points': {1: [0., 0., 0.], 2: [5., 0., 0.]},
+                    'lines': {1: [1, 2]},
+                    'surfaces': {},
+                    'volumes': {},
+                    'physical_groups': {'Line': {'ndim': 1, 'id': 1, 'geometry_ids': [1]}}}
+
+        gmsh_io = GmshIO()
+
+        # manually set geo data
+        gmsh_io._GmshIO__geo_data = geo_data
+        gmsh_io.generate_geo_from_geo_data()
+
+        # set mesh size of group
+        gmsh_io.set_mesh_size_of_group("Line", 1)
+
+        gmsh_io.generate_mesh(1)
+
+        expected_mesh_data = {"ndim": 1,
+                              'nodes': {1: [0., 0., 0.],
+                                        2: [5., 0., 0.],
+                                        3: [1.0, 0.0, 0.0],
+                                        4: [2.0, 0.0, 0.0],
+                                        5: [3.0, 0.0, 0.0],
+                                        6: [4.0, 0.0, 0.0]},
+                              'elements': {'LINE_2N': {1: [1, 3],
+                                                       2: [3, 4],
+                                                       3: [4, 5],
+                                                       4: [5, 6],
+                                                       5: [6, 2]},
+                                           'POINT_1N': {6: [1],
+                                                        7: [2]}},
+                              'physical_groups': {'Line': {"ndim": 1,
+                                                           "node_ids": [1, 2, 3, 4, 5, 6],
+                                                           "element_ids": [1, 2, 3, 4, 5],
+                                                           "element_type": "LINE_2N"}}}
+
+        TestUtils.assert_dictionary_almost_equal(expected_mesh_data, gmsh_io.mesh_data)
+
+    def test_set_mesh_size_of_group_2D(self):
+        """
+        Checks whether the mesh size of a group is set correctly for a 2D mesh.
+
+        """
+        geo_data = {'points': {1: [0., 0., 0.], 2: [5., 0., 0.], 3: [5., 5., 0.], 4: [0., 5., 0.]},
+                    'lines': {1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [4, 1]},
+                    'surfaces': {1: [1, 2, 3, 4]},
+                    'volumes': {},
+                    'physical_groups': {'Surface': {'ndim': 2, 'id': 1, 'geometry_ids': [1]}}}
+
+        gmsh_io = GmshIO()
+
+        # manually set geo data
+        gmsh_io._GmshIO__geo_data = geo_data
+        gmsh_io.generate_geo_from_geo_data()
+
+        # set mesh size of group
+        gmsh_io.set_mesh_size_of_group("Surface", 2.5)
+
+        gmsh_io.generate_mesh(2)
+
+        expected_mesh_data = {"ndim": 2,
+                              'nodes': {1: [0., 0., 0.],
+                                        2: [5., 0., 0.],
+                                        3: [5.0, 5.0, 0.0],
+                                        4: [0.0, 5.0, 0.0],
+                                        5: [2.5, 0.0, 0.0],
+                                        6: [5.0, 2.5, 0.0],
+                                        7: [2.5, 5.0, 0.0],
+                                        8: [0.0, 2.5, 0.0],
+                                        9: [3.75, 3.75, 0.0],
+                                        10: [3.125, 1.8749999999999998, 0.0],
+                                        11: [1.4062499999999991, 1.4062499999999996, 0.0],
+                                        12: [1.7285156250000004, 3.271484375, 0.0]
+                                        },
+                              'elements': {'LINE_2N': {19: [1, 5],
+                                                       20: [5, 2],
+                                                       21: [2, 6],
+                                                       22: [6, 3],
+                                                       23: [3, 7],
+                                                       24: [7, 4],
+                                                       25: [4, 8],
+                                                       26: [8, 1]},
+                                           'TRIANGLE_3N': {1: [6, 10, 2],
+                                                           2: [2, 10, 5],
+                                                           3: [4, 12, 7],
+                                                           4: [8, 12, 4],
+                                                           5: [1, 11, 8],
+                                                           6: [5, 11, 1],
+                                                           7: [3, 9, 6],
+                                                           8: [7, 9, 3],
+                                                           9: [9, 12, 10],
+                                                           10: [7, 12, 9],
+                                                           11: [9, 10, 6],
+                                                           12: [10, 12, 11],
+                                                           13: [11, 12, 8],
+                                                           14: [10, 11, 5]},
+                                           'POINT_1N': {15: [1],
+                                                        16: [2],
+                                                        17: [3],
+                                                        18: [4]}},
+                              'physical_groups': {'Surface': {"ndim": 2,
+                                                              "node_ids": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+                                                              "element_ids": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+                                                                              13,
+                                                                              14],
+                                                              "element_type": "TRIANGLE_3N"}}}
+
+        TestUtils.assert_dictionary_almost_equal(expected_mesh_data, gmsh_io.mesh_data)
+
+    def test_generate_different_mesh_sizes_2D(self):
+        """
+        Checks a 2D mesh with different mesh sizes. Where the mesh size for one physical group is set after the geometry
+        is generated.
+        """
+
+        # define geometry dimension; input "3" for 3D to extrude the 2D surface, input "2" for 2D
+        dims = 2
+        # if 3D, input depth of geometry to be extruded from 2D surface
+        extrusion_length = [0, 0, 3]
+
+        # define the points of the surface as a list of tuples
+        input_dict = {'soil_1': {"element_size": 1,
+                                 "coordinates": [(0, 0, 0), (3, 0, 0), (5, 1.5, 0), (2, 1, 0), (0, 1, 0)],
+                                 "ndim": dims,
+                                 "extrusion_length": extrusion_length},
+                      'soil_2': {"coordinates": [(3, 0, 0), (5, 0, 0), (5, 1.5, 0)],
+                                 "ndim": dims,
+                                 "extrusion_length": extrusion_length},
+                      'soil_3': {"element_size": 0.5,
+                                 "coordinates": [(0, 1, 0), (2, 1, 0), (2, 3, 0), (0, 3, 0)],
+                                 "ndim": dims,
+                                 "extrusion_length": extrusion_length}
+                      }
+
+        # set a name for mesh output file
+        mesh_output_name = "test_mesh_2D"
+
+        # generate geometry
+        gmsh_io = GmshIO()
+        gmsh_io.generate_geometry(input_dict, mesh_output_name)
+
+        # set mesh size of a group by defining the name label of the group and the desired mesh size
+        gmsh_io.set_mesh_size_of_group("soil_1", 0.1)
+
+        # generate mesh
+        gmsh_io.generate_mesh(dims, open_gmsh_gui=False)
+
+        mesh_data = gmsh_io.mesh_data
+
+        with open('tests/test_data/mesh_data_2D.pkl', 'rb') as file:
+            expected_mesh_data = pickle.load(file)
+
+        # Assert that the dumped data is the same as the original mesh data
+        TestUtils.assert_dictionary_almost_equal(mesh_data, expected_mesh_data)
+
+    @pytest.mark.skipif(platform == "linux", reason="Gmsh works differently on Linux")
+    def test_generate_different_mesh_sizes_3D(self):
+        """
+        Checks whether 3D mesh data generated and expected mesh data are the same.
+        """
+
+        # define a global mesh size, if set to -1 mesh size is logically chosen by Gmsh itself based on the geometry
+        global_mesh_size: float = 5
+        # define geometry dimension; input "3" for 3D to extrude the 2D surface, input "2" for 2D
+        dims = 3
+        # if 3D, input depth of geometry to be extruded from 2D surface
+        extrusion_length = [0, 0, 3]
+        # define the points of the surface as a list of tuples
+        input_dict = {'soil_1': {"coordinates": [(0, 0, 0), (3, 0, 0), (5, 1.5, 0), (2, 1, 0), (0, 1, 0)],
+                                 "ndim": dims,
+                                 "extrusion_length": extrusion_length},
+                      'soil_2': {"coordinates": [(3, 0, 0), (5, 0, 0), (5, 1.5, 0)],
+                                 "ndim": dims,
+                                 "extrusion_length": extrusion_length},
+                      'soil_3': {"coordinates": [(0, 1, 0), (2, 1, 0), (2, 3, 0), (0, 3, 0)],
+                                 "ndim": dims,
+                                 "extrusion_length": extrusion_length}
+                      }
+
+        # set a name for mesh output file
+        mesh_output_name = "test_mesh_3D"
+
+        # generate geometry
+        gmsh_io = GmshIO()
+        gmsh_io.generate_geometry(input_dict, mesh_output_name)
+
+        # set mesh size of a group by defining the name label of the group and the desired mesh size
+        gmsh_io.set_mesh_size_of_group("soil_1", 0.5)
+
+        # generate mesh
+        gmsh_io.generate_mesh(3, element_size=global_mesh_size, open_gmsh_gui=False)
+
+        mesh_data = gmsh_io.mesh_data
+
+        with open('tests/test_data/mesh_data_3D.pkl', 'rb') as file:
+            expected_mesh_data = pickle.load(file)
+
+        # Assert that the dumped data is the same as the original mesh data
+        TestUtils.assert_dictionary_almost_equal(mesh_data, expected_mesh_data)
+
     def test_synchronize_gmsh_with_new_surface_on_extruded_volume(self):
         """
         Checks whether gmsh is synchronized after calling synchronize_gmsh. This test checks whether the geo data
@@ -1849,10 +2057,3 @@ class TestGmshIO:
 
         # check if mesh can be generated
         gmsh.model.mesh.generate(3)
-
-
-
-
-
-
-
