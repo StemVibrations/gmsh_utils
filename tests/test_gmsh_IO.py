@@ -2180,4 +2180,3 @@ class TestGmshIO:
 
         # check if mesh can be generated
         gmsh_io.generate_mesh(3)
-

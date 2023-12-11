@@ -124,11 +124,14 @@ class GmshIO:
         y = coordinates[1]
         z = coordinates[2]
 
+        # define typing point id
+        point_id: int
+
         if [x, y, z] in self.__geo_data["points"].values():
             point_id = next((point_tag for point_tag, point_coordinates in self.__geo_data["points"].items() if
-                             point_coordinates == [x,y,z]))
+                             point_coordinates == [x, y, z]))
         else:
-            point_id: int = gmsh.model.occ.addPoint(x, y, z, mesh_size)
+            point_id = gmsh.model.occ.addPoint(x, y, z, mesh_size)
 
         return point_id
 
