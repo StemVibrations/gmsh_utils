@@ -123,6 +123,13 @@ class GmshIO:
         x = coordinates[0]
         y = coordinates[1]
         z = coordinates[2]
+        #
+        # if [x,y,z] in self.__geo_data["points"].values():
+        #     point_id = next((point_tag for point_tag, point_coordinates in self.__geo_data["points"].items() if
+        #                      point_coordinates == [x,y,z]))
+        # else:
+        #     point_id: int = gmsh.model.occ.addPoint(x, y, z, mesh_size)
+
         point_id: int = gmsh.model.occ.addPoint(x, y, z, mesh_size)
         return point_id
 
@@ -276,10 +283,22 @@ class GmshIO:
         # create lines
         line_ids = [self.create_line([point_ids[i], point_ids[i + 1]]) for i in range(len(point_ids) - 1)]
 
+        # new_dimtags = [(1,id) for id in line_ids]
+        # original_dimtags = [(1,id) for id in list(self.geo_data["lines"].keys())]
+        #
+        # new_entities, new_entities_map = gmsh.model.occ.fragment(new_dimtags, original_dimtags, removeTool=True,
+        #                                                          removeObject=True)
+        #
+        # new_entities_map = new_entities_map[len(line_ids):]
+        #
+        # self.__readd_physical_group_on_split_entities(original_dimtags, new_entities_map, dims=[1])
+
         # only add physical group if name label is not empty
         if name_label != "":
             line_ndim = 1
             self.__add_or_append_to_physical_group(name_label, line_ndim, line_ids)
+
+
 
         return line_ids
 
@@ -675,7 +694,13 @@ class GmshIO:
         """
 
         # get all entities
-        entities = gmsh.model.get_entities()
+        entities = gmsh.model.occ.getEntities()
+
+        # if no occ entities are found, it means that geo_data is read from a geo file, in this case entities are stored
+        # directly on the gmsh model
+        if len(entities) == 0:
+            entities = gmsh.model.get_entities()
+
 
         geo_data: Dict[str, Dict[str, Any]] = {"points": {},
                                                "lines": {},
@@ -1012,6 +1037,8 @@ class GmshIO:
 
         # loop over the filtered physical groups
         for group_dim, group_id in physical_groups:
+            # if group_dim not in dims:
+            #     continue
             # get name of the group
             name = gmsh.model.getPhysicalName(group_dim, group_id)
 
