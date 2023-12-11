@@ -2178,3 +2178,6 @@ class TestGmshIO:
 
         TestUtils.assert_dictionary_almost_equal(gmsh_io.geo_data["physical_groups"], expected_physical_groups)
 
+        # check if mesh can be generated
+        gmsh_io.generate_mesh(3, open_gmsh_gui=True)
+

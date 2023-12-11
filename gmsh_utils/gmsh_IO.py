@@ -123,14 +123,13 @@ class GmshIO:
         x = coordinates[0]
         y = coordinates[1]
         z = coordinates[2]
-        #
-        # if [x,y,z] in self.__geo_data["points"].values():
-        #     point_id = next((point_tag for point_tag, point_coordinates in self.__geo_data["points"].items() if
-        #                      point_coordinates == [x,y,z]))
-        # else:
-        #     point_id: int = gmsh.model.occ.addPoint(x, y, z, mesh_size)
 
-        point_id: int = gmsh.model.occ.addPoint(x, y, z, mesh_size)
+        if [x, y, z] in self.__geo_data["points"].values():
+            point_id = next((point_tag for point_tag, point_coordinates in self.__geo_data["points"].items() if
+                             point_coordinates == [x,y,z]))
+        else:
+            point_id: int = gmsh.model.occ.addPoint(x, y, z, mesh_size)
+
         return point_id
 
     def create_line(self, point_ids: Sequence[int]) -> int:
