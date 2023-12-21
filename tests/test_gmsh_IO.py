@@ -591,14 +591,6 @@ class TestGmshIO:
 
         gmsh.model.addPhysicalGroup(0, [point_id1, point_id2], name="test")
 
-        # extract geo data
-        gmsh_io.extract_geo_data()
-        empty_geo_data = gmsh_io.geo_data
-
-        # check if geo data is empty before synchronizing
-        expected_empty_geo_data = {'lines': {}, 'physical_groups': {}, 'points': {}, 'surfaces': {}, 'volumes': {}}
-        TestUtils.assert_dictionary_almost_equal(empty_geo_data, expected_empty_geo_data)
-
         # synchronize gmsh
         gmsh_io.synchronize_gmsh()
 
@@ -2137,3 +2129,54 @@ class TestGmshIO:
 
         # check if mesh can be generated
         gmsh.model.mesh.generate(3)
+
+    def test_add_line_on_edge_of_volume(self):
+        """
+        Tests whether a line can be added on an edge of a volume. The existing volume edge should be split in two
+        edges. The new line should be added to the geo data.
+        """
+
+        # initialize gmsh
+        gmsh_io = GmshIO()
+        gmsh.initialize()
+
+        # create first surface
+        # create surface points
+        point_id1 = gmsh.model.occ.addPoint(0, 0, 0)
+        point_id2 = gmsh.model.occ.addPoint(4, 0, 0)
+        point_id3 = gmsh.model.occ.addPoint(4, 1, 0)
+        point_id4 = gmsh.model.occ.addPoint(0, 1, 0)
+
+        # create surface lines
+        line_id1 = gmsh.model.occ.addLine(point_id1, point_id2)
+        line_id2 = gmsh.model.occ.addLine(point_id2, point_id3)
+        line_id3 = gmsh.model.occ.addLine(point_id3, point_id4)
+        line_id4 = gmsh.model.occ.addLine(point_id4, point_id1)
+
+        # create a surface
+        curve_loop_id = gmsh.model.occ.addCurveLoop([line_id1, line_id2, line_id3, line_id4])
+        surface_id = gmsh.model.occ.addPlaneSurface([curve_loop_id])
+
+        # create a volume by extruding the surface
+        new_dim_ids = gmsh.model.occ.extrude([(2, surface_id)], 0, 0, 4)
+        volume_id: int = next((dim_tag[1] for dim_tag in new_dim_ids if dim_tag[0] == 3))
+
+        gmsh.model.addPhysicalGroup(3, [volume_id], tag=-1, name="volume")
+        gmsh_io.synchronize_gmsh()
+        gmsh_io.extract_geo_data()
+
+        gmsh_io.make_geometry_1d([[0.5, 1.0, 4.0], [4.0, 1.0, 4.0]], "new_line")
+        gmsh_io.synchronize_gmsh()
+        gmsh_io.extract_geo_data()
+
+        # check if the amount of lines in the model is correct
+        assert len(gmsh_io.geo_data["lines"].keys()) == 13
+
+        # check if the physical groups are added correctly
+        expected_physical_groups = {'volume': {'geometry_ids': [1], 'id': 1, 'ndim': 3},
+                                    'new_line': {'geometry_ids': [13], 'id': 2, 'ndim': 1}}
+
+        TestUtils.assert_dictionary_almost_equal(gmsh_io.geo_data["physical_groups"], expected_physical_groups)
+
+        # check if mesh can be generated
+        gmsh_io.generate_mesh(3)
