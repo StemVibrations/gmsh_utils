@@ -2189,3 +2189,23 @@ class TestGmshIO:
 
         # check if mesh can be generated
         gmsh_io.generate_mesh(3)
+
+    @pytest.mark.skipif(reason="Somehow setting verbosity level via a test does not work. While it does work without"
+                               "pytest.")
+    def test_set_verbosity_level(self):
+        """
+        Tests whether the verbosity level is set correctly.
+        """
+
+        gmsh_io = GmshIO()
+
+        # loop over all available verbosity levels
+        available_levels = [0, 1, 2, 3, 4, 5, 99]
+        for level in available_levels:
+            gmsh_io.set_verbosity_level(level)
+            assert gmsh.option.getNumber("General.Verbosity") == level
+
+        # check if exception is raised when a non-existing verbosity level is set
+        non_existing_level = 100
+        with pytest.raises(ValueError, match=f"Verbosity level must be 0, 1, 2, 3, 4, 5 or 99. Verbosity level is 100"):
+            gmsh_io.set_verbosity_level(non_existing_level)

@@ -1102,3 +1102,17 @@ class GmshIO:
         """
 
         self.__mesh_data = {}
+
+    @staticmethod
+    def set_verbosity_level(verbosity_level: int):
+        """
+        Sets the verbosity level of gmsh.
+        Level of information printed on the terminal and the message console (0: silent except for fatal errors,
+        1: errors, 2: warnings, 3: direct, 4: information, 5: status, 99: debug) Default value: 5
+
+        """
+
+        if verbosity_level not in [0, 1, 2, 3, 4, 5, 99]:
+            raise ValueError(f"Verbosity level must be 0, 1, 2, 3, 4, 5 or 99. Verbosity level is {verbosity_level}")
+
+        gmsh.option.setNumber("General.Verbosity", verbosity_level)
