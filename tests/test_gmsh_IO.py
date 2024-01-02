@@ -1,6 +1,7 @@
 from pathlib import Path
 import re
 from sys import platform
+from copy import deepcopy
 
 import gmsh
 import numpy as np
@@ -2177,6 +2178,14 @@ class TestGmshIO:
                                     'new_line': {'geometry_ids': [13], 'id': 2, 'ndim': 1}}
 
         TestUtils.assert_dictionary_almost_equal(gmsh_io.geo_data["physical_groups"], expected_physical_groups)
+
+        # check if nothing changes after synchronizing again
+        expected_geo_data = deepcopy(gmsh_io.geo_data)
+
+        gmsh_io.synchronize_gmsh()
+        gmsh_io.extract_geo_data()
+
+        TestUtils.assert_dictionary_almost_equal(expected_geo_data, gmsh_io.geo_data)
 
         # check if mesh can be generated
         gmsh_io.generate_mesh(3)

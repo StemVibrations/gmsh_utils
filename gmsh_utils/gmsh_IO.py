@@ -971,7 +971,6 @@ class GmshIO:
 
             # get all entities
             occ_entities = gmsh.model.occ.get_entities()
-            geo_entities = gmsh.model.get_entities()
 
             # get all lines and surfaces
             lines = [entity for entity in occ_entities if entity[0] == 1]
@@ -992,7 +991,7 @@ class GmshIO:
 
             # in the original entities list, exchange original points with new points, other entities remain the same
             unique_original_entities = ([entity for entity in new_occ_entities if entity[0] == 0] +
-                                        [entity for entity in geo_entities if entity[0] != 0])
+                                        [entity for entity in occ_entities if entity[0] != 0])
 
             # re-add physical groups on split entities
             self.__readd_physical_group_on_split_entities(unique_original_entities, new_entities_map)
