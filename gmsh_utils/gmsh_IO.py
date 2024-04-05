@@ -5,7 +5,7 @@ import re
 
 import gmsh
 
-# for gmsh to not use numpy for gmsh
+# force gmsh io to not use numpy for gmsh
 gmsh.use_numpy = False
 
 
