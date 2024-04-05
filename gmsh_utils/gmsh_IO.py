@@ -4,8 +4,9 @@ from enum import Enum
 import re
 
 import gmsh
-import numpy as np
-import numpy.typing as npt
+
+# for gmsh to not use numpy for gmsh
+gmsh.use_numpy = False
 
 
 class ElementType(Enum):
@@ -494,14 +495,14 @@ class GmshIO:
                 entities_list = gmsh.model.getBoundary([(ndim, geometry_id)], recursive=True)
                 gmsh.model.mesh.setSize(entities_list, mesh_size)
 
-    def create_node_data_dict(self, node_tags: npt.NDArray[np.int_],
-                              node_coordinates: npt.NDArray[np.float64]) -> Dict[int, Sequence[float]]:
+    def create_node_data_dict(self, node_tags: List[int],
+                              node_coordinates: List[float]) -> Dict[int, Sequence[float]]:
         """
         Creates a dictionary containing node ids as keys and coordinates as values
 
         Args:
-           - node_tags (npt.NDArray[np.int_]): gmsh node ids
-           - node_coordinates (npt.NDArray[float]) : gmsh node coordinates
+           - node_tags (List[int]): gmsh node ids
+           - node_coordinates (List[float]) : gmsh node coordinates
 
         Returns:
            - Dict[int, Sequence[float]]: A dictionary containing node ids and
@@ -511,17 +512,17 @@ class GmshIO:
 
         # reshape nodal coordinate array to [num nodes, 3]
         num_nodes = len(node_tags)
-        node_coordinates = np.reshape(node_coordinates, (num_nodes, 3))
+        ndim = 3
 
         # create dictionary of nodal data with node ids as keys and coordinates as values
         nodal_data: Dict[int, Any] = {}
         for i in range(num_nodes):
-            nodal_data[node_tags[i]] = node_coordinates[i, :].tolist()
+            nodal_data[node_tags[i]] = node_coordinates[i * ndim: (i + 1) * ndim]
 
         return nodal_data
 
-    def extract_all_elements_data(self, elem_types: npt.NDArray[np.int_], elem_tags: List[npt.NDArray[np.int_]],
-                                  elem_node_tags: List[npt.NDArray[np.int_]]) -> Dict[str, Any]:
+    def extract_all_elements_data(self, elem_types: List[int], elem_tags: List[List[int]],
+                                  elem_node_tags: List[List[int]]) -> Dict[str, Any]:
         """
         Extracts element data for all the elements in the gmsh mesh. Element data is defined as:
             - element type
@@ -529,9 +530,9 @@ class GmshIO:
             - element node connectivities
 
         Args:
-            - elem_types (npt.NDArray[np.int_]): Element types.
-            - elem_tags (List[npt.NDArray[np.int_]]): Element tags.
-            - elem_node_tags (List[npt.NDArray[np.int_]]): Element node tags.
+            - elem_types (List[int]): Element types.
+            - elem_tags (List[List[int]]): Element tags.
+            - elem_node_tags (List[List[int]]): Element node tags.
 
         Returns:
             - Dict (Dict[str, Any]): Dictionary which contains element data.
@@ -548,8 +549,8 @@ class GmshIO:
 
         return elements_data
 
-    def extract_element_data(self, elem_type: int, elem_tags: npt.NDArray[np.int_],
-                             element_connectivities: npt.NDArray[np.int_]) -> \
+    def extract_element_data(self, elem_type: int, elem_tags: List[int],
+                             element_connectivities: List[int]) -> \
             Dict[str, Any]:
         """
         Extracts element data from gmsh mesh belonging to a single element type. Element data is defined as:
@@ -559,8 +560,8 @@ class GmshIO:
 
         Args:
             - elem_type (int): Element type.
-            - elem_tags (npt.NDArray[np.int_]): Element ids.
-            - element_connectivities (npt.NDArray[np.int_]): Element node tags.
+            - elem_tags (List[int]): Element ids.
+            - element_connectivities (List[int]): Element node tags.
 
         Returns:
             - Dict: Dictionary which contains element data.
@@ -569,12 +570,11 @@ class GmshIO:
         element_name = ElementType(elem_type).name
         n_nodes_per_element = self.get_num_nodes_from_elem_type(elem_type)
         num_elements = len(elem_tags)
-        connectivities = np.reshape(element_connectivities, (num_elements, n_nodes_per_element))
 
         # add element data to dictionary with key = element id and value = element connectivity
         element_data: Dict[int, Any] = {}
         for i in range(num_elements):
-            element_data[elem_tags[i]] = connectivities[i, :].tolist()
+            element_data[elem_tags[i]] = element_connectivities[i * n_nodes_per_element: (i + 1) * n_nodes_per_element]
 
         return {element_name: element_data}
 
@@ -617,7 +617,7 @@ class GmshIO:
             for entity in entities:
 
                 # gets element ids belonging to physical group
-                element_ids.extend(gmsh.model.mesh.getElements(dim=group_dim, tag=entity)[1][0].tolist())
+                element_ids.extend(gmsh.model.mesh.getElements(dim=group_dim, tag=entity)[1][0])
 
                 # gets element type of elements in physical group, note that gmsh makes sure that all elements in a
                 # physical group are of the same type
@@ -625,7 +625,7 @@ class GmshIO:
 
             # store group information in dictionary
             mesh_data["physical_groups"][name] = {"ndim": group_dim,
-                                                  "node_ids": node_ids.tolist(),
+                                                  "node_ids": node_ids,
                                                   "element_ids": element_ids}
 
             # store element type in dictionary if it exists
@@ -707,7 +707,7 @@ class GmshIO:
 
             # get point data
             if entity_ndim == 0:
-                geo_data["points"][entity_id] = gmsh.model.get_value(entity_ndim, entity_id, []).tolist()
+                geo_data["points"][entity_id] = gmsh.model.get_value(entity_ndim, entity_id, [])
             # get line data
             if entity_ndim == 1:
                 geo_data["lines"][entity_id] = self.get_boundary_data(entity_ndim, entity_id)
@@ -732,7 +732,7 @@ class GmshIO:
             # add group to dictionary
             geo_data["physical_groups"][name] = {"ndim": group[0],
                                                  "id": group[1],
-                                                 "geometry_ids": entities.tolist()}
+                                                  "geometry_ids": entities}
 
             # add previously defined element size to physical group
             if name in self.geo_data["physical_groups"]:
@@ -791,7 +791,7 @@ class GmshIO:
 
         # add volumes to the geometry
         for k, v in self.__geo_data["volumes"].items():
-            gmsh.model.occ.addSurfaceLoop(np.abs(v), tag=k)
+            gmsh.model.occ.addSurfaceLoop([abs(surface_id) for surface_id in v], tag=k)
             gmsh.model.occ.add_volume([k], tag=k)
 
         # add physical groups to the geometry
