@@ -732,7 +732,7 @@ class GmshIO:
             # add group to dictionary
             geo_data["physical_groups"][name] = {"ndim": group[0],
                                                  "id": group[1],
-                                                  "geometry_ids": entities}
+                                                 "geometry_ids": entities}
 
             # add previously defined element size to physical group
             if name in self.geo_data["physical_groups"]:
