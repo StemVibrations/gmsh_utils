@@ -1912,7 +1912,6 @@ class TestGmshIO:
         # Assert that the dumped data is the same as the original mesh data
         TestUtils.assert_dictionary_almost_equal(mesh_data, expected_mesh_data)
 
-    @pytest.mark.skipif(platform == "linux", reason="Gmsh works differently on Linux")
     def test_generate_different_mesh_sizes_3D(self):
         """
         Checks whether 3D mesh data generated and expected mesh data are the same.
@@ -1951,8 +1950,13 @@ class TestGmshIO:
 
         mesh_data = gmsh_io.mesh_data
 
-        with open('tests/test_data/mesh_data_3D.pkl', 'rb') as file:
-            expected_mesh_data = pickle.load(file)
+        # check if sys is windows or linux to load the correct expected mesh data
+        if platform == 'win32':
+            with open('tests/test_data/mesh_data_3D_windows.pkl', 'rb') as file:
+                expected_mesh_data = pickle.load(file)
+        elif platform == 'linux':
+            with open('tests/test_data/mesh_data_3D_linux.pkl', 'rb') as file:
+                expected_mesh_data = pickle.load(file)
 
         # Assert that the dumped data is the same as the original mesh data
         TestUtils.assert_dictionary_almost_equal(mesh_data, expected_mesh_data)
