@@ -737,7 +737,7 @@ class GmshIO:
             # add previously defined element size to physical group
             if name in self.geo_data["physical_groups"]:
                 if "element_size" in self.geo_data["physical_groups"][name]:
-                    geo_data["physical_groups"][name]["mesh_size"] = (
+                    geo_data["physical_groups"][name]["element_size"] = (
                         self.geo_data)["physical_groups"][name]["element_size"]
 
         self.__geo_data = geo_data
