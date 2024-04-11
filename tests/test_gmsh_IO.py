@@ -1912,6 +1912,18 @@ class TestGmshIO:
         # Assert that the dumped data is the same as the original mesh data
         TestUtils.assert_dictionary_almost_equal(mesh_data, expected_mesh_data)
 
+        # check if the mesh stays the same after extracting the geo data
+        gmsh_io.generate_geo_from_geo_data()
+        gmsh_io.extract_geo_data()
+
+        # regenerate mesh
+        gmsh_io.generate_mesh(dims, open_gmsh_gui=False)
+
+        mesh_data = gmsh_io.mesh_data
+
+        # Assert that the dumped data is the same as the original mesh data
+        TestUtils.assert_dictionary_almost_equal(mesh_data, expected_mesh_data)
+
     def test_generate_different_mesh_sizes_3D(self):
         """
         Checks whether 3D mesh data generated and expected mesh data are the same.
