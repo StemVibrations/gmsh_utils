@@ -1330,6 +1330,29 @@ class TestGmshIO:
         # check if physical groups are added correctly
         TestUtils.assert_dictionary_almost_equal(geo_data["physical_groups"], expected_group_data)
 
+    def test_add_physical_group_twice(self):
+        """
+        Checks whether physical groups are added correctly when the group is already there.
+
+        """
+
+        # initialize gmsh and create a 3D geometry
+        gmsh_io = GmshIO()
+        gmsh.initialize()
+        gmsh_io.make_geometry_1d([(0, 0, 0), (1, 0, 0)], "line_group")
+        gmsh_io.synchronize_gmsh()
+        gmsh_io.extract_geo_data()
+
+        # add physical group on existing group
+        gmsh_io.add_physical_group("line_group", 1, [1])
+        gmsh_io.add_physical_group("line_group", 1, np.array([1]))
+
+        # set expected data
+        expected_group_data = {"line_group": {"geometry_ids": [1], "id": 1, "ndim": 1}}
+
+        # check if physical groups are added correctly
+        TestUtils.assert_dictionary_almost_equal(gmsh_io.geo_data["physical_groups"], expected_group_data)
+
     def test_add_point_at_surface_point(self):
         """
         Checks whether a point is added at the surface point correctly. Both the physical groups of the surface and the

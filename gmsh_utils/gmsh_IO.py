@@ -825,7 +825,7 @@ class GmshIO:
                                  f"{ndim_existing_group}.")
 
             existing_geometry_ids = self.__geo_data["physical_groups"][name]["geometry_ids"]
-            new_geometry_ids = existing_geometry_ids + geometry_ids
+            new_geometry_ids = existing_geometry_ids + list(geometry_ids)
 
             # remove existing physical group
             gmsh.model.removePhysicalGroups([(ndim_existing_group, self.__geo_data["physical_groups"][name]["id"])])
