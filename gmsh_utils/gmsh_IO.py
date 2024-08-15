@@ -4,8 +4,9 @@ from enum import Enum
 import re
 
 import gmsh
+import numpy as np
 
-# force gmsh io to not use numpy for gmsh
+# force gmsh io to not use numpy for gmsh, outside of gmsh, numpy can be used
 gmsh.use_numpy = False
 
 
@@ -27,6 +28,49 @@ class ElementType(Enum):
     QUADRANGLE_8N = 16
     HEXAHEDRON_20N = 17
 
+class ElementData:
+
+    def __init__(self, element_type):
+        self.element_type = element_type
+
+    def __line_2n_shape_functions(self, local_coordinate):
+        x = local_coordinate[0]
+        return np.array([1 - x, x])
+    def __triangle_3n_shape_functions(self, local_coordinate):
+        x, y = local_coordinate[0], local_coordinate[1]
+        return np.array([1 - x - y, x, y])
+
+    def __tetrahedron_4n_shape_functions(self, local_coordinate):
+        x, y, z = local_coordinate[0], local_coordinate[1], local_coordinate[2]
+        return np.array([1 - x - y - z, x, y, z])
+
+    def calculate_shape_functions(self, coordinates):
+
+        if self.element_type == ElementType.LINE_2N:
+            return self.__line_2n_shape_functions(coordinates)
+        elif self.element_type == ElementType.TRIANGLE_3N:
+            return self.__triangle_3n_shape_functions(coordinates)
+        elif self.element_type == ElementType.TETRAHEDRON_4N:
+            return self.__tetrahedron_4n_shape_functions(coordinates)
+        else:
+            raise ValueError(f"Element type {self.element_type} is not supported by the shape functions class.")
+
+    def get_integration_point_values(self, gauss_integration_order):
+        if gauss_integration_order != 2:
+            raise ValueError(f"Gauss integration order {gauss_integration_order} is not supported.")
+
+        if self.element_type == ElementType.LINE_2N:
+            return [[-(1 / 3)**0.5],
+                    [(1 / 3)**0.5]], [1, 1]
+        elif self.element_type == ElementType.TRIANGLE_3N:
+            return [[1/6, 1/6],
+                    [2/3, 1/6],
+                    [1/6, 2/3]], [1/6, 1/6, 1/6]
+        elif self.element_type == ElementType.TETRAHEDRON_4N:
+            return [[0.58541020, 0.13819660, 0.13819660],
+                    [0.13819660, 0.58541020, 0.13819660],
+                    [0.13819660, 0.13819660, 0.58541020],
+                    [0.13819660, 0.13819660, 0.13819660]], [1/24, 1/24, 1/24, 1/24]
 
 class GmshIO:
     """
@@ -45,6 +89,7 @@ class GmshIO:
         Constructor of GmshIO class
 
         """
+        self.__mesh_info = {}
         self.__mesh_data = {}
         self.__geo_data: Dict[str, Any] = {"points": {},
                                            "lines": {},
@@ -895,20 +940,10 @@ class GmshIO:
 
         return sorted_groups, sorted_group_names
 
-    def generate_mesh(self, ndim: int, element_size: float = -1, order: int = 1, save_file: bool = False,
-                      mesh_name: str = "mesh_file", mesh_output_dir: str = "./", open_gmsh_gui: bool = False):
+    def __generate_mesh(self, ndim: int, element_size: float, order: int):
         """
-        Generates a mesh from the geometry data.
-
-        Args:
-            - ndim (int): Dimension of the mesh.
-            - element_size (float): Element size. Defaults to -1, which lets gmsh choose the element size.
-            - order (int, optional): Order of the mesh. Defaults to 1.
-            - save_file (bool): If True, saves mesh data to gmsh msh file. Defaults to False.
-            - mesh_name (str): Name of gmsh model and mesh output file. Defaults to `mesh_file`.
-            - mesh_output_dir (str): Output directory of mesh file. Defaults to working directory.
-            - open_gmsh_gui (bool): User indicates whether to open gmsh interface. Defaults to False.
-
+        Private function to generate mesh from geometry data. This function does not extract the mesh data to a
+        dictionary and does not close the gmsh instance, this function is therefore dangerous to use publicly.
         """
 
         # sets gmsh geometry from a geometry data dictionary
@@ -929,6 +964,27 @@ class GmshIO:
 
         # generate mesh
         gmsh.model.mesh.generate(ndim)
+
+    def generate_mesh(self, ndim: int, element_size: float = -1, order: int = 1, save_file: bool = False,
+                      mesh_name: str = "mesh_file", mesh_output_dir: str = "./", open_gmsh_gui: bool = False):
+        """
+        Generates a mesh from the geometry data.
+
+        Args:
+            - ndim (int): Dimension of the mesh.
+            - element_size (float): Element size. Defaults to -1, which lets gmsh choose the element size.
+            - order (int, optional): Order of the mesh. Defaults to 1.
+            - save_file (bool): If True, saves mesh data to gmsh msh file. Defaults to False.
+            - mesh_name (str): Name of gmsh model and mesh output file. Defaults to `mesh_file`.
+            - mesh_output_dir (str): Output directory of mesh file. Defaults to working directory.
+            - open_gmsh_gui (bool): User indicates whether to open gmsh interface. Defaults to False.
+
+        """
+
+        self.__mesh_info = {"ndim": ndim, "element_size": element_size, "order": order}
+
+        # generate the mesh from the geometry data
+        self.__generate_mesh(ndim, element_size, order)
 
         # parses gmsh mesh data into a mesh data dictionary
         self.extract_mesh_data()
@@ -1072,6 +1128,73 @@ class GmshIO:
 
             # synchronize intersections of entities
             self.__synchronize_intersection()
+
+
+    def get_elements_at_coordinates(self, coordinates: Sequence[Sequence[float]], dim: int = -1) -> List[int]:
+        self.__generate_mesh(self.__mesh_info["ndim"], self.__mesh_info["element_size"], self.__mesh_info["order"])
+
+        element_ids = []
+        for point in coordinates:
+            element_ids.append(gmsh.model.mesh.getElementsByCoordinates(point[0], point[1], point[2], dim=dim, strict=False))
+
+        self.finalize_gmsh()
+
+        return element_ids
+
+    def get_interpolation_factors_at_coordinates(self, coordinates: Sequence[Sequence[float]], dim: int = -1):
+        """
+        Gets the interpolation factors at a coordinate.
+
+        Args:
+            - coordinate (Sequence[float]): A sequence of x, y and z coordinates.
+
+        Returns:
+            - Dict[str, Any]: A dictionary containing the interpolation factors.
+
+        """
+        self.__generate_mesh(self.__mesh_info["ndim"], self.__mesh_info["element_size"], self.__mesh_info["order"])
+
+        all_interpolation_factors = []
+        all_connectivities = []
+
+
+        for point in coordinates:
+            element_ids = gmsh.model.mesh.getElementsByCoordinates(point[0], point[1], point[2], dim=dim, strict=False)
+            # only get the first element id, in case multiple elements are found
+            local_coordinates = gmsh.model.mesh.getLocalCoordinatesInElement(element_ids[0], point[0], point[1], point[2])
+
+            element_info = gmsh.model.mesh.getElement(element_ids[0])
+            element_type = element_info[0]
+            #
+            # integration_points = gmsh.model.mesh.getIntegrationPoints(element_type, "Gauss2")
+
+            # integration_points_values = np.array(integration_points[0])
+            # integration_points_values.resize((int(len(integration_points_values) / 3), 3))
+            # inv_n_gauss_matrix = np.linalg.inv(integration_points_values)
+
+
+            element_data = ElementData(ElementType(element_type))
+            n_target = np.array(element_data.calculate_shape_functions(local_coordinates))
+
+            integration_points_coordinates = element_data.get_integration_point_values(2)[0]
+
+            n_integration_points = [element_data.calculate_shape_functions(point) for point in integration_points_coordinates]
+            inv_n_gauss_matrix = np.linalg.inv(np.array(n_integration_points))
+
+
+
+
+
+
+            all_interpolation_factors.append(n_target.dot(inv_n_gauss_matrix))
+
+            # save connectivities such that the orrientation of the interpolation factors can be determined
+            all_connectivities.append(element_info[1])
+
+        return (all_interpolation_factors, all_connectivities)
+
+
+
 
     @staticmethod
     def reset_gmsh_instance():

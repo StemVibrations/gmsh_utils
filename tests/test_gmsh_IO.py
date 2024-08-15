@@ -2224,3 +2224,28 @@ class TestGmshIO:
         non_existing_level = 100
         with pytest.raises(ValueError, match=f"Verbosity level must be 0, 1, 2, 3, 4, 5 or 99. Verbosity level is 100"):
             gmsh_io.set_verbosity_level(non_existing_level)
+
+
+    def test_interpolation_factors_at_coordinates(self):
+
+        # define point coordinates
+        point_coordinates = [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)]
+
+        # initialize gmsh
+        gmsh_io = GmshIO()
+        gmsh.initialize()
+
+        # create multiple points and add to physical group
+        gmsh_io.make_geometry_2d(point_coordinates, "surface")
+        gmsh_io.synchronize_gmsh()
+        gmsh_io.extract_geo_data()
+
+        gmsh_io.generate_mesh(2,element_size=10)
+        # gmsh_io.generate_mesh(2,element_size=10)
+
+        interpolation_coordinates = [[0.4,0.2,0.0]]
+
+
+        gmsh_io.get_interpolation_factors_at_coordinates(interpolation_coordinates, 2)
+
+        a=1+1
