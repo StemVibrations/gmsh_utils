@@ -4,7 +4,9 @@ from enum import Enum
 import re
 
 import gmsh
+import numpy as np
 
+from gmsh_utils.math_utils import MathUtils
 # force gmsh io to not use numpy for gmsh
 gmsh.use_numpy = False
 
@@ -856,6 +858,68 @@ class GmshIO:
 
         # extract the geometry data
         self.extract_geo_data()
+
+    def get_surface_ids_at_plane(self, plane_vertices: Sequence[Sequence[float]]) -> List[int]:
+        """
+        Gets surface ids at a plane defined by three vertices.
+
+        Args:
+            - plane_vertices (Sequence[Sequence[float]]): A list of three vertices defining the plane.
+
+        Returns:
+            - List[int]: A list of surface ids at the plane.
+        """
+
+        # check if all surface_vertices lie on the same plane
+        surface_ids_at_plane = []
+
+        # get normal of the plane
+        plane_vertices_array  = np.array(plane_vertices, dtype=float)
+        normal_plane = MathUtils.calculate_normal_plane(plane_vertices_array)
+
+        # check all surfaces
+        for surface_id in self.geo_data["surfaces"].keys():
+
+            # get point ids of the surface
+            surface_point_dim_ids = gmsh.model.getBoundary([(2, surface_id)], combined=False, recursive=True)
+
+            # get surface coordinates
+            surface_coordinates = np.array([self.geo_data["points"][point_id] for _, point_id in surface_point_dim_ids])
+
+            # check if all surface coordinates are on the plane, if so add surface id to list
+            if all(MathUtils.is_point_on_plane(point, plane_vertices_array[0], normal_plane)
+                   for point in surface_coordinates):
+                surface_ids_at_plane.append(surface_id)
+
+        return surface_ids_at_plane
+
+    def get_surface_ids_at_polygon(self, polygon_vertices: Sequence[Sequence[float]]) -> List[int]:
+        """
+        Gets surface ids at a bounded plane
+
+        Args:
+            - plane_vertices (Sequence[Sequence[float]]): A list of three vertices defining the plane.
+
+        Returns:
+            - List[int]: A list of surface ids at the plane.
+        """
+
+        # check if all surface_vertices lie on the same plane
+        surface_ids_at_plane = []
+
+        for surface_id in self.geo_data["surfaces"].keys():
+
+            # get point ids of the surface
+            surface_point_dim_ids = gmsh.model.getBoundary([(2, surface_id)], combined=False, recursive=True)
+
+            # get surface coordinates
+            surface_coordinates = [self.geo_data["points"][point_id] for _, point_id in surface_point_dim_ids]
+
+            # check if all surface coordinates are in the polygon, if so add surface id to list
+            if all(MathUtils.is_point_in_polygon(point, polygon_vertices) for point in surface_coordinates):
+                surface_ids_at_plane.append(surface_id)
+
+        return surface_ids_at_plane
 
     def __sort_groups_by_element_size(self) -> Tuple[List[Dict[str, Any]], List[str]]:
         """

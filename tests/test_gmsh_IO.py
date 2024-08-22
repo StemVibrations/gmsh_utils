@@ -2247,3 +2247,74 @@ class TestGmshIO:
         non_existing_level = 100
         with pytest.raises(ValueError, match=f"Verbosity level must be 0, 1, 2, 3, 4, 5 or 99. Verbosity level is 100"):
             gmsh_io.set_verbosity_level(non_existing_level)
+
+
+    def test_get_surface_ids_at_plane(self):
+        """
+        Tests whether the surface ids at a plane are correctly returned.
+        """
+
+        # initialize gmsh
+        gmsh_io = GmshIO()
+
+        # define geometry
+        layer_parameters = {'layer1': {
+            "coordinates": [(0, 0, 1), (1, 0, 1), (1, 1, 1), (0, 1, 1)],
+            "ndim": 2},
+            'layer2': { # layer on another plane
+                "coordinates": [(0, 0, 2), (1, 0, 2), (1, 1, 2), (0, 1, 2)],
+                "ndim": 2},
+            'layer3': { # layer on top of layer1 on same plane
+                "coordinates": [(0, 1, 1), (1, 1, 1), (1, 2, 1), (0, 2, 1)],
+                "ndim": 2},
+            }
+
+        # generate geometry
+        gmsh_io.generate_geometry(layer_parameters, "test_model")
+
+        # layer 1 and layer 3 should be on the plane
+        plane_vertices = [(20, 0, 1), (10, 0, 1), (10, 5, 1)]
+        surface_ids = gmsh_io.get_surface_ids_at_plane(plane_vertices)
+        assert surface_ids == [1, 3]
+
+
+    def test_get_surface_ids_at_polygon(self):
+        """
+        Tests whether the surface ids at a polygon are correctly returned.
+        """
+
+        # initialize gmsh
+        gmsh_io = GmshIO()
+
+        # define geometry
+        layer_parameters = {'layer1': {
+            "coordinates": [(0, 0, 1), (1, 0, 1), (1, 1, 1), (0, 1, 1)],
+            "ndim": 2},
+            'layer2': { # layer on another plane
+                "coordinates": [(0, 0, 2), (1, 0, 2), (1, 1, 2), (0, 1, 2)],
+                "ndim": 2},
+            'layer3': { # layer on top of layer1 on same plane
+                "coordinates": [(0, 1, 1), (1, 1, 1), (1, 2, 1), (0, 2, 1)],
+                "ndim": 2},
+            }
+
+        # generate geometry
+        gmsh_io.generate_geometry(layer_parameters, "test_model")
+
+        # polygon has the same coordinates as layer1
+        polygon_vertices = [(0, 0, 1), (1, 0, 1), (1, 1, 1), (0, 1, 1)]
+        surface_ids = gmsh_io.get_surface_ids_at_polygon(polygon_vertices)
+        assert surface_ids == [1]
+
+        # polygon has greater coordinates than layer1, but not as much that layer 3 is fully included
+        polygon_vertices = [(0, 0, 1), (1.5, 0, 1), (1.5, 1.5, 1), (0, 1.5, 1)]
+        surface_ids = gmsh_io.get_surface_ids_at_polygon(polygon_vertices)
+        assert surface_ids == [1]
+
+        # polygon includes layer 1 and 3
+        polygon_vertices = [(0, 0, 1), (10, 0, 1), (10, 20, 1), (0, 20, 1)]
+        surface_ids = gmsh_io.get_surface_ids_at_polygon(polygon_vertices)
+        assert surface_ids == [1, 3]
+
+
+
