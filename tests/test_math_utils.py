@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from math_utils import MathUtils
+from gmsh_utils.math_utils import MathUtils
 
 class TestMathUtils:
     """
