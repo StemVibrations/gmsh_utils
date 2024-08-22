@@ -9,13 +9,13 @@ class MathUtils:
         Check if a point is inside a concave polygon. With the ray tracing algorithm.
         """
 
-        polygon_vertices_array = np.array(polygon_vertices)
+        polygon_vertices_array = np.array(polygon_vertices, dtype=float)
         point_array = np.array(point)
 
         polygon_normal = MathUtils.calculate_normal_plane(polygon_vertices_array)
 
         # check if the point is on the plane of the polygon
-        if not MathUtils.is_point_on_plane(point_array, polygon_normal[0], polygon_normal):
+        if not MathUtils.is_point_on_plane(point_array, polygon_vertices_array[0], polygon_normal):
             return False
 
         # reduce the polygon to 2D. If the polygon is in the x-y plane, keep the first two coordinates
@@ -38,15 +38,15 @@ class MathUtils:
         inside = ((p1xi < xi + eps) & (xi < p2xi + eps)) | ((p2xi < xi + eps) & (xi < p1xi + eps))
 
         # Compute the intersection points of the polygon edges with the horizontal line at y
-        xints = (p2eta - p1eta) * (xi - p1xi) / (p2xi - p1xi) + p1eta
+        eta_intersections = (p2eta - p1eta) * (xi - p1xi) / (p2xi - p1xi) + p1eta
 
         # check if point is on the edge
-        on_edge = np.isclose(eta, xints) & inside
+        on_edge = np.isclose(eta, eta_intersections) & inside
         if on_edge.any():
             return True
 
         # Check if the point is to the left of the intersection points
-        inside = inside & (eta < xints+eps)
+        inside = inside & (eta < eta_intersections+eps)
 
         # point is inside if an odd number of edges are to the right of the point
         return np.any(inside) & np.sum(inside) % 2 == 1
@@ -65,35 +65,16 @@ class MathUtils:
         """
         Calculate the normal of a plane defined by three vertices.
         """
+
         v1 = plane_vertices[1] - plane_vertices[0]
-        v2 = plane_vertices[2] - plane_vertices[0]
-        normal = np.cross(v1, v2)
-        return normal / np.linalg.norm(normal)
 
+        # make sure that the vertices are not collinear
+        for i in range(2, len(plane_vertices)):
+            v2 = plane_vertices[i] - plane_vertices[0]
+            normal = np.cross(v1, v2)
 
+            # return the normal if it is not zero
+            if not np.allclose(normal, 0):
+                return normal / np.linalg.norm(normal)
 
-
-v1 = np.array([1, 0, 0])
-v2 = np.array([0, 1, 0])
-
-v3 = np.cross(v1, v2)
-
-
-
-#
-# # Example usage
-# polygon = [(0, 0,0), (0, 1, 0), (1, 1,0), (1, 0,0)]
-# point = (0.5, 0.5,0)
-#
-# math_utils = MathUtils()
-# result = math_utils.is_point_in_polygon(point, polygon)
-# print(f"Is point {point} inside the polygon? {result}")
-#
-# # Example usage
-# surface = np.array([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]])
-# plane = (np.array([0, 0, 1]), np.array([0, 0, 1]))
-
-
-
-
-
+        raise ValueError("All plane vertices are collinear.")

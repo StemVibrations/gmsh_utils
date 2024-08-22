@@ -1,16 +1,41 @@
 import numpy as np
+import pytest
+
 from math_utils import MathUtils
 
 class TestMathUtils:
+    """
+    Test the MathUtils class.
+    """
 
     def test_calculate_normal_2d_plane(self):
+        """
+        Test the calculation of the normal vector of a 2D plane.
+
+        """
 
         plane_vertices = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]])
         normal = MathUtils.calculate_normal_plane(plane_vertices)
         expected_normal = np.array([0, 0, 1])
         assert np.allclose(normal, expected_normal)
 
+        # vertices with collinear points
+        plane_vertices = np.array([[0, 0, 0], [1, 0, 0], [2, 0, 0], [0,1, 0]])
+        normal = MathUtils.calculate_normal_plane(plane_vertices)
+        expected_normal = np.array([0, 0, 1])
+        assert np.allclose(normal, expected_normal)
+
+        # vertices with only collinear points
+        plane_vertices = np.array([[0, 0, 0], [1, 0, 0], [2, 0, 0]])
+        with pytest.raises(ValueError, match="All plane vertices are collinear."):
+            MathUtils.calculate_normal_plane(plane_vertices)
+
+
+
     def test_calculate_normal_3d_plane(self):
+        """
+        Test the calculation of the normal vector of a 3D plane.
+        """
 
         plane_vertices = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 1]])
         normal = MathUtils.calculate_normal_plane(plane_vertices)
@@ -18,6 +43,9 @@ class TestMathUtils:
         assert np.allclose(normal, expected_normal)
 
     def test_is_point_on_2d_plane(self):
+        """
+        Test if a point is on a 2D plane.
+        """
         point = np.array([14, 99, 0])
         plane_point = np.array([1, 4, 0])
         plane_normal = np.array([0, 0, 1])
@@ -25,7 +53,12 @@ class TestMathUtils:
 
         point_not_on_plane = np.array([14, 99, -99])
         assert not MathUtils.is_point_on_plane(point_not_on_plane, plane_point, plane_normal)
+
+
     def test_is_point_on_3d_plane(self):
+        """
+        Test if a point is on a 3D plane.
+        """
         point = np.array([2, -4, 2])
         plane_point = np.array([0, 0, 0])
         plane_normal = np.array([1, 1, 1]) / np.sqrt(3)
@@ -35,6 +68,9 @@ class TestMathUtils:
         assert not MathUtils.is_point_on_plane(point_not_on_plane, plane_point, plane_normal)
 
     def test_is_point_in_convex_polygon_xy_plane(self):
+        """
+        Test if a point is inside a convex polygon in the x-y plane.
+        """
         polygon = [(0, 0, 0), (0, 1, 0), (1, 2, 0), (2, 1, 0), (2, 0, 0)]
 
         # point inside the polygon
@@ -57,6 +93,9 @@ class TestMathUtils:
         assert not MathUtils.is_point_in_polygon(point_outside, polygon)
 
     def test_is_point_in_convex_polygon_xz_plane(self):
+        """
+        Test if a point is inside a convex polygon in the x-z plane.
+        """
         polygon = [(0, 0, 0), (0, 0, 1), (1, 0, 2), (2, 0, 1), (2, 0, 0)]
 
         # point inside the polygon
@@ -68,6 +107,9 @@ class TestMathUtils:
         assert not MathUtils.is_point_in_polygon(point_outside, polygon)
 
     def test_is_point_in_concave_polygon(self):
+        """
+        Test if a point is inside a concave polygon.
+        """
 
         polygon = [(0, 0, 0), (0, 1, 0), (0.5, 0.5, 0),(1,1,0), (1, 0, 0)]
 
@@ -92,6 +134,9 @@ class TestMathUtils:
         assert MathUtils.is_point_in_polygon(point_corner, polygon)
 
     def test_is_point_in_polygon_inclined_plane(self):
+        """
+        Test if a point is inside a polygon in an inclined plane.
+        """
         polygon = [(0, 0, 0), (0, 1, 1), (1, 1, 1), (1, 0, 0)]
 
         # point inside the polygon
