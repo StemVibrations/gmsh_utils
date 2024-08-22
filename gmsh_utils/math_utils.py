@@ -71,7 +71,7 @@ class MathUtils:
         # make sure that the vertices are not collinear
         for i in range(2, len(plane_vertices)):
             v2 = plane_vertices[i] - plane_vertices[0]
-            normal = np.cross(v1, v2)
+            normal: npt.NDArray[np.float64] = np.cross(v1, v2)
 
             # return the normal if it is not zero
             if not np.allclose(normal, 0):

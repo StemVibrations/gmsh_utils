@@ -874,8 +874,8 @@ class GmshIO:
         surface_ids_at_plane = []
 
         # get normal of the plane
-        plane_vertices = np.array(plane_vertices)
-        normal_plane = MathUtils.calculate_normal_plane(plane_vertices)
+        plane_vertices_array  = np.array(plane_vertices, dtype=float)
+        normal_plane = MathUtils.calculate_normal_plane(plane_vertices_array)
 
         # check all surfaces
         for surface_id in self.geo_data["surfaces"].keys():
@@ -887,7 +887,7 @@ class GmshIO:
             surface_coordinates = np.array([self.geo_data["points"][point_id] for _, point_id in surface_point_dim_ids])
 
             # check if all surface coordinates are on the plane, if so add surface id to list
-            if all(MathUtils.is_point_on_plane(point, plane_vertices[0], normal_plane)
+            if all(MathUtils.is_point_on_plane(point, plane_vertices_array[0], normal_plane)
                    for point in surface_coordinates):
                 surface_ids_at_plane.append(surface_id)
 
