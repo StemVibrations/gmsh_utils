@@ -151,3 +151,51 @@ class TestMathUtils:
         point_outside = (1.4, 0.5, 0.5)
         assert not MathUtils.is_point_in_polygon(point_outside, polygon)
 
+    def test_is_point_in_polygon_on_yz_plane(self):
+        """
+        Test if a point is on a polygon plane.
+        """
+        polygon = [(0, 0, 0), (0, 0, 1), (0, 1, 1), (0, 1, 0)]
+
+        # point inside the polygon
+        point = (0, 0.5, 0.5)
+        assert MathUtils.is_point_in_polygon(point, polygon)
+
+        # point on yz plane outside of the the polygon
+        point = (0.0, 2.0, 1)
+        assert not MathUtils.is_point_in_polygon(point, polygon)
+
+    def test_calculate_rotation_matrix_polygon_with_xy_plane(self):
+        """
+        Test the calculation of the rotation matrix from a xy plane polygon to the x-y plane.
+        """
+        polygon_vertices = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]])
+        rotation_matrix = MathUtils.calculate_rotation_matrix_polygon(polygon_vertices)
+        expected_matrix = np.eye(3)
+        assert np.allclose(rotation_matrix, expected_matrix)
+
+    def test_calculate_rotation_matrix_polygon_with_yz_plane(self):
+        """
+        Test the calculation of the rotation matrix from a yz plane polygon to the x-y plane.
+        """
+        polygon_vertices = np.array([[0, 0, 0], [0, 1, 0], [0, 0, 1]])
+        rotation_matrix = MathUtils.calculate_rotation_matrix_polygon(polygon_vertices)
+        expected_matrix = np.array([[0, 0, -1], [0, 1, 0], [1, 0, 0]])
+        assert np.allclose(rotation_matrix, expected_matrix)
+
+    def test_calculate_rotation_matrix_polygon_with_inclined_plane(self):
+        """
+        Test the calculation of the rotation matrix from an inclined plane polygon to the x-y plane.
+        """
+        polygon_vertices = np.array([[0, 0, 0], [0, 1, 1], [1, 1, 1]])
+        rotation_matrix = MathUtils.calculate_rotation_matrix_polygon(polygon_vertices)
+        expected_matrix = np.array([[1, 0, 0], [0, -1/np.sqrt(2), -1/np.sqrt(2)], [0, 1/np.sqrt(2), -1/np.sqrt(2)]])
+        assert np.allclose(rotation_matrix, expected_matrix)
+
+    def test_calculate_rotation_matrix_polygon_with_collinear_vertices(self):
+        """
+        Test the calculation of the rotation matrix from a polygon with collinear vertices.
+        """
+        polygon_vertices = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])
+        with pytest.raises(ValueError, match="All plane vertices are collinear."):
+            MathUtils.calculate_rotation_matrix_polygon(polygon_vertices)
