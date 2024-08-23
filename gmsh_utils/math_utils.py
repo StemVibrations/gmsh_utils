@@ -12,7 +12,7 @@ class MathUtils:
     @staticmethod
     def calculate_rotation_matrix_polygon(polygon_vertices: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
         """
-        Calculate the rotation matrix to align the polygon with the x-y plane.
+        Calculate the rotation matrix to align the polygon with the x-y plane. Using the Rodrigues' rotation formula.
 
         Args:
             - polygon_vertices (npt.NDArray[np.float64]): Vertices of the polygon.
@@ -26,15 +26,15 @@ class MathUtils:
         # Define the target normal (Z-axis in this case)
         target_normal = np.array([0, 0, 1])
 
-        # Calculate the rotation matrix
+        # Calculate the rotation vector
         rotation_vector = np.cross(polygon_normal, target_normal)
 
-        # Calculate the angle between the polygon normal and the target normal
+        # Calculate sin and cos of the angle between the polygon normal and the target normal
         sin_theta = np.linalg.norm(rotation_vector)
         cos_theta = np.dot(polygon_normal, target_normal)
 
         # Normalize the rotation vector
-        if sin_theta != 0:
+        if not np.isclose(sin_theta,0.0):
             rotation_vector = rotation_vector / sin_theta
 
         # Skew-symmetric cross-product matrix of rotation_vector
@@ -43,7 +43,8 @@ class MathUtils:
                             [-rotation_vector[1], rotation_vector[0], 0]])
 
         # Rotation matrix using the Rodrigues' rotation formula
-        rotation_matrix: npt.NDArray[np.float64] = np.eye(3) + sin_theta * v_cross + (1 - cos_theta) * np.dot(v_cross, v_cross)
+        rotation_matrix: npt.NDArray[np.float64] = (np.eye(3) + sin_theta * v_cross +
+                                                    (1 - cos_theta) * np.dot(v_cross, v_cross))
 
         return rotation_matrix
 
