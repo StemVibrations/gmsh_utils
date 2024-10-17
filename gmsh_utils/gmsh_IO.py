@@ -20,6 +20,7 @@ class ElementType(Enum):
     QUADRANGLE_4N = 3
     TETRAHEDRON_4N = 4
     HEXAHEDRON_8N = 5
+    PYRAMID_5N = 7
     LINE_3N = 8
     TRIANGLE_6N = 9
     TETRAHEDRON_10N = 11
@@ -187,6 +188,27 @@ class GmshIO:
         volume_tag: int = next((dim_tag[1] for dim_tag in new_dim_tags if dim_tag[0] == volume_dim))
 
         return volume_tag
+
+    def make_structured_curves(self, line_ids, n_nodes):
+
+        gmsh.model.mesh.setTransfiniteAutomatic()
+        # for line_id in line_ids:
+        #     gmsh.model.mesh.setTransfiniteCurve(line_id, n_nodes)
+
+    def make_structured_surfaces(self, surface_ids):
+        for surface_id in surface_ids:
+            gmsh.model.mesh.set_transfinite_surface(surface_id)
+            gmsh.model.mesh.setRecombine(2, surface_id, angle=45.)
+
+    def make_structured_volume(self, volume_ids):
+        for volume_id in volume_ids:
+            gmsh.model.mesh.setTransfiniteVolume(volume_id)
+
+        gmsh.option.setNumber('Mesh.RecombineAll', 1)
+        gmsh.option.setNumber('Mesh.RecombinationAlgorithm', 1)
+        gmsh.option.setNumber('Mesh.Recombine3DLevel', 2)
+
+        gmsh.model.mesh.setTransfiniteAutomatic()
 
     def __generate_point_pairs_for_closed_loop(self, point_ids: List[int]) -> List[List[int]]:
         """
@@ -912,7 +934,14 @@ class GmshIO:
         """
 
         # sets gmsh geometry from a geometry data dictionary
-        self.generate_geo_from_geo_data()
+        # self.generate_geo_from_geo_data()
+        line_ids = [2,3]
+        for line_id in line_ids:
+            gmsh.model.mesh.setTransfiniteCurve(line_id, 11)
+
+        corner_ids = [1, 2, 4, 5]
+        gmsh.model.mesh.setRecombine(2,1)
+        gmsh.model.mesh.setTransfiniteSurface(1, cornerTags=corner_ids)
 
         # sort physical groups by element size in descending order
         sorted_groups, sorted_group_names = self.__sort_groups_by_element_size()
