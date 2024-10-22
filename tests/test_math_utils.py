@@ -15,20 +15,20 @@ class TestMathUtils:
         """
 
         plane_vertices = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0]])
-        normal = MathUtils.calculate_normal_plane(plane_vertices)
+        normal = MathUtils.calculate_normal_polygon(plane_vertices)
         expected_normal = np.array([0, 0, 1])
         assert np.allclose(normal, expected_normal)
 
         # vertices with collinear points
         plane_vertices = np.array([[0, 0, 0], [1, 0, 0], [2, 0, 0], [0,1, 0]])
-        normal = MathUtils.calculate_normal_plane(plane_vertices)
+        normal = MathUtils.calculate_normal_polygon(plane_vertices)
         expected_normal = np.array([0, 0, 1])
         assert np.allclose(normal, expected_normal)
 
         # vertices with only collinear points
         plane_vertices = np.array([[0, 0, 0], [1, 0, 0], [2, 0, 0]])
-        with pytest.raises(ValueError, match="All plane vertices are collinear."):
-            MathUtils.calculate_normal_plane(plane_vertices)
+        with pytest.raises(ValueError, match="All polygon vertices are collinear."):
+            MathUtils.calculate_normal_polygon(plane_vertices)
 
 
 
@@ -38,7 +38,7 @@ class TestMathUtils:
         """
 
         plane_vertices = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 1]])
-        normal = MathUtils.calculate_normal_plane(plane_vertices)
+        normal = MathUtils.calculate_normal_polygon(plane_vertices)
         expected_normal = np.array([0, -1/np.sqrt(2), 1/np.sqrt(2)])
         assert np.allclose(normal, expected_normal)
 
@@ -197,5 +197,5 @@ class TestMathUtils:
         Test the calculation of the rotation matrix from a polygon with collinear vertices.
         """
         polygon_vertices = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])
-        with pytest.raises(ValueError, match="All plane vertices are collinear."):
+        with pytest.raises(ValueError, match="All polygon vertices are collinear."):
             MathUtils.calculate_rotation_matrix_polygon(polygon_vertices)

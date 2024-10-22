@@ -870,12 +870,11 @@ class GmshIO:
             - List[int]: A list of surface ids at the plane.
         """
 
-        # check if all surface_vertices lie on the same plane
         surface_ids_at_plane = []
 
         # get normal of the plane
         plane_vertices_array  = np.array(plane_vertices, dtype=float)
-        normal_plane = MathUtils.calculate_normal_plane(plane_vertices_array)
+        normal_plane = MathUtils.calculate_normal_polygon(plane_vertices_array)
 
         # check all surfaces
         for surface_id in self.geo_data["surfaces"].keys():
@@ -895,10 +894,10 @@ class GmshIO:
 
     def get_surface_ids_at_polygon(self, polygon_vertices: Sequence[Sequence[float]]) -> List[int]:
         """
-        Gets surface ids at a bounded plane
+        Gets all surface ids at a convex or concave polygon
 
         Args:
-            - plane_vertices (Sequence[Sequence[float]]): A list of three vertices defining the plane.
+            - polygon_vertices (Sequence[Sequence[float]]): A list of all vertices defining the polygon.
 
         Returns:
             - List[int]: A list of surface ids at the plane.

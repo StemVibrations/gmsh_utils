@@ -3,6 +3,7 @@ from typing import Sequence
 import numpy as np
 import numpy.typing as npt
 
+from gmsh_utils.globals import PRECISION
 
 class MathUtils:
     """
@@ -21,7 +22,7 @@ class MathUtils:
             - npt.NDArray[np.float64]: Rotation matrix.
         """
 
-        polygon_normal = MathUtils.calculate_normal_plane(polygon_vertices)
+        polygon_normal = MathUtils.calculate_normal_polygon(polygon_vertices)
 
         # Define the target normal (Z-axis in this case)
         target_normal = np.array([0, 0, 1])
@@ -34,7 +35,7 @@ class MathUtils:
         cos_theta = np.dot(polygon_normal, target_normal)
 
         # Normalize the rotation vector
-        if not np.isclose(sin_theta,0.0):
+        if not np.isclose(sin_theta, 0.0):
             rotation_vector = rotation_vector / sin_theta
 
         # Skew-symmetric cross-product matrix of rotation_vector
@@ -49,7 +50,7 @@ class MathUtils:
         return rotation_matrix
 
     @staticmethod
-    def is_point_in_polygon(point: Sequence[float], polygon_vertices: Sequence[Sequence[float]], eps: float = 1e-8) \
+    def is_point_in_polygon(point: Sequence[float], polygon_vertices: Sequence[Sequence[float]]) \
             -> bool:
         """
         Check if a point is inside a concave polygon. With the ray tracing algorithm.
@@ -57,7 +58,6 @@ class MathUtils:
         Args:
             - point (Sequence[float]): Point to check.
             - polygon_vertices (Sequence[Sequence[float]]): Vertices of the polygon.
-            - eps (float): Tolerance value.
 
         Returns:
             - bool: True if the point is inside the polygon, False otherwise.
@@ -68,7 +68,7 @@ class MathUtils:
         point_array = np.array(point)
 
         # calculate the normal of the polygon
-        polygon_normal = MathUtils.calculate_normal_plane(polygon_vertices_array)
+        polygon_normal = MathUtils.calculate_normal_polygon(polygon_vertices_array)
 
         # check if the point is on the plane of the polygon
         if not MathUtils.is_point_on_plane(point_array, polygon_vertices_array[0], polygon_normal):
@@ -109,7 +109,8 @@ class MathUtils:
         p2eta, p2xi = shifted_polygon[:, 0], shifted_polygon[:, 1]
 
         # Check if the point is within the xi-bounds of the polygon edges
-        between_xi_bounds = ((p1xi < xi + eps) & (xi < p2xi + eps)) | ((p2xi < xi + eps) & (xi < p1xi + eps))
+        between_xi_bounds = (((p1xi < xi + PRECISION) & (xi < p2xi + PRECISION)) |
+                             ((p2xi < xi + PRECISION) & (xi < p1xi + PRECISION)))
 
         # Compute the intersection points of the polygon edges with the horizontal line at y
         eta_intersections = (p2eta - p1eta) * (xi - p1xi) / (p2xi - p1xi) + p1eta
@@ -120,7 +121,7 @@ class MathUtils:
             return True
 
         # Check if the point is to the left of the intersection points
-        left_of_intersection = between_xi_bounds & (eta < eta_intersections+eps)
+        left_of_intersection = between_xi_bounds & (eta < eta_intersections+PRECISION)
 
         # point is inside if an odd number of edges are to the right of the point
         is_point_inside: bool = np.any(left_of_intersection) & np.sum(left_of_intersection) % 2 == 1
@@ -136,7 +137,7 @@ class MathUtils:
         Args:
             - point (npt.NDArray[np.float64]): Point to check.
             - plane_point (npt.NDArray[np.float64]): Point on the plane.
-            - plane_normal (npt.NDArray[np.float64]): Normal of the plane.
+            - plane_normal (npt.NDArray[np.float64]): Vector normal of the plane.
 
         Returns:
             - bool: True if the point is on the plane, False
@@ -149,29 +150,29 @@ class MathUtils:
         return is_point_on_plane
 
     @staticmethod
-    def calculate_normal_plane(plane_vertices: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+    def calculate_normal_polygon(polygon_vertices: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
         """
-        Calculate the normal of a plane defined by three vertices.
+        Calculate the normal of a polygon defined by a minimum three vertices.
 
         Args:
-            - plane_vertices (npt.NDArray[np.float64]): Vertices of the plane.
+            - polygon_vertices (npt.NDArray[np.float64]): Vertices of the polygon.
 
         Raises:
-            - ValueError: If the vertices are collinear.
+            - ValueError: If all the vertices are collinear.
 
         Returns:
-            - npt.NDArray[np.float64]: Normal of the plane.
+            - npt.NDArray[np.float64]: Normal of the polygon.
         """
 
-        v1 = plane_vertices[1] - plane_vertices[0]
+        v1 = polygon_vertices[1] - polygon_vertices[0]
 
         # make sure that the vertices are not collinear
-        for i in range(2, len(plane_vertices)):
-            v2 = plane_vertices[i] - plane_vertices[0]
+        for i in range(2, len(polygon_vertices)):
+            v2 = polygon_vertices[i] - polygon_vertices[0]
             normal: npt.NDArray[np.float64] = np.cross(v1, v2)
 
             # return the normal if it is not zero
             if not np.allclose(normal, 0):
                 return normal / np.linalg.norm(normal)
 
-        raise ValueError("All plane vertices are collinear.")
+        raise ValueError("All polygon vertices are collinear.")
