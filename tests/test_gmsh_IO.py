@@ -1330,6 +1330,29 @@ class TestGmshIO:
         # check if physical groups are added correctly
         TestUtils.assert_dictionary_almost_equal(geo_data["physical_groups"], expected_group_data)
 
+    def test_add_physical_group_twice(self):
+        """
+        Checks whether physical groups are added correctly when the group is already there.
+
+        """
+
+        # initialize gmsh and create a 3D geometry
+        gmsh_io = GmshIO()
+        gmsh.initialize()
+        gmsh_io.make_geometry_1d([(0, 0, 0), (1, 0, 0)], "line_group")
+        gmsh_io.synchronize_gmsh()
+        gmsh_io.extract_geo_data()
+
+        # add physical group on existing group
+        gmsh_io.add_physical_group("line_group", 1, [1])
+        gmsh_io.add_physical_group("line_group", 1, np.array([1]))
+
+        # set expected data
+        expected_group_data = {"line_group": {"geometry_ids": [1], "id": 1, "ndim": 1}}
+
+        # check if physical groups are added correctly
+        TestUtils.assert_dictionary_almost_equal(gmsh_io.geo_data["physical_groups"], expected_group_data)
+
     def test_add_point_at_surface_point(self):
         """
         Checks whether a point is added at the surface point correctly. Both the physical groups of the surface and the
@@ -2224,3 +2247,74 @@ class TestGmshIO:
         non_existing_level = 100
         with pytest.raises(ValueError, match=f"Verbosity level must be 0, 1, 2, 3, 4, 5 or 99. Verbosity level is 100"):
             gmsh_io.set_verbosity_level(non_existing_level)
+
+
+    def test_get_surface_ids_at_plane(self):
+        """
+        Tests whether the surface ids at a plane are correctly returned.
+        """
+
+        # initialize gmsh
+        gmsh_io = GmshIO()
+
+        # define geometry
+        layer_parameters = {'layer1': {
+            "coordinates": [(0, 0, 1), (1, 0, 1), (1, 1, 1), (0, 1, 1)],
+            "ndim": 2},
+            'layer2': { # layer on another plane
+                "coordinates": [(0, 0, 2), (1, 0, 2), (1, 1, 2), (0, 1, 2)],
+                "ndim": 2},
+            'layer3': { # layer on top of layer1 on same plane
+                "coordinates": [(0, 1, 1), (1, 1, 1), (1, 2, 1), (0, 2, 1)],
+                "ndim": 2},
+            }
+
+        # generate geometry
+        gmsh_io.generate_geometry(layer_parameters, "test_model")
+
+        # layer 1 and layer 3 should be on the plane
+        plane_vertices = [(20, 0, 1), (10, 0, 1), (10, 5, 1)]
+        surface_ids = gmsh_io.get_surface_ids_at_plane(plane_vertices)
+        assert surface_ids == [1, 3]
+
+
+    def test_get_surface_ids_at_polygon(self):
+        """
+        Tests whether the surface ids at a polygon are correctly returned.
+        """
+
+        # initialize gmsh
+        gmsh_io = GmshIO()
+
+        # define geometry
+        layer_parameters = {'layer1': {
+            "coordinates": [(0, 0, 1), (1, 0, 1), (1, 1, 1), (0, 1, 1)],
+            "ndim": 2},
+            'layer2': { # layer on another plane
+                "coordinates": [(0, 0, 2), (1, 0, 2), (1, 1, 2), (0, 1, 2)],
+                "ndim": 2},
+            'layer3': { # layer on top of layer1 on same plane
+                "coordinates": [(0, 1, 1), (1, 1, 1), (1, 2, 1), (0, 2, 1)],
+                "ndim": 2},
+            }
+
+        # generate geometry
+        gmsh_io.generate_geometry(layer_parameters, "test_model")
+
+        # polygon has the same coordinates as layer1
+        polygon_vertices = [(0, 0, 1), (1, 0, 1), (1, 1, 1), (0, 1, 1)]
+        surface_ids = gmsh_io.get_surface_ids_at_polygon(polygon_vertices)
+        assert surface_ids == [1]
+
+        # polygon has greater coordinates than layer1, but not as much that layer 3 is fully included
+        polygon_vertices = [(0, 0, 1), (1.5, 0, 1), (1.5, 1.5, 1), (0, 1.5, 1)]
+        surface_ids = gmsh_io.get_surface_ids_at_polygon(polygon_vertices)
+        assert surface_ids == [1]
+
+        # polygon includes layer 1 and 3
+        polygon_vertices = [(0, 0, 1), (10, 0, 1), (10, 20, 1), (0, 20, 1)]
+        surface_ids = gmsh_io.get_surface_ids_at_polygon(polygon_vertices)
+        assert surface_ids == [1, 3]
+
+
+
