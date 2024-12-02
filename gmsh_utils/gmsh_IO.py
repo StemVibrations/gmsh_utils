@@ -988,7 +988,7 @@ class GmshIO:
                 self.set_mesh_size_of_group(group_name, element_size)
 
         # set mesh order
-        gmsh.model.mesh.setOrder(order)
+        gmsh.option.setNumber("Mesh.ElementOrder", order)
 
         # generate mesh
         gmsh.model.mesh.generate(ndim)
