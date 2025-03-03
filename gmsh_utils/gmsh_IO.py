@@ -458,10 +458,10 @@ class GmshIO:
                 self.make_geometry_3d_by_extrusion(layer["coordinates"], layer["extrusion_length"], layer_name,
                                                    layer["element_size"])
 
-        self.remove_duplicate_entities_from_geometry()
-        self.synchronize_gmsh()
-
-        self.extract_geo_data()
+            # clean up geo data after each layer, such that occ entities are correctly assigned
+            self.remove_duplicate_entities_from_geometry()
+            self.synchronize_gmsh()
+            self.extract_geo_data()
 
         # add element size to geo data
         for layer_name, layer in layer_parameters.items():

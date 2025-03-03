@@ -2,10 +2,12 @@ from pathlib import Path
 import re
 from sys import platform
 from copy import deepcopy
+from typing import Dict, Any
 
 import gmsh
 import numpy as np
 import pickle
+import json
 import pytest
 from _pytest.capture import CaptureFixture
 
@@ -81,6 +83,100 @@ class TestGmshIO:
                 "volumes": expected_volumes,
                 "physical_groups": expected_physical_groups}
 
+    @pytest.fixture
+    def expected_second_order_mesh_data_2D(self):
+        """
+        Expected mesh data for a 2D geometry with second order elements.
+        """
+        expected_mesh_data = {'nodes': {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0],
+         5: [0.5, 0.0, 0.0], 6: [1.0, 0.5, 0.0], 7: [0.5, 1.0, 0.0], 8: [0.0, 0.5, 0.0],
+         9: [0.5, 0.5, 0.0], 10: [0.75, 0.25, 0.0], 11: [0.25, 0.25, 0.0], 12: [0.25, 0.75, 0.0], 13: [0.75, 0.75, 0.0]},
+                           'elements': {'LINE_3N': {2: [3, 4, 7], 10: [1, 2, 5], 11: [2, 3, 6], 12: [4, 1, 8]},
+                               'TRIANGLE_6N': {3: [2, 9, 1, 10, 11, 5], 4: [1, 9, 4, 11, 12, 8], 5: [3, 9, 2, 13, 10, 6], 6: [4, 9, 3, 12, 13, 7]},
+                                        'POINT_1N': {1: [1], 7: [2], 8: [3], 9: [4]}},
+                              "physical_groups":{'line': {'element_ids': [2], 'element_type': 'LINE_3N', 'ndim': 1, 'node_ids': [3, 4, 7]},
+                                                 'point': {'element_ids': [1], 'element_type': 'POINT_1N', 'ndim': 0, 'node_ids': [1]},
+                                                 'surface': {'element_ids': [3, 4, 5, 6], 'element_type': 'TRIANGLE_6N', 'ndim': 2, 'node_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]}},
+                              "ndim": 2}
+
+
+        return expected_mesh_data
+
+
+    # @pytest.fixture
+    # def expected_second_order_mesh_data_3D(self):
+    #     """
+    #     Expected mesh data for a 2D geometry with second order elements.
+    #     """
+    #     expected_mesh_data = {'elements': {'LINE_3N': {2: [1, 2, 9], 38: [2, 3, 10], 39: [3, 4, 11], 40: [4, 1, 12],
+    #                                                 41: [1, 5, 13], 42: [2, 6, 14], 43: [5, 6, 15], 44: [3, 7, 16],
+    #                                                    45: [6, 7, 17], 46: [4, 8, 18], 47: [7, 8, 19], 48: [8, 5, 20]},
+    #                                        'POINT_1N': {1: [1], 31: [2], 32: [3], 33: [4],
+    #                                                     34: [5], 35: [6], 36: [7], 37: [8]},
+    #                                        'TETRAHEDRON_10N': {7: [26, 21, 41, 31, 51, 52, 53, 54, 55, 56],
+    #                                                            8: [41, 36, 46, 31, 57, 58, 59, 55, 60, 61],
+    #                                                            9: [26, 41, 46, 31, 53, 59, 62, 54, 60, 55],
+    #                                                            10: [36, 41, 21, 31, 57, 52, 63, 61, 56, 55],
+    #                                                            11: [41, 21, 1, 4, 52, 23, 43, 42, 12, 24],
+    #                                                            12: [36, 4, 41, 8, 38, 42, 57, 40, 45, 18],
+    #                                                            13: [5, 1, 41, 26, 13, 43, 44, 29, 53, 27],
+    #                                                            14: [46, 8, 41, 5, 49, 45, 59, 48, 44, 20],
+    #                                                            15: [36, 8, 46, 7, 40, 49, 58, 39, 50, 19],
+    #                                                            16: [7, 6, 46, 31, 17, 47, 50, 35, 60, 34],
+    #                                                            17: [6, 5, 46, 26, 15, 48, 47, 30, 62, 29],
+    #                                                            18: [21, 4, 36, 3, 24, 38, 63, 25, 37, 11],
+    #                                                            19: [36, 7, 31, 3, 39, 35, 61, 37, 33, 16],
+    #                                                            20: [1, 21, 26, 2, 23, 51, 27, 9, 28, 22],
+    #                                                            21: [3, 31, 21, 2, 33, 56, 25, 10, 22, 32],
+    #                                                            22: [6, 26, 31, 2, 30, 54, 34, 14, 32, 28],
+    #                                                            23: [4, 41, 21, 36, 42, 52, 24, 38, 63, 57],
+    #                                                            24: [1, 21, 41, 26, 23, 52, 43, 27, 53, 51],
+    #                                                            25: [41, 36, 8, 46, 57, 40, 45, 59, 49, 58],
+    #                                                            26: [46, 6, 26, 31, 47, 30, 62, 60, 54, 34],
+    #                                                            27: [41, 46, 5, 26, 59, 48, 44, 53, 29, 62],
+    #                                                            28: [46, 36, 7, 31, 58, 39, 50, 60, 35, 61],
+    #                                                            29: [31, 26, 21, 2, 54, 51, 56, 32, 22, 28],
+    #                                                            30: [21, 36, 31, 3, 63, 61, 56, 25, 33, 37]},
+    #                                        'TRIANGLE_6N': {3: [2, 21, 1, 22, 23, 9], 4: [1, 21, 4, 23, 24, 12],
+    #                                                        5: [3, 21, 2, 25, 22, 10], 6: [4, 21, 3, 24, 25, 11],
+    #                                                        49: [1, 26, 2, 27, 28, 9], 50: [5, 26, 1, 29, 27, 13],
+    #                                                        51: [2, 26, 6, 28, 30, 14], 52: [6, 26, 5, 30, 29, 15],
+    #                                                        53: [2, 31, 3, 32, 33, 10], 54: [6, 31, 2, 34, 32, 14],
+    #                                                        55: [3, 31, 7, 33, 35, 16], 56: [7, 31, 6, 35, 34, 17],
+    #                                                        57: [3, 36, 4, 37, 38, 11], 58: [7, 36, 3, 39, 37, 16],
+    #                                                        59: [4, 36, 8, 38, 40, 18], 60: [8, 36, 7, 40, 39, 19],
+    #                                                        61: [4, 41, 1, 42, 43, 12], 62: [1, 41, 5, 43, 44, 13],
+    #                                                        63: [8, 41, 4, 45, 42, 18], 64: [5, 41, 8, 44, 45, 20],
+    #                                                        65: [6, 46, 5, 47, 48, 15], 66: [5, 46, 8, 48, 49, 20],
+    #                                                        67: [7, 46, 6, 50, 47, 17], 68: [8, 46, 7, 49, 50, 19]}},
+    #                           'ndim': 3,
+    #                           'nodes': {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0],
+    #                                     5: [0.0, 0.0, 1.0], 6: [1.0, 0.0, 1.0], 7: [1.0, 1.0, 1.0], 8: [0.0, 1.0, 1.0],
+    #                                     9: [0.5, 0.0, 0.0], 10: [1.0, 0.5, 0.0], 11: [0.5, 1.0, 0.0],
+    #                                     12: [0.0, 0.5, 0.0], 13: [0.0, 0.0, 0.5], 14: [1.0, 0.0, 0.5],
+    #                                     15: [0.5, 0.0, 1.0], 16: [1.0, 1.0, 0.5], 17: [1.0, 0.5, 1.0],
+    #                                     18: [0.0, 1.0, 0.5], 19: [0.5, 1.0, 1.0], 20: [0.0, 0.5, 1.0],
+    #                                     21: [0.5, 0.5, 0.0], 22: [0.75, 0.25, 0.0], 23: [0.25, 0.25, 0.0],
+    #                                     24: [0.25, 0.75, 0.0], 25: [0.75, 0.75, 0.0], 26: [0.5, 0.0, 0.5],
+    #                                     27: [0.25, 0.0, 0.25], 28: [0.75, 0.0, 0.25], 29: [0.25, 0.0, 0.75],
+    #                                     30: [0.75, 0.0, 0.75], 31: [1.0, 0.5, 0.5], 32: [1.0, 0.25, 0.25],
+    #                                     33: [1.0, 0.75, 0.25], 34: [1.0, 0.25, 0.75], 35: [1.0, 0.75, 0.75],
+    #                                     36: [0.5, 1.0, 0.5], 37: [0.75, 1.0, 0.25], 38: [0.25, 1.0, 0.25],
+    #                                     39: [0.75, 1.0, 0.75], 40: [0.25, 1.0, 0.75], 41: [0.0, 0.5, 0.5],
+    #                                     42: [0.0, 0.75, 0.25], 43: [0.0, 0.25, 0.25], 44: [0.0, 0.25, 0.75],
+    #                                     45: [0.0, 0.75, 0.75], 46: [0.5, 0.5, 1.0], 47: [0.75, 0.25, 1.0],
+    #                                     48: [0.25, 0.25, 1.0], 49: [0.25, 0.75, 1.0], 50: [0.75, 0.75, 1.0],
+    #                                     51: [0.5, 0.25, 0.25], 52: [0.25, 0.5, 0.25], 53: [0.25, 0.25, 0.5],
+    #                                     54: [0.75, 0.25, 0.5], 55: [0.5, 0.5, 0.5], 56: [0.75, 0.5, 0.25],
+    #                                     57: [0.25, 0.75, 0.5], 58: [0.5, 0.75, 0.75], 59: [0.25, 0.5, 0.75],
+    #                                     60: [0.75, 0.5, 0.75], 61: [0.75, 0.75, 0.5], 62: [0.5, 0.25, 0.75],
+    #                                     63: [0.5, 0.75, 0.25]},
+    #                           'physical_groups': {'line': {'element_ids': [2], 'element_type': 'LINE_3N', 'ndim': 1, 'node_ids': [1, 2, 9]}, 'point': {'element_ids': [1], 'element_type': 'POINT_1N', 'ndim': 0, 'node_ids': [1]}, 'surface': {'element_ids': [3, 4, 5, 6], 'element_type': 'TRIANGLE_6N', 'ndim': 2, 'node_ids': [1, 2, 3, 4, 9, 10, 11, 12, 21, 22, 23, 24, 25]}, 'volume': {'element_ids': [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30], 'element_type': 'TETRAHEDRON_10N', 'ndim': 3, 'node_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63]}}}
+    #
+    #
+    #     return expected_mesh_data
+
+
     def test_generate_mesh_2D(self):
         """
         Checks whether mesh data generated for 2D geometries is not empty.
@@ -139,6 +235,39 @@ class TestGmshIO:
         # check elements are not empty
         for value in mesh_data["elements"].values():
             assert len(value) > 0
+
+    def test_generate_second_order_mesh_2D(self, expected_second_order_mesh_data_2D: Dict[str, Any]):
+        """
+        Checks if the second order mesh in 2D is generated correctly.
+
+        Args:
+            - expected_second_order_mesh_data_2D (Dict[str, Any]): Expected mesh data for a 2D geometry with second
+              order elements.
+
+        """
+
+        element_size= 1
+
+        input_dict = {'surface': {"element_size": element_size,
+                                                "coordinates": [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)],
+                                                "ndim": 2},
+                      'line': {"element_size": element_size,
+                               "coordinates": [(0, 1, 0), (1, 1, 0)],
+                                     "ndim": 1},
+                        'point': {"element_size": element_size,
+                                    "coordinates": [(0, 0, 0)],
+                                    "ndim": 0}
+                      }
+
+        # set a name for mesh output file
+        mesh_output_name = "test_2D"
+
+        gmsh_io = GmshIO()
+
+        gmsh_io.generate_geometry(input_dict, mesh_output_name)
+        gmsh_io.generate_mesh(ndim=2, mesh_name=mesh_output_name,  order=2,open_gmsh_gui=False)
+
+        TestUtils.assert_dictionary_almost_equal(gmsh_io.mesh_data, expected_second_order_mesh_data_2D)
 
     def test_generate_mesh_3D(self):
         """
@@ -207,6 +336,51 @@ class TestGmshIO:
         # check elements are not empty
         for value in mesh_data["elements"].values():
             assert len(value) > 0
+
+    def test_generate_second_order_mesh_3D(self):
+        """
+        Checks if the second order mesh in 3D is generated correctly.
+
+        """
+
+        element_size = 1
+        # extrusion in 1 meter in z direction
+        extrusion_length = [0, 0, 1]
+
+        input_dict = {'volume': {"element_size": element_size,
+                                                "coordinates": [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)],
+                                                "ndim": 3,
+                                                "extrusion_length": extrusion_length},
+                      'surface': {"element_size": element_size,
+                                  "coordinates": [(0, 0, 0), (1, 0, 0), (1,1 , 0), (0, 1, 0)],
+                                  "ndim": 2},
+                      "line" : {"element_size": element_size,
+                                    "coordinates": [(0, 0, 0), (1, 0, 0)],
+                                    "ndim": 1},
+                        "point" : {"element_size": element_size,
+                                   "coordinates": [(0, 0, 0)],
+                                   "ndim": 0}
+                      }
+
+        # set a name for mesh output file
+        mesh_output_name = "test_3D"
+
+        gmsh_io = GmshIO()
+
+        # generate geometry and second order mesh
+        gmsh_io.generate_geometry(input_dict, mesh_output_name)
+        gmsh_io.generate_mesh(3, mesh_name=mesh_output_name, order=2,
+                              open_gmsh_gui=False)
+
+        with open("tests/test_data/expected_second_order_mesh_data_3D.json", "r") as f:
+            expected_second_order_mesh_data_3D = json.load(f)
+
+            # make sure all node and element keys are integers
+            expected_second_order_mesh_data_3D["nodes"] = {int(k): v for k, v in expected_second_order_mesh_data_3D["nodes"].items()}
+            expected_second_order_mesh_data_3D["elements"] = {k: {int(kk): vv for kk, vv in v.items()}
+                                                              for k, v in expected_second_order_mesh_data_3D["elements"].items()}
+
+        TestUtils.assert_dictionary_almost_equal(gmsh_io.mesh_data, expected_second_order_mesh_data_3D)
 
     def test_read_gmsh_geo_2D(self):
         """
