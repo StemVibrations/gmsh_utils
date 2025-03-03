@@ -297,13 +297,19 @@ class TestGmshIO:
         gmsh_io.generate_mesh(3, mesh_name=mesh_output_name, order=2,
                               open_gmsh_gui=False)
 
-        with open("tests/test_data/expected_second_order_mesh_data_3D.json", "r") as f:
-            expected_second_order_mesh_data_3D = json.load(f)
+        if platform == 'win32':
+            with open("tests/test_data/expected_second_order_mesh_data_3D_windows.json", 'r') as f:
+                expected_second_order_mesh_data_3D = json.load(f)
+        elif platform == 'linux':
+            with open('tests/test_data/expected_second_order_mesh_data_3D_linux.json', 'r') as f:
+                expected_second_order_mesh_data_3D = json.load(f)
 
-            # make sure all node and element keys are integers
-            expected_second_order_mesh_data_3D["nodes"] = {int(k): v for k, v in expected_second_order_mesh_data_3D["nodes"].items()}
-            expected_second_order_mesh_data_3D["elements"] = {k: {int(kk): vv for kk, vv in v.items()}
-                                                              for k, v in expected_second_order_mesh_data_3D["elements"].items()}
+
+
+        # make sure all node and element keys are integers
+        expected_second_order_mesh_data_3D["nodes"] = {int(k): v for k, v in expected_second_order_mesh_data_3D["nodes"].items()}
+        expected_second_order_mesh_data_3D["elements"] = {k: {int(kk): vv for kk, vv in v.items()}
+                                                            for k, v in expected_second_order_mesh_data_3D["elements"].items()}
 
         TestUtils.assert_dictionary_almost_equal(gmsh_io.mesh_data, expected_second_order_mesh_data_3D)
 
