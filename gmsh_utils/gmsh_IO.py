@@ -364,14 +364,6 @@ class GmshIO:
 
         return volume_id
 
-    def remove_duplicate_entities_from_geometry(self):
-        """
-        Removes duplicate entities from the geometry.
-
-        """
-
-        gmsh.model.occ.removeAllDuplicates()
-
     @staticmethod
     def get_num_nodes_from_elem_type(elem_type: int) -> int:
         """
@@ -459,7 +451,7 @@ class GmshIO:
                                                    layer["element_size"])
 
             # clean up geo data after each layer, such that occ entities are correctly assigned
-            self.remove_duplicate_entities_from_geometry()
+            gmsh.model.occ.removeAllDuplicates()
             self.synchronize_gmsh()
             self.extract_geo_data()
 
