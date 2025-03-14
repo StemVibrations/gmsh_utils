@@ -823,7 +823,7 @@ class GmshIO:
         else:
             raise FileNotFoundError(f"File {filename} does not exist!")
 
-    def set_structured_mesh_constraints_surface(self, n_points, surface_id, corner_node_ids=[]):
+    def set_structured_mesh_constraints_surface(self, n_points: List[int], surface_id: int):
         """
         Sets structured mesh constraints for a surface.
 
@@ -839,30 +839,39 @@ class GmshIO:
         if "transfinite_curve" not in self.geo_data["constraints"]:
             self.geo_data["constraints"]["transfinite_curve"] = {}
 
-        self.geo_data["constraints"]["transfinite_surface"][surface_id] = {"n_points": n_points, "corner_node_ids": corner_node_ids}
-
-        # get coordinates of corner nodes
-        corner_node_coordinates = [self.geo_data["points"][corner_node_id] for corner_node_id in corner_node_ids]
-
-        # Compute pairwise distances
-        distances = []
-        for i in range(len(corner_node_coordinates)):
-            p1 = np.array(corner_node_coordinates[i])
-            p2 = np.array(corner_node_coordinates[(i + 1) % len(corner_node_coordinates)])  # Wrap around to the first point
-            distance = np.linalg.norm(p2 - p1)
-            distances.append(distance)
 
 
-        if len(self.geo_data["surfaces"][surface_id]) >4:
-            groups = self.group_consecutive_collinear_lines_3d(self.geo_data["surfaces"][surface_id])
+        # # get coordinates of corner nodes
+        # corner_node_coordinates = [self.geo_data["points"][corner_node_id] for corner_node_id in corner_node_ids]
+
+        # # Compute pairwise distances
+        # distances = []
+        # for i in range(len(corner_node_coordinates)):
+        #     p1 = np.array(corner_node_coordinates[i])
+        #     p2 = np.array(corner_node_coordinates[(i + 1) % len(corner_node_coordinates)])  # Wrap around to the first point
+        #     distance = np.linalg.norm(p2 - p1)
+        #     distances.append(distance)
+
+
+        abs_surface_id = abs(surface_id)
+
+        # if the surface has more than 4 lines, find the lines which are collinear and group them
+        if len(self.geo_data["surfaces"][abs_surface_id]) >4:
+            groups = self.group_consecutive_collinear_lines_3d(self.geo_data["surfaces"][abs_surface_id])
 
             if len(groups) != 4:
-                raise ValueError(f"Surface {surface_id} is not a rectangle, it has {len(groups)} groups of collinear lines.")
+                raise ValueError(f"Surface {abs_surface_id} is not a rectangle, it has {len(groups)} groups of collinear lines.")
 
-            distances = []
             directions = []
+            corner_node_ids = []
 
             for group in groups:
+
+                # the corner node is the first node of the first line in the group
+                if group[0] > 0:
+                    corner_node_ids.append(self.geo_data["lines"][group[0]][0])
+                else:
+                    corner_node_ids.append(self.geo_data["lines"][abs(group[0])][1])
 
                 line = self.geo_data["lines"][group[0]]
                 points = [self.geo_data["points"][point_id] for point_id in line]
@@ -880,11 +889,9 @@ class GmshIO:
 
                 directions.append(direction_index)
 
-                lengths = [self.calculate_length_line(line_id) for line_id in group]
-                distances.append(lengths)
+                lengths = [self.calculate_length_line(abs(line_id)) for line_id in group]
 
                 # set number of points in each direction
-
                 for i in range(len(group)):
 
                     if len(group) >1:
@@ -896,101 +903,43 @@ class GmshIO:
                             new_n_points = int(new_n_points)
                         else:
                             raise ValueError(f"Number of points in direction {directions[i]} is not an integer.")
-
                     else:
                         new_n_points = n_points[direction_index]
 
                     self.geo_data["constraints"]["transfinite_curve"][group[i]] = {"n_points": new_n_points}
 
-    # def set_structured_mesh_constraints_volume(self, n_points, volume_id, corner_node_ids=[]):
-    #     """
-    #     Sets structured mesh constraints for a surface.
-    #
-    #     Args:
-    #         - n_points (List[int]): Number of points in each direction.
-    #         - surface_id (int): Surface id.
-    #         - corner_node_ids (List[int]): List of corner node ids.
-    #
-    #     """
-    #
-    #     constraints = self.geo_data.setdefault("constraints", {})
-    #     constraints.setdefault("transfinite_volume", {})
-    #     constraints.setdefault("transfinite_surface", {})
-    #     constraints.setdefault("transfinite_curve", {})
-    #
-    #
-    #     self.geo_data["constraints"]["transfinite_volume"][volume_id] = {"n_points": n_points,
-    #                                                                        "corner_node_ids": corner_node_ids}
-    #
-    #     xmin, ymin, zmin, xmax, ymax, zmax = gmsh.model.occ.getBoundingBox(3, volume_id)
-    #
-    #
-    #
-    #     a=1+1
-    #
-    #     # # get coordinates of corner nodes
-    #     # corner_node_coordinates = [self.geo_data["points"][corner_node_id] for corner_node_id in corner_node_ids]
-    #     #
-    #     # # Compute pairwise distances
-    #     # distances = []
-    #     # for i in range(len(corner_node_coordinates)):
-    #     #     p1 = np.array(corner_node_coordinates[i])
-    #     #     p2 = np.array(
-    #     #         corner_node_coordinates[(i + 1) % len(corner_node_coordinates)])  # Wrap around to the first point
-    #     #     distance = np.linalg.norm(p2 - p1)
-    #     #     distances.append(distance)
-    #
-    #     if len(self.geo_data["volumes"][volume_id]) > 6:
-    #         groups = self.group_consecutive_collinear_lines_3d(self.geo_data["surfaces"][surface_id])
-    #
-    #         if len(groups) != 4:
-    #             raise ValueError(
-    #                 f"Surface {surface_id} is not a rectangle, it has {len(groups)} groups of collinear lines.")
-    #
-    #         distances = []
-    #         directions = []
-    #
-    #         for group in groups:
-    #
-    #             line = self.geo_data["lines"][group[0]]
-    #             points = [self.geo_data["points"][point_id] for point_id in line]
-    #             # calculate direction of group
-    #             v1 = np.array(points[1]) - np.array(points[0])
-    #
-    #             if v1[0] != 0 and v1[1] == 0 and v1[2] == 0:
-    #                 direction_index = 0
-    #             elif v1[0] == 0 and v1[1] != 0 and v1[2] == 0:
-    #                 direction_index = 1
-    #             elif v1[0] == 0 and v1[1] == 0 and v1[2] != 0:
-    #                 direction_index = 2
-    #             else:
-    #                 raise ValueError(f"Surface {surface_id} is not aligned with x, y or z axis.")
-    #
-    #             directions.append(direction_index)
-    #
-    #             lengths = [self.calculate_length_line(line_id) for line_id in group]
-    #             distances.append(lengths)
-    #
-    #             # set number of points in each direction
-    #
-    #             for i in range(len(group)):
-    #
-    #                 if len(group) > 1:
-    #
-    #                     ratio = lengths[i] / sum(lengths)
-    #                     new_n_points = (n_points[direction_index] - 1) * ratio + 1
-    #
-    #                     if new_n_points.is_integer():
-    #                         new_n_points = int(new_n_points)
-    #                     else:
-    #                         raise ValueError(f"Number of points in direction {directions[i]} is not an integer.")
-    #
-    #                 else:
-    #                     new_n_points = n_points[direction_index]
-    #
-    #                 self.geo_data["constraints"]["transfinite_curve"][group[i]] = {"n_points": new_n_points}
+        elif len(self.geo_data["surfaces"][abs_surface_id]) == 4:
+            surface = self.geo_data["surfaces"][abs_surface_id]
 
-    def set_structured_mesh_constraints_volume(self, n_points, volume_id, corner_node_ids):
+            corner_node_ids = []
+            for line_id in surface:
+                if line_id > 0:
+                    corner_node_ids.append(self.geo_data["lines"][abs(line_id)][0])
+                else:
+                    corner_node_ids.append(self.geo_data["lines"][abs(line_id)][1])
+        else:
+            raise ValueError(f"Surface {abs_surface_id} has {len(self.geo_data['surfaces'][abs_surface_id])} lines. "
+                             f"Only 4 lines are supported.")
+
+        # check if the surface is a rectangle by checking the corner nodes
+        coordinates = np.array([self.geo_data["points"][corner_node_id] for corner_node_id in corner_node_ids])
+
+        # check if all opposite sides have the same distance between points
+        dist_1, dist_3 = abs(coordinates[0, :] - coordinates[1, :]), abs(coordinates[2, :] - coordinates[3, :])
+        dist_2, dist_4 = abs(coordinates[0, :] - coordinates[3, :]), abs(coordinates[1, :] - coordinates[2, :])
+
+        if not np.isclose(dist_1, dist_3).all() or not np.isclose(dist_2, dist_4).all():
+            raise ValueError(f"Surface {abs_surface_id} is not a rectangle, opposite sides have different lengths.")
+
+        # check if all distances lay on a global axis
+        for distance in [dist_1, dist_2, dist_3, dist_4]:
+            if sum(1 for v in distance if v != 0) != 1:
+                raise ValueError(f"Surface {abs_surface_id} is not a rectangle, the sides are not aligned with the axes.")
+
+        self.geo_data["constraints"]["transfinite_surface"][abs_surface_id] = {"n_points": n_points,
+                                                                           "corner_node_ids": corner_node_ids}
+
+    def set_structured_mesh_constraints_volume(self, n_points, volume_id):
         """
         Sets structured mesh constraints for a cuboid volume, distributing points across surfaces.
 
@@ -1005,185 +954,20 @@ class GmshIO:
         if "transfinite_volume" not in self.geo_data["constraints"]:
             self.geo_data["constraints"]["transfinite_volume"] = {}
 
-        self.geo_data["constraints"]["transfinite_volume"][volume_id] = {"n_points": n_points, "corner_node_ids": corner_node_ids}
-
         surfaces = self.geo_data["volumes"][volume_id]
-        planes = {}
 
-        # Group surfaces into planes based on normal direction and position
+        if len(surfaces) != 6:
+            raise ValueError(f"Volume {volume_id} is not a cuboid, it has {len(surfaces)} surfaces.")
+
+        set_volume_corner_node_ids = set()
         for surface_id in surfaces:
-            abs_surface_id = abs(surface_id)
-            line_loop = self.geo_data["surfaces"][abs_surface_id]
-            groups = self.group_consecutive_collinear_lines_3d(line_loop)
-            if len(groups) != 4:
-                raise ValueError(f"Surface {abs_surface_id} is not a rectangle.")
+            self.set_structured_mesh_constraints_surface(n_points, surface_id)
 
-            # Determine normal direction
-            line_id = groups[0][0]
-            line = self.geo_data["lines"][line_id]
-            # p1 = np.array(self.geo_data["points"][line[0]])
-            # p2 = np.array(self.geo_data["points"][line[1]])
-            # dir_vec = p2 - p1
-            # dir_normalized = dir_vec / np.linalg.norm(dir_vec)
-            normal_dir = None
+            surface_corner_node_ids = self.geo_data["constraints"]["transfinite_surface"][abs(surface_id)]["corner_node_ids"]
+            set_volume_corner_node_ids.update(surface_corner_node_ids)
 
-            lines = [self.geo_data["lines"][abs(line_id)] for line_id in line_loop]
-
-            checked_point_ids = set()
-            points = []
-            for line in lines:
-                for point_id in line:
-                    if point_id in checked_point_ids:
-                        continue
-                    checked_point_ids.add(point_id)
-                    points.append(self.geo_data["points"][point_id])
-
-            p0 = np.array(points[0])
-            p1 = np.array(points[1])
-            p2 = np.array(points[2])
-
-
-            normal = np.cross(p1 - p0, p2 - p0)
-            normal_normalized = normal / np.linalg.norm(normal)
-
-            for i in range(3):
-                if abs(abs(normal_normalized[i]) - 1) < 1e-6:
-                    normal_dir = i
-                    break
-            if normal_dir is None:
-                raise ValueError(f"Surface {surface_id} is not axis-aligned.")
-
-            # Get position along normal direction
-            position = self.geo_data["points"][line[0]][normal_dir]
-
-            key = (normal_dir, position)
-            if key not in planes:
-                planes[key] = []
-            planes[key].append(surface_id)
-
-        # Process each plane
-        for (normal_dir, pos), plane_surfaces in planes.items():
-            dir1, dir2 = [d for d in [0, 1, 2] if d != normal_dir]
-
-            # Collect all points in the plane
-            all_points = []
-            for surface_id in plane_surfaces:
-                abs_surface_id = abs(surface_id)
-                line_loop = self.geo_data["surfaces"][abs_surface_id]
-                for line_id in line_loop:
-                    abs_line_id = abs(line_id)
-                    line = self.geo_data["lines"][abs_line_id]
-                    all_points.extend(line)
-            all_points = list(set(all_points))
-            coords = [self.geo_data["points"][pid] for pid in all_points]
-
-            # Compute total lengths for dir1 and dir2
-            min_dir1 = min(c[dir1] for c in coords)
-            max_dir1 = max(c[dir1] for c in coords)
-            total_dir1 = max_dir1 - min_dir1
-
-            min_dir2 = min(c[dir2] for c in coords)
-            max_dir2 = max(c[dir2] for c in coords)
-            total_dir2 = max_dir2 - min_dir2
-
-            # Process each surface in the plane
-            for surface_id in plane_surfaces:
-                abs_surface_id = abs(surface_id)
-                line_loop = self.geo_data["surfaces"][abs_surface_id]
-                srf_points = []
-                for line_id in line_loop:
-                    abs_line_id = abs(line_id)
-                    line = self.geo_data["lines"][abs_line_id]
-                    srf_points.extend(line)
-                srf_points = list(set(srf_points))
-                srf_coords = [self.geo_data["points"][pid] for pid in srf_points]
-
-                # Surface's dimensions
-                srf_min_d1 = min(c[dir1] for c in srf_coords)
-                srf_max_d1 = max(c[dir1] for c in srf_coords)
-                srf_len_d1 = srf_max_d1 - srf_min_d1
-
-                srf_min_d2 = min(c[dir2] for c in srf_coords)
-                srf_max_d2 = max(c[dir2] for c in srf_coords)
-                srf_len_d2 = srf_max_d2 - srf_min_d2
-
-                # Calculate ratios
-                ratio_d1 = srf_len_d1 / total_dir1 if total_dir1 != 0 else 0
-                ratio_d2 = srf_len_d2 / total_dir2 if total_dir2 != 0 else 0
-
-                # Determine points for each in-plane direction
-                n_dir1_total = n_points[dir1]
-                n_dir2_total = n_points[dir2]
-
-                intervals_d1 = ratio_d1 * (n_dir1_total - 1)
-                intervals_d2 = ratio_d2 * (n_dir2_total - 1)
-
-                if not (abs(intervals_d1 - round(intervals_d1)) < 1e-6 and abs(
-                        intervals_d2 - round(intervals_d2)) < 1e-6):
-                    raise ValueError(f"Surface {surface_id} intervals must be integer.")
-
-                n_d1 = int(round(intervals_d1)) + 1
-                n_d2 = int(round(intervals_d2)) + 1
-
-                # Get normal direction's n_points
-                n_normal = n_points[normal_dir]
-
-                # Create n_points list in x, y, z order
-                surface_n_points = [0, 0, 0]
-                surface_n_points[normal_dir] = n_normal
-                surface_n_points[dir1] = n_d1
-                surface_n_points[dir2] = n_d2
-
-                # Get corner_node_ids from surface's line groups
-                groups = self.group_consecutive_collinear_lines_3d(line_loop)
-
-                corner_node_ids = []
-                for group in groups:
-                    if group[0] > 0:
-                        corner_node_ids.append(self.geo_data["lines"][group[0]][0])
-                    else:
-                        corner_node_ids.append(self.geo_data["lines"][abs(group[0])][1])
-
-                # corner_node_ids = [self.geo_data["lines"][abs(group[0])][0] for group in groups]
-
-                # Set surface constraints with three directions and corner nodes
-                self.geo_data["constraints"]["transfinite_surface"][abs(surface_id)] = {
-                    "n_points": surface_n_points,
-                    "corner_node_ids": corner_node_ids
-                }
-
-                # Set line constraints for each group
-                for group in groups:
-                    group_line = self.geo_data["lines"][abs(group[0])]
-                    p1 = np.array(self.geo_data["points"][group_line[0]])
-                    p2 = np.array(self.geo_data["points"][group_line[1]])
-                    dir_vec = p2 - p1
-                    dir_norm = dir_vec / np.linalg.norm(dir_vec)
-                    group_dir = None
-                    for i in range(3):
-                        if abs(abs(dir_norm[i]) - 1) < 1e-6:
-                            group_dir = i
-                            break
-
-                    if group_dir == dir1:
-                        total_intervals = n_d1 - 1
-                    elif group_dir == dir2:
-                        total_intervals = n_d2 - 1
-                    else:
-                        raise ValueError("Invalid group direction.")
-
-                    group_lengths = [self.calculate_length_line(abs(l)) for l in group]
-                    total_length = sum(group_lengths)
-
-                    for line_id, length in zip(group, group_lengths):
-                        ratio = length / total_length if total_length != 0 else 0
-                        line_intervals = ratio * total_intervals
-                        if not (abs(line_intervals - round(line_intervals)) < 1e-6):
-                            raise ValueError(f"Line {line_id} intervals must be integer.")
-                        line_n = int(round(line_intervals)) + 1
-                        self.geo_data["constraints"]["transfinite_curve"][line_id] = {"n_points": line_n, "corner_node_ids": corner_node_ids}
-
-        a=1+1
+        self.geo_data["constraints"]["transfinite_volume"][volume_id] = {"n_points": n_points,
+                                                                         "corner_node_ids": list(set_volume_corner_node_ids)}
 
     def generate_geo_from_geo_data(self):
         """
@@ -1226,9 +1010,11 @@ class GmshIO:
             gmsh.model.mesh.setTransfiniteSurface(k,cornerTags=v["corner_node_ids"])
             gmsh.model.mesh.set_recombine(2, k)
 
-        for k, v in self.__geo_data["constraints"]["transfinite_volume"].items():
-            gmsh.model.mesh.setTransfiniteVolume(k, cornerTags=v["corner_node_ids"])
-            gmsh.model.mesh.set_recombine(3, k)
+        if "transfinite_volume" in self.__geo_data["constraints"]:
+
+            for k, v in self.__geo_data["constraints"]["transfinite_volume"].items():
+                gmsh.model.mesh.setTransfiniteVolume(k, cornerTags=v["corner_node_ids"])
+                gmsh.model.mesh.set_recombine(3, k)
 
 
         # gmsh.fltk.run()
