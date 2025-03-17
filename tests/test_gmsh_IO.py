@@ -2,10 +2,12 @@ from pathlib import Path
 import re
 from sys import platform
 from copy import deepcopy
+from typing import Dict, Any
 
 import gmsh
 import numpy as np
 import pickle
+import json
 import pytest
 from _pytest.capture import CaptureFixture
 
@@ -81,6 +83,30 @@ class TestGmshIO:
                 "volumes": expected_volumes,
                 "physical_groups": expected_physical_groups}
 
+    @pytest.fixture
+    def expected_second_order_mesh_data_2D(self):
+        """
+        Expected mesh data for a 2D geometry with second order elements.
+        """
+        expected_mesh_data = {'nodes': {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0],
+                                        5: [0.5, 0.0, 0.0], 6: [1.0, 0.5, 0.0], 7: [0.5, 1.0, 0.0], 8: [0.0, 0.5, 0.0],
+                                        9: [0.5, 0.5, 0.0], 10: [0.75, 0.25, 0.0], 11: [0.25, 0.25, 0.0],
+                                        12: [0.25, 0.75, 0.0], 13: [0.75, 0.75, 0.0]},
+                              'elements': {'LINE_3N': {2: [3, 4, 7], 10: [1, 2, 5], 11: [2, 3, 6], 12: [4, 1, 8]},
+                                           'TRIANGLE_6N': {3: [2, 9, 1, 10, 11, 5], 4: [1, 9, 4, 11, 12, 8],
+                                                           5: [3, 9, 2, 13, 10, 6], 6: [4, 9, 3, 12, 13, 7]},
+                                           'POINT_1N': {1: [1], 7: [2], 8: [3], 9: [4]}},
+                              "physical_groups": {'line': {'element_ids': [2], 'element_type': 'LINE_3N', 'ndim': 1,
+                                                           'node_ids': [3, 4, 7]},
+                                                  'point': {'element_ids': [1], 'element_type': 'POINT_1N', 'ndim': 0,
+                                                            'node_ids': [1]},
+                                                  'surface': {'element_ids': [3, 4, 5, 6],
+                                                              'element_type': 'TRIANGLE_6N', 'ndim': 2,
+                                                              'node_ids': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]}},
+                              "ndim": 2}
+
+        return expected_mesh_data
+
     def test_generate_mesh_2D(self):
         """
         Checks whether mesh data generated for 2D geometries is not empty.
@@ -139,6 +165,39 @@ class TestGmshIO:
         # check elements are not empty
         for value in mesh_data["elements"].values():
             assert len(value) > 0
+
+    def test_generate_second_order_mesh_2D(self, expected_second_order_mesh_data_2D: Dict[str, Any]):
+        """
+        Checks if the second order mesh in 2D is generated correctly.
+
+        Args:
+            - expected_second_order_mesh_data_2D (Dict[str, Any]): Expected mesh data for a 2D geometry with second
+              order elements.
+
+        """
+
+        element_size = 1
+
+        input_dict = {'surface': {"element_size": element_size,
+                                  "coordinates": [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)],
+                                  "ndim": 2},
+                      'line': {"element_size": element_size,
+                               "coordinates": [(0, 1, 0), (1, 1, 0)],
+                               "ndim": 1},
+                      'point': {"element_size": element_size,
+                                "coordinates": [(0, 0, 0)],
+                                "ndim": 0}
+                      }
+
+        # set a name for mesh output file
+        mesh_output_name = "test_2D"
+
+        gmsh_io = GmshIO()
+
+        gmsh_io.generate_geometry(input_dict, mesh_output_name)
+        gmsh_io.generate_mesh(ndim=2, mesh_name=mesh_output_name, order=2, open_gmsh_gui=False)
+
+        TestUtils.assert_dictionary_almost_equal(gmsh_io.mesh_data, expected_second_order_mesh_data_2D)
 
     def test_generate_mesh_3D(self):
         """
@@ -207,6 +266,57 @@ class TestGmshIO:
         # check elements are not empty
         for value in mesh_data["elements"].values():
             assert len(value) > 0
+
+    def test_generate_second_order_mesh_3D(self):
+        """
+        Checks if the second order mesh in 3D is generated correctly.
+
+        """
+
+        element_size = 1
+        # extrusion in 1 meter in z direction
+        extrusion_length = [0, 0, 1]
+
+        input_dict = {'volume': {"element_size": element_size,
+                                 "coordinates": [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)],
+                                 "ndim": 3,
+                                 "extrusion_length": extrusion_length},
+                      'surface': {"element_size": element_size,
+                                  "coordinates": [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)],
+                                  "ndim": 2},
+                      "line": {"element_size": element_size,
+                               "coordinates": [(0, 0, 0), (1, 0, 0)],
+                               "ndim": 1},
+                      "point": {"element_size": element_size,
+                                "coordinates": [(0, 0, 0)],
+                                "ndim": 0}
+                      }
+
+        # set a name for mesh output file
+        mesh_output_name = "test_3D"
+
+        gmsh_io = GmshIO()
+
+        # generate geometry and second order mesh
+        gmsh_io.generate_geometry(input_dict, mesh_output_name)
+        gmsh_io.generate_mesh(3, mesh_name=mesh_output_name, order=2,
+                              open_gmsh_gui=False)
+
+        if platform == 'win32':
+            with open("tests/test_data/expected_second_order_mesh_data_3D_windows.json", 'r') as f:
+                expected_second_order_mesh_data_3D = json.load(f)
+        elif platform == 'linux':
+            with open('tests/test_data/expected_second_order_mesh_data_3D_linux.json', 'r') as f:
+                expected_second_order_mesh_data_3D = json.load(f)
+
+        # make sure all node and element keys are integers
+        expected_second_order_mesh_data_3D["nodes"] = {int(k): v for k, v in
+                                                       expected_second_order_mesh_data_3D["nodes"].items()}
+        expected_second_order_mesh_data_3D["elements"] = {k: {int(kk): vv for kk, vv in v.items()}
+                                                          for k, v in
+                                                          expected_second_order_mesh_data_3D["elements"].items()}
+
+        TestUtils.assert_dictionary_almost_equal(gmsh_io.mesh_data, expected_second_order_mesh_data_3D)
 
     def test_read_gmsh_geo_2D(self):
         """
@@ -297,7 +407,6 @@ class TestGmshIO:
                                         7: [1.0, 1.0, -1.0], 8: [0.0, 1.0, -1.0]},
                               'elements': {'TETRAHEDRON_4N': {1: [2, 1, 4, 8], 2: [5, 6, 8, 2], 3: [5, 2, 8, 1],
                                                               4: [2, 4, 3, 7], 5: [8, 6, 7, 2], 6: [8, 2, 7, 4]}}}
-
 
         # check if the coordinates of the points are correct
         TestUtils.assert_dictionary_almost_equal(expected_mesh_data, mesh_data)
@@ -644,7 +753,7 @@ class TestGmshIO:
         gmsh_io.extract_geo_data()
         filled_geo_data = gmsh_io.geo_data
 
-        expected_geo_data = {'points': {1: [0., 0., 0.], 2: [1., 0., 0.], 3: [2.0, 0.0,0.0],
+        expected_geo_data = {'points': {1: [0., 0., 0.], 2: [1., 0., 0.], 3: [2.0, 0.0, 0.0],
                                         4: [0.5, 0., 0.], 5: [1.5, 0., 0.]},
                              'lines': {1: [1, 4], 2: [4, 2], 3: [2, 5], 4: [5, 3]},
                              'surfaces': {},
@@ -956,7 +1065,6 @@ class TestGmshIO:
         point_id7 = gmsh.model.occ.addPoint(1, 1, 1)
         point_id8 = gmsh.model.occ.addPoint(0, 1, 1)
 
-
         # create a volume
         line_id1 = gmsh.model.occ.addLine(point_id1, point_id2)
         line_id2 = gmsh.model.occ.addLine(point_id2, point_id3)
@@ -1000,7 +1108,7 @@ class TestGmshIO:
         line_id14 = gmsh.model.occ.addLine(point_id2, point_id7)
 
         # create surface
-        curve_loop_id7 = gmsh.model.occ.addCurveLoop([line_id1, line_id14, line_id7,line_id13])
+        curve_loop_id7 = gmsh.model.occ.addCurveLoop([line_id1, line_id14, line_id7, line_id13])
         surface_id_7: int = gmsh.model.occ.addPlaneSurface([curve_loop_id7])
         gmsh.model.addPhysicalGroup(2, [surface_id_7], name="new_surface")
 
@@ -1463,7 +1571,7 @@ class TestGmshIO:
         gmsh_io = GmshIO()
 
         # valid layer parameters, no error should be raised
-        layer_parameters = {"layer_1": {"coordinates": [[0,0,0], [1,1,1]],
+        layer_parameters = {"layer_1": {"coordinates": [[0, 0, 0], [1, 1, 1]],
                                         "element_size": 1,
                                         "ndim": 1,
                                         "extrusion_length": 1}}
@@ -1478,7 +1586,7 @@ class TestGmshIO:
             gmsh_io.validate_layer_parameters(layer_parameters)
 
         # missing ndim, error should be raised
-        layer_parameters = {"layer_1": {"coordinates": [[0,0,0], [1,1,1]],
+        layer_parameters = {"layer_1": {"coordinates": [[0, 0, 0], [1, 1, 1]],
                                         "element_size": 1,
                                         "extrusion_length": 1}}
 
@@ -1486,7 +1594,7 @@ class TestGmshIO:
             gmsh_io.validate_layer_parameters(layer_parameters)
 
         # missing extrusion length in 3D, error should be raised
-        layer_parameters = {"layer_1": {"coordinates": [[0,0,0], [1,1,1]],
+        layer_parameters = {"layer_1": {"coordinates": [[0, 0, 0], [1, 1, 1]],
                                         "element_size": 1,
                                         "ndim": 3}}
 
@@ -1495,14 +1603,14 @@ class TestGmshIO:
             gmsh_io.validate_layer_parameters(layer_parameters)
 
         # missing extrusion length in non-3D, should not raise an error
-        layer_parameters = {"layer_1": {"coordinates": [[0,0,0], [1,1,1]],
+        layer_parameters = {"layer_1": {"coordinates": [[0, 0, 0], [1, 1, 1]],
                                         "element_size": 1,
                                         "ndim": 2}}
 
         gmsh_io.validate_layer_parameters(layer_parameters)
 
         # missing element size, warning should be printed
-        layer_parameters = {"layer_1": {"coordinates": [[0,0,0], [1,1,1]],
+        layer_parameters = {"layer_1": {"coordinates": [[0, 0, 0], [1, 1, 1]],
                                         "ndim": 1,
                                         "extrusion_length": 1}}
 
@@ -1576,11 +1684,11 @@ class TestGmshIO:
         gmsh_io = GmshIO()
 
         # create first point input
-        input_first_point = {'point': {"coordinates": [(0, 0, 0), (1,0,0), (0,1,0)],
+        input_first_point = {'point': {"coordinates": [(0, 0, 0), (1, 0, 0), (0, 1, 0)],
                                        "ndim": 0}}
 
         # create second point input, note that one coordinate already exists
-        input_second_point = {'point': {"coordinates": [(3, 0, 0), (2,0,0), (0,1,0)],
+        input_second_point = {'point': {"coordinates": [(3, 0, 0), (2, 0, 0), (0, 1, 0)],
                                         "ndim": 0}}
 
         # generate points separately
@@ -1655,13 +1763,13 @@ class TestGmshIO:
 
         # create first volume input
         input_first_volume = {'volume': {"coordinates": [(0, 0, 0), (3, 0, 0), (3, 1, 0), (0, 1, 0)],
-                                            "ndim": 3,
-                                            "extrusion_length": [0, 0, 1]}}
+                                         "ndim": 3,
+                                         "extrusion_length": [0, 0, 1]}}
 
         # create second volume input
         input_second_volume = {'volume': {"coordinates": [(0, 0, 2), (3, 0, 2), (3, 1, 2), (0, 1, 2)],
-                                            "ndim": 3,
-                                            "extrusion_length": [0, 0, 1]}}
+                                          "ndim": 3,
+                                          "extrusion_length": [0, 0, 1]}}
 
         # generate volumes separately
         gmsh_io.generate_geometry(input_first_volume, "")
@@ -1709,10 +1817,10 @@ class TestGmshIO:
 
         # create first surface
         # create surface points
-        point_id1 = gmsh.model.occ.addPoint(0, 0, 0,0.1)
-        point_id2 = gmsh.model.occ.addPoint(1, 0, 0,0.1)
-        point_id3 = gmsh.model.occ.addPoint(1, 1, 0,0.1)
-        point_id4 = gmsh.model.occ.addPoint(0, 1, 0,0.1)
+        point_id1 = gmsh.model.occ.addPoint(0, 0, 0, 0.1)
+        point_id2 = gmsh.model.occ.addPoint(1, 0, 0, 0.1)
+        point_id3 = gmsh.model.occ.addPoint(1, 1, 0, 0.1)
+        point_id4 = gmsh.model.occ.addPoint(0, 1, 0, 0.1)
 
         # create surface lines
         line_id1 = gmsh.model.occ.addLine(point_id1, point_id2)
@@ -1731,8 +1839,8 @@ class TestGmshIO:
         gmsh.model.addPhysicalGroup(3, [volume_id], tag=-1, name="volume")
 
         # create intersection line
-        point_id_5 = gmsh.model.occ.addPoint(0.25, 1, 0,0.1)
-        point_id_6 = gmsh.model.occ.addPoint(0.25, 1, 1,0.1)
+        point_id_5 = gmsh.model.occ.addPoint(0.25, 1, 0, 0.1)
+        point_id_6 = gmsh.model.occ.addPoint(0.25, 1, 1, 0.1)
 
         line_id5 = gmsh.model.occ.addLine(point_id_5, point_id_6)
         gmsh.model.addPhysicalGroup(1, [line_id5], name="new_line")
@@ -2065,7 +2173,7 @@ class TestGmshIO:
         expected_geo_data = {'points': {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0],
                                         5: [0.0, 0.0, 1.0], 6: [1.0, 0.0, 1.0], 7: [1.0, 1.0, 1.0], 8: [0.0, 1.0, 1.0],
                                         9: [0.0, 1.0, 0.0], 10: [0, 0.0, 1.0], 11: [0.0, 1.0, 1.0]},
-                             'lines': {1: [1, 2], 2: [2, 3], 3: [3,4], 4: [4, 1], 5: [1, 5], 6: [2, 6],
+                             'lines': {1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [4, 1], 5: [1, 5], 6: [2, 6],
                                        7: [5, 6], 8: [3, 7], 9: [6, 7], 10: [4, 8], 11: [7, 8], 12: [8, 5]},
                              'surfaces': {1: [1, 2, 3, 4], 2: [5, 7, -6, -1], 3: [6, 9, -8, -2],
                                           4: [8, 11, -10, -3], 5: [10, 12, -5, -4], 6: [7, 9, 11, 12]},
@@ -2149,20 +2257,20 @@ class TestGmshIO:
         gmsh_io.synchronize_gmsh()
         gmsh_io.extract_geo_data()
 
-        expected_geo_data ={"points": {1: [0.0, 0.0, 0.0], 2: [4.0, 0.0, 0.0], 3: [4.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0],
-                                       5: [0.0, 0.0, 4.0], 6: [4.0, 0.0, 4.0], 7: [4.0, 1.0, 4.0], 8: [0.0, 1.0, 4.0],
-                                       10: [2.0, 1.0, 1.5], 11: [2.0, 1.0, 2.5], 12: [0.0, 1.0, 1.5],
-                                       13: [4.0, 1.0, 2.5]},
-                            "lines": {1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [4, 1], 5: [1, 5], 6: [2, 6],
-                                      7: [5, 6], 9: [6, 7], 11: [7, 8], 12: [8, 5], 13: [12, 10], 14: [10, 11],
-                                      15: [11, 13], 16: [4, 12], 17: [3, 13], 18: [12, 8], 19: [13, 7]},
-                            "surfaces": {1: [1, 2, 3, 4], 2: [5, 7, -6, -1], 3: [6, 9, -19, -17, -2],
-                                         5: [16, 18, 12, -5, -4], 6: [7, 9, 11, 12], 7: [-3, 17, -15, -14, -13, -16],
-                                         8: [15, 19, 11, -18, 13, 14]},
-                            "volumes": {1: [-2, -3, -7, -8, -5, -1, 6]},
-                            "physical_groups": {'new_lines': {'geometry_ids': [13, 14, 15], 'id': 3, 'ndim': 1},
-                                                'new_surface': {'geometry_ids': [7, 8], 'id': 2, 'ndim': 2},
-                                                'volume': {'geometry_ids': [1], 'id': 1, 'ndim': 3}}}
+        expected_geo_data = {"points": {1: [0.0, 0.0, 0.0], 2: [4.0, 0.0, 0.0], 3: [4.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0],
+                                        5: [0.0, 0.0, 4.0], 6: [4.0, 0.0, 4.0], 7: [4.0, 1.0, 4.0], 8: [0.0, 1.0, 4.0],
+                                        10: [2.0, 1.0, 1.5], 11: [2.0, 1.0, 2.5], 12: [0.0, 1.0, 1.5],
+                                        13: [4.0, 1.0, 2.5]},
+                             "lines": {1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [4, 1], 5: [1, 5], 6: [2, 6],
+                                       7: [5, 6], 9: [6, 7], 11: [7, 8], 12: [8, 5], 13: [12, 10], 14: [10, 11],
+                                       15: [11, 13], 16: [4, 12], 17: [3, 13], 18: [12, 8], 19: [13, 7]},
+                             "surfaces": {1: [1, 2, 3, 4], 2: [5, 7, -6, -1], 3: [6, 9, -19, -17, -2],
+                                          5: [16, 18, 12, -5, -4], 6: [7, 9, 11, 12], 7: [-3, 17, -15, -14, -13, -16],
+                                          8: [15, 19, 11, -18, 13, 14]},
+                             "volumes": {1: [-2, -3, -7, -8, -5, -1, 6]},
+                             "physical_groups": {'new_lines': {'geometry_ids': [13, 14, 15], 'id': 3, 'ndim': 1},
+                                                 'new_surface': {'geometry_ids': [7, 8], 'id': 2, 'ndim': 2},
+                                                 'volume': {'geometry_ids': [1], 'id': 1, 'ndim': 3}}}
 
         # check if geo data is as expected
         TestUtils.assert_dictionary_almost_equal(gmsh_io.geo_data, expected_geo_data)
@@ -2248,7 +2356,6 @@ class TestGmshIO:
         with pytest.raises(ValueError, match=f"Verbosity level must be 0, 1, 2, 3, 4, 5 or 99. Verbosity level is 100"):
             gmsh_io.set_verbosity_level(non_existing_level)
 
-
     def test_get_surface_ids_at_plane(self):
         """
         Tests whether the surface ids at a plane are correctly returned.
@@ -2261,13 +2368,13 @@ class TestGmshIO:
         layer_parameters = {'layer1': {
             "coordinates": [(0, 0, 1), (1, 0, 1), (1, 1, 1), (0, 1, 1)],
             "ndim": 2},
-            'layer2': { # layer on another plane
+            'layer2': {  # layer on another plane
                 "coordinates": [(0, 0, 2), (1, 0, 2), (1, 1, 2), (0, 1, 2)],
                 "ndim": 2},
-            'layer3': { # layer on top of layer1 on same plane
+            'layer3': {  # layer on top of layer1 on same plane
                 "coordinates": [(0, 1, 1), (1, 1, 1), (1, 2, 1), (0, 2, 1)],
                 "ndim": 2},
-            }
+        }
 
         # generate geometry
         gmsh_io.generate_geometry(layer_parameters, "test_model")
@@ -2276,7 +2383,6 @@ class TestGmshIO:
         plane_vertices = [(20, 0, 1), (10, 0, 1), (10, 5, 1)]
         surface_ids = gmsh_io.get_surface_ids_at_plane(plane_vertices)
         assert surface_ids == [1, 3]
-
 
     def test_get_surface_ids_at_polygon(self):
         """
@@ -2290,13 +2396,13 @@ class TestGmshIO:
         layer_parameters = {'layer1': {
             "coordinates": [(0, 0, 1), (1, 0, 1), (1, 1, 1), (0, 1, 1)],
             "ndim": 2},
-            'layer2': { # layer on another plane
+            'layer2': {  # layer on another plane
                 "coordinates": [(0, 0, 2), (1, 0, 2), (1, 1, 2), (0, 1, 2)],
                 "ndim": 2},
-            'layer3': { # layer on top of layer1 on same plane
+            'layer3': {  # layer on top of layer1 on same plane
                 "coordinates": [(0, 1, 1), (1, 1, 1), (1, 2, 1), (0, 2, 1)],
                 "ndim": 2},
-            }
+        }
 
         # generate geometry
         gmsh_io.generate_geometry(layer_parameters, "test_model")
@@ -2315,6 +2421,3 @@ class TestGmshIO:
         polygon_vertices = [(0, 0, 1), (10, 0, 1), (10, 20, 1), (0, 20, 1)]
         surface_ids = gmsh_io.get_surface_ids_at_polygon(polygon_vertices)
         assert surface_ids == [1, 3]
-
-
-

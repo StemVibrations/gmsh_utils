@@ -364,14 +364,6 @@ class GmshIO:
 
         return volume_id
 
-    def remove_duplicate_entities_from_geometry(self):
-        """
-        Removes duplicate entities from the geometry.
-
-        """
-
-        gmsh.model.occ.removeAllDuplicates()
-
     @staticmethod
     def get_num_nodes_from_elem_type(elem_type: int) -> int:
         """
@@ -458,10 +450,10 @@ class GmshIO:
                 self.make_geometry_3d_by_extrusion(layer["coordinates"], layer["extrusion_length"], layer_name,
                                                    layer["element_size"])
 
-        self.remove_duplicate_entities_from_geometry()
-        self.synchronize_gmsh()
-
-        self.extract_geo_data()
+            # clean up geo data after each layer, such that occ entities are correctly assigned
+            gmsh.model.occ.removeAllDuplicates()
+            self.synchronize_gmsh()
+            self.extract_geo_data()
 
         # add element size to geo data
         for layer_name, layer in layer_parameters.items():
@@ -988,7 +980,7 @@ class GmshIO:
                 self.set_mesh_size_of_group(group_name, element_size)
 
         # set mesh order
-        gmsh.model.mesh.setOrder(order)
+        gmsh.option.setNumber("Mesh.ElementOrder", order)
 
         # generate mesh
         gmsh.model.mesh.generate(ndim)
