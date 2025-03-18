@@ -114,62 +114,70 @@ class GmshIO:
 
         raise Exception("Geometry data can only be set by internal methods.")
 
-    def is_collinear_3d(self, line1, line2):
-        """Check if two 3D lines are collinear using the cross product."""
-        (x1, y1, z1), (x2, y2, z2) = self.geo_data["points"][line1[0]], self.geo_data["points"][line1[1]]
-        (x3, y3, z3), (x4, y4, z4) = self.geo_data["points"][line2[0]], self.geo_data["points"][line2[1]]
+    def group_consecutive_collinear_lines_3d(self, line_ids: List[int]) -> List[List[int]]:
+        """
+        Group consecutive collinear 3D lines while maintaining order.
 
-        # Compute direction vectors
-        v1 = np.array([x2 - x1, y2 - y1, z2 - z1])
-        v2 = np.array([x4 - x3, y4 - y3, z4 - z3])
+        Args:
+            - line_ids (List[int]): A list of line ids.
 
-        # Compute cross product
-        cross_prod = np.cross(v1, v2)
+        Returns:
+            - List[List[int]]: A list of groups of collinear lines.
 
-        # If the cross product is [0,0,0], the vectors are collinear
-        return np.allclose(cross_prod, [0, 0, 0])
-
-    def group_consecutive_collinear_lines_3d(self, line_ids):
-        """Group consecutive collinear 3D lines while maintaining order."""
+        """
         if not line_ids:
             return []
-
-        # lines = [(line_id, self.geo_data["lines"][line_id]) for line_id in line_ids]
 
         groups = []
         current_group = [line_ids[0]]
 
-        for i in range(1, len(line_ids)):
-            prev_line = self.geo_data["lines"][abs(line_ids[i - 1])]
-            curr_line = self.geo_data["lines"][abs(line_ids[i])]
-            if self.is_collinear_3d(prev_line, curr_line):
-                current_group.append(line_ids[i])
+        # check if two connected lines are collinear
+        for prev_id, curr_id in zip(line_ids, line_ids[1:]):
+
+            prev_line = self.geo_data["lines"][abs(prev_id)]
+            curr_line = self.geo_data["lines"][abs(curr_id)]
+
+            if MathUtils.are_lines_collinear_3d([self.geo_data["points"][prev_line[0]], self.geo_data["points"][prev_line[1]]],
+                                             [self.geo_data["points"][curr_line[0]], self.geo_data["points"][curr_line[1]]]):
+                current_group.append(curr_id)
             else:
                 groups.append(current_group)
-                current_group = [line_ids[i]]
+                current_group = [curr_id]
 
-        groups.append(current_group)  # Add the last group
+        if current_group:  # Append the last group
+            groups.append(current_group)
 
         return groups
 
-
-    def calculate_length_line(self, line_id: int) -> float:
+    def get_coordinates_from_geometry_id(self,ndim, geometry_id: int) -> List[List[float]]:
         """
-        Calculate the length of a line in 3D space.
+        Get the coordinates of the geometry points from the geometry id.
 
         Args:
-            - line_id (int): The line tag.
+            - geometry_id (int): The geometry id.
 
         Returns:
-            - float: The length of the line.
+            - List[List[float]]: A list of point coordinates.
         """
 
-        line = self.geo_data["lines"][line_id]
-        p1 = self.geo_data["points"][line[0]]
-        p2 = self.geo_data["points"][line[1]]
+        if ndim == 0:
+            return [self.geo_data["points"][geometry_id]]
+        elif ndim == 1:
+            return [self.geo_data["points"][self.geo_data["lines"][geometry_id][0]],
+                    self.geo_data["points"][self.geo_data["lines"][geometry_id][1]]]
+        elif ndim == 2:
 
+            unique_point_ids = set()
+            for line_id in self.geo_data["surfaces"][geometry_id]:
+                unique_point_ids.update(self.geo_data["lines"][line_id])
+            return [self.geo_data["points"][point_id] for point_id in unique_point_ids]
 
-        return np.linalg.norm(np.array(p1) - np.array(p2))
+        elif ndim == 3:
+            unique_point_ids = set()
+            for surface_id in self.geo_data["volumes"][geometry_id]:
+                for line_id in self.geo_data["surfaces"][surface_id]:
+                    unique_point_ids.update(self.geo_data["lines"][line_id])
+            return [self.geo_data["points"][point_id] for point_id in unique_point_ids]
 
 
     def create_point(self, coordinates: Sequence[float], mesh_size: float = -1) -> int:
@@ -854,43 +862,80 @@ class GmshIO:
             raise FileNotFoundError(f"File {filename} does not exist!")
 
     def __get_direction_index_straight_line(self, line_id: int) -> int:
+        """
+        Gets the direction index of a straight line. X = 0, Y = 1, Z = 2.
+
+        Args:
+            - line_id (int): Line id.
+
+        Returns:
+            - int: Direction index, X = 0, Y = 1, Z = 2.
+        """
         line = self.geo_data["lines"][abs(line_id)]
         points = [self.geo_data["points"][point_id] for point_id in line]
+
         # calculate direction of group
         v1 = np.array(points[1]) - np.array(points[0])
 
-        if v1[0] != 0 and v1[1] == 0 and v1[2] == 0:
-            direction_index = 0
-        elif v1[0] == 0 and v1[1] != 0 and v1[2] == 0:
-            direction_index = 1
-        elif v1[0] == 0 and v1[1] == 0 and v1[2] != 0:
-            direction_index = 2
+        # Find the index of the nonzero component
+        nonzero_indices = np.where(~np.isclose(v1, 0))[0]
+
+        if len(nonzero_indices) == 1:  # Ensure only one nonzero component exists
+            direction_index = nonzero_indices[0]
         else:
-            raise ValueError(f"Line {line} is not aligned with x, y or z axis.")
+            raise ValueError(f"Line {line_id} is not aligned with x, y, or z axis.")
 
         return direction_index
 
-    def __set_constraints_straight_colinear_lines(self, line_ids: List[int], n_points: int):
-        lengths = [self.calculate_length_line(abs(line_id)) for line_id in line_ids]
+    def __set_constraints_straight_collinear_lines(self, line_ids: List[int], n_points: int):
+        """
+        Sets constraints for evenly spaced points on straight and collinear lines.
 
-        # set number of points in each direction
-        for i in range(len(line_ids)):
+        Args:
+            - line_ids (List[int]): List of line ids.
+            - n_points (int): Number of points.
+        """
 
-            if len(line_ids) > 1:
-                ratio = lengths[i] / sum(lengths)
-                new_n_points = (n_points - 1) * ratio + 1
+        if len(line_ids) == 1:
+            self.geo_data["constraints"]["transfinite_curve"][abs(line_ids[0])] = {"n_points": n_points}
 
+        # if more than 1 line is given, distribute points based on the length of the lines
+        elif len(line_ids) > 1:
+            lengths = [
+                MathUtils.calculate_distance_between_points(*self.get_coordinates_from_geometry_id(1, abs(line_id)))
+                for line_id in line_ids]
+
+            # set number of points per line based on the length of the lines
+            for length, line_id in zip(lengths, line_ids):
+
+                length_ratio = length / sum(lengths)
+                new_n_points = (n_points - 1) * length_ratio + 1
+
+                # check if the number of points is an integer, if not raise an error
                 if new_n_points.is_integer():
                     new_n_points = int(new_n_points)
                 else:
-                    raise ValueError(f"The lines {line_ids} into an evenly spaced integer distance.")
-            else:
-                new_n_points = n_points
+                    raise ValueError(f"Line {line_id} cannot be divided into an integer number of evenly spaced points.")
 
-            self.geo_data["constraints"]["transfinite_curve"][abs(line_ids[i])] = {"n_points": new_n_points}
+                self.geo_data["constraints"]["transfinite_curve"][abs(line_id)] = {"n_points": new_n_points}
 
-    def __validate_rectangle(self, surface_id, corner_node_ids):
-        """Validate that the surface forms a rectangle."""
+    def __validate_rectangle(self, surface_id: int, corner_node_ids: List[int]):
+        """
+        Validate that the surface forms a rectangle.
+
+        Args:
+            - surface_id (int): Surface id.
+            - corner_node_ids (List[int]): List of corner node ids.
+
+        Raises:
+            - ValueError: If the surface does not have 4 corner nodes.
+            - ValueError: If the opposite sides of a surface have a different lengths.
+            - ValueError: If the sides of a surface are not aligned with the axes.
+
+        """
+        if len(corner_node_ids) != 4:
+            raise ValueError(f"Surface {surface_id} is not a rectangle, it has {len(corner_node_ids)} corner nodes.")
+
         coordinates = np.array([self.geo_data["points"][node_id] for node_id in corner_node_ids])
 
         # Check if all opposite sides have the same distance
@@ -903,7 +948,8 @@ class GmshIO:
         # Check if all distances lay on a global axis
         for distance in [dist_1, dist_2, dist_3, dist_4]:
             if sum(1 for v in distance if v != 0) != 1:
-                raise ValueError(f"Surface {surface_id} is not a rectangle, the sides are not aligned with the axes.")
+                raise ValueError(f"Surface {surface_id} is not an aligned rectangle, "
+                                 f"the sides are not aligned with the axes.")
 
     def set_structured_mesh_constraints_surface(self, n_points: List[int], surface_id: int):
         """
@@ -920,7 +966,6 @@ class GmshIO:
 
         if "transfinite_curve" not in self.geo_data["constraints"]:
             self.geo_data["constraints"]["transfinite_curve"] = {}
-
 
         abs_surface_id = abs(surface_id)
 
@@ -942,14 +987,17 @@ class GmshIO:
         corner_node_ids = []
         for group in groups:
 
-            # the corner node is the first node of the first line in the group
-            if group[0] > 0:
-                corner_node_ids.append(self.geo_data["lines"][group[0]][0])
+            first_line_index = group[0]
+            # the corner node is the first node of the first line in the group, if the line index is negative,
+            # the line is reversed
+            if first_line_index > 0:
+                corner_node_ids.append(self.geo_data["lines"][first_line_index][0])
             else:
-                corner_node_ids.append(self.geo_data["lines"][abs(group[0])][1])
+                corner_node_ids.append(self.geo_data["lines"][abs(first_line_index)][1])
 
-            direction_index = self.__get_direction_index_straight_line(group[0])
-            self.__set_constraints_straight_colinear_lines( group, n_points[direction_index])
+            # check which direction the line is aligned with, x, y or z
+            direction_index = self.__get_direction_index_straight_line(first_line_index)
+            self.__set_constraints_straight_collinear_lines( group, n_points[direction_index])
 
         # check if the surface is a rectangle
         self.__validate_rectangle(surface_id, corner_node_ids)
@@ -957,7 +1005,7 @@ class GmshIO:
         self.geo_data["constraints"]["transfinite_surface"][abs_surface_id] = {"n_points": n_points,
                                                                                "corner_node_ids": corner_node_ids}
 
-    def set_structured_mesh_constraints_volume(self, n_points, volume_id):
+    def set_structured_mesh_constraints_volume(self, n_points: List[int], volume_id: int):
         """
         Sets structured mesh constraints for a cuboid volume, distributing points across surfaces.
 
@@ -987,6 +1035,35 @@ class GmshIO:
         self.geo_data["constraints"]["transfinite_volume"][volume_id] = {"n_points": n_points,
                                                                          "corner_node_ids": list(set_volume_corner_node_ids)}
 
+    def __set_constraints_to_mesh(self):
+        """
+        Sets mesh constraints to the gmsh mesh.
+        """
+
+        # set transfinite curve constraints
+        if "transfinite_curve" in self.__geo_data["constraints"]:
+            for k, v in self.__geo_data["constraints"]["transfinite_curve"].items():
+
+                # split the curve into n equally spaced points
+                gmsh.model.mesh.setTransfiniteCurve(k, v["n_points"])
+
+        # set transfinite surface constraints
+        if "transfinite_surface" in self.__geo_data["constraints"]:
+            for k, v in self.__geo_data["constraints"]["transfinite_surface"].items():
+                gmsh.model.mesh.setTransfiniteSurface(k,cornerTags=v["corner_node_ids"])
+
+                # recombine to create quadrilateral elements
+                gmsh.model.mesh.set_recombine(2, k)
+
+        # set transfinite volume constraints
+        if "transfinite_volume" in self.__geo_data["constraints"]:
+            for k, v in self.__geo_data["constraints"]["transfinite_volume"].items():
+                gmsh.model.mesh.setTransfiniteVolume(k, cornerTags=v["corner_node_ids"])
+
+                # recombine to create hexahedral elements
+                gmsh.model.mesh.set_recombine(3, k)
+
+
     def generate_geo_from_geo_data(self):
         """
         Generates a Gmsh geometry data from a geometry data dictionary.
@@ -1010,6 +1087,7 @@ class GmshIO:
         for k, v in self.__geo_data["surfaces"].items():
             curve_key = gmsh.model.occ.addCurveLoop(v)
             gmsh.model.occ.addPlaneSurface([curve_key], tag=k)
+
         # add volumes to the geometry
         for k, v in self.__geo_data["volumes"].items():
             gmsh.model.occ.addSurfaceLoop([abs(surface_id) for surface_id in v], tag=k)
@@ -1021,19 +1099,7 @@ class GmshIO:
 
         self.synchronize_gmsh()
 
-        if "transfinite_curve" in self.__geo_data["constraints"]:
-            for k, v in self.__geo_data["constraints"]["transfinite_curve"].items():
-                gmsh.model.mesh.setTransfiniteCurve(k, v["n_points"])
-
-        if "transfinite_surface" in self.__geo_data["constraints"]:
-            for k, v in self.__geo_data["constraints"]["transfinite_surface"].items():
-                gmsh.model.mesh.setTransfiniteSurface(k,cornerTags=v["corner_node_ids"])
-                gmsh.model.mesh.set_recombine(2, k)
-
-        if "transfinite_volume" in self.__geo_data["constraints"]:
-            for k, v in self.__geo_data["constraints"]["transfinite_volume"].items():
-                gmsh.model.mesh.setTransfiniteVolume(k, cornerTags=v["corner_node_ids"])
-                gmsh.model.mesh.set_recombine(3, k)
+        self.__set_constraints_to_mesh()
 
 
     def __add_or_append_to_physical_group(self, name: str, ndim: int, geometry_ids: Sequence[int]):

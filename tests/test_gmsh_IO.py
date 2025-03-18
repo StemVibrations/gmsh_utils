@@ -2439,3 +2439,94 @@ class TestGmshIO:
         polygon_vertices = [(0, 0, 1), (10, 0, 1), (10, 20, 1), (0, 20, 1)]
         surface_ids = gmsh_io.get_surface_ids_at_polygon(polygon_vertices)
         assert surface_ids == [1, 3]
+
+    def test_get_direction_index_straight_line(self):
+        """
+        Tests whether the direction index of a straight line is correctly returned
+
+        """
+        gmsh_io = GmshIO()
+
+        # aligned with x-axis
+        gmsh_io.geo_data["lines"] = {1: [1, 2]}
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0]}
+
+        assert gmsh_io._GmshIO__get_direction_index_straight_line(1) == 0
+
+        # aligned with y-axis
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [0.0, 1.0, 0.0]}
+
+        assert gmsh_io._GmshIO__get_direction_index_straight_line(1) == 1
+
+        # aligned with z-axis
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [0.0, 0.0, 1.0]}
+
+        assert gmsh_io._GmshIO__get_direction_index_straight_line(1) == 2
+
+        # non-aligned line
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 1.0, 0.0]}
+
+        with pytest.raises(ValueError, match=r"Line 1 is not aligned with x, y, or z axis."):
+            gmsh_io._GmshIO__get_direction_index_straight_line(1)
+
+    def test_set_constraints_straight_collinear_lines(self):
+        """
+        Tests whether the constraints for straight collinear lines are correctly set.
+        """
+        gmsh_io = GmshIO()
+
+        gmsh_io.geo_data["constraints"] = {"transfinite_curve": {}}
+
+        # check the number of points for a single line
+        gmsh_io.geo_data["lines"] = {1: [1, 2]}
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0]}
+
+        gmsh_io._GmshIO__set_constraints_straight_collinear_lines([1], 5)
+        assert gmsh_io.geo_data["constraints"]["transfinite_curve"][1] == {"n_points": 5}
+
+        # check the number of points for multiple collinear lines
+        gmsh_io.geo_data["constraints"] = {"transfinite_curve": {}}
+        gmsh_io.geo_data["lines"] = {1: [1, 2], 2: [2, 3]}
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [2.0, 0.0, 0.0]}
+
+        gmsh_io._GmshIO__set_constraints_straight_collinear_lines([1, 2], 5)
+        assert gmsh_io.geo_data["constraints"]["transfinite_curve"][1] == {"n_points": 3}
+        assert gmsh_io.geo_data["constraints"]["transfinite_curve"][2] == {"n_points": 3}
+
+        # check expected error when the line cannot be divided into an integer number of evenly spaced points
+        gmsh_io.geo_data["constraints"] = {"transfinite_curve": {}}
+        gmsh_io.geo_data["lines"] = {1: [1, 2], 2: [2, 3]}
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [2.5, 0.0, 0.0]}
+
+        with pytest.raises(ValueError, match=r"Line 1 cannot be divided into an integer number of evenly spaced points."):
+            gmsh_io._GmshIO__set_constraints_straight_collinear_lines([1, 2], 5)
+
+    def test_validate_rectangle(self):
+        """
+        Tests whether a surface is correctly validated as a rectangle.
+        """
+
+        # simple rectangle
+        gmsh_io = GmshIO()
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0]}
+        gmsh_io._GmshIO__validate_rectangle(1, [1, 2, 3, 4])
+
+        # different lengths
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 2.0, 0.0], 4: [0.0, 1.0, 0.0]}
+        with pytest.raises(ValueError, match=r"Surface 1 is not a rectangle, opposite sides have different lengths."):
+            gmsh_io._GmshIO__validate_rectangle(1, [1, 2, 3, 4])
+
+        # not aligned with axes
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 1.0], 4: [0.0, 1.0, 1.0]}
+        with pytest.raises(ValueError, match=r"Surface 1 is not an aligned rectangle, "
+                                             r"the sides are not aligned with the axes."):
+            gmsh_io._GmshIO__validate_rectangle(1, [1, 2, 3, 4])
+
+        # surface with 3 points
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0]}
+        with pytest.raises(ValueError, match=r"Surface 1 is not a rectangle, it has 3 corner nodes."):
+            gmsh_io._GmshIO__validate_rectangle(1, [1, 2, 3])
+
+
+
+
