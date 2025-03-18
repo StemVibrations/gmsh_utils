@@ -142,7 +142,6 @@ class MathUtils:
         Returns:
             - bool: True if the point is on the plane, False
 
-
         """
 
         # check if the point is on the plane
@@ -176,3 +175,53 @@ class MathUtils:
                 return normal / np.linalg.norm(normal)
 
         raise ValueError("All polygon vertices are collinear.")
+
+    @staticmethod
+    def are_lines_collinear_3d(line_1_end_coordinates: Sequence[Sequence[float]],
+                               line_2_end_coordinates: Sequence[Sequence[float]]) -> bool:
+        """
+        Check if two 3D lines are collinear using the cross product.
+
+        Args:
+            - line_1_end_coordinates (Sequence[Sequence[float]]): End coordinates of the first line.
+            - line_2_end_coordinates (Sequence[Sequence[float]]): End coordinates of the second line.
+
+        Returns:
+            - bool: True if the lines are collinear, False otherwise.
+        """
+
+        line_1_end_coordinates_array = np.array(line_1_end_coordinates)
+        line_2_end_coordinates_array = np.array(line_2_end_coordinates)
+
+        # Compute direction vectors
+        v1 = line_1_end_coordinates_array[1] - line_1_end_coordinates_array[0]
+        v2 = line_2_end_coordinates_array[1] - line_2_end_coordinates_array[0]
+
+        # Compute cross product
+        cross_prod = np.cross(v1, v2)
+
+        # check if vectors are parallel
+        if not np.allclose(cross_prod, 0):
+            return False
+        else:
+            # vectors are parallel, check if they are collinear
+            # create a new vector between the 2 lines
+            v3 = np.mean(line_2_end_coordinates_array, axis=0) - np.mean(line_1_end_coordinates_array, axis=0)
+            cross_prod = np.cross(v1, v3)
+
+            # If the cross product is [0,0,0], the vectors are collinear
+            return np.allclose(cross_prod, 0)
+
+    @staticmethod
+    def calculate_distance_between_points(point_1_coordinates: Sequence[float], point_2_coordinates: Sequence[float]) -> float:
+        """
+        Calculate the Euclidean distance between two points.
+
+        Args:
+            - point_1_coordinates (Sequence[float]): Coordinates of the first point.
+            - point_2_coordinates (Sequence[float]): Coordinates of the second point.
+
+        Returns:
+            - float: Euclidean distance between the two points
+        """
+        return np.linalg.norm(np.array(point_1_coordinates) - np.array(point_2_coordinates)).astype(float)

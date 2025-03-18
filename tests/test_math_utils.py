@@ -199,3 +199,40 @@ class TestMathUtils:
         polygon_vertices = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]])
         with pytest.raises(ValueError, match="All polygon vertices are collinear."):
             MathUtils.calculate_rotation_matrix_polygon(polygon_vertices)
+
+    def test_calculate_distance_between_points(self):
+        """
+        Test the calculation of the distance between two points.
+        """
+        point1 = [0, 0, 0]
+        point2 = [3, 4, 0]
+        distance = MathUtils.calculate_distance_between_points(point1, point2)
+        assert np.isclose(distance, 5.0)
+
+    def test_are_lines_collinear_3d(self):
+        """
+        Test if two 3D lines are collinear. It checks collinear lines, non-collinear lines, parallel lines, and
+        collinear lines with negative coordinates.
+        """
+
+        # collinear lines
+        line_1 = [[0, 0, 0], [1, 1, 1]]
+        line_2 = [[2, 2, 2], [3, 3, 3]]
+        assert MathUtils.are_lines_collinear_3d(line_1, line_2)
+
+        # non-collinear lines
+        line_1 = [[0, 0, 0], [1, 1, 1]]
+        line_2 = [[1, 0, 0], [0, 1, 1]]
+        assert not MathUtils.are_lines_collinear_3d(line_1, line_2)
+
+        # parallel lines are not collinear
+        line_1 = [[0, 0, 0], [1, 1, 1]]
+        line_2 = [[0, 0, 1], [1, 1, 2]]
+        assert not MathUtils.are_lines_collinear_3d(line_1, line_2)
+
+        # negative coordinates
+        line_1 = [[1, 1, -1], [2, 2, -2]]
+        line_2 = [[3, 3, -3], [4, 4, -4]]
+        assert MathUtils.are_lines_collinear_3d(line_1, line_2)
+
+
