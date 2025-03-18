@@ -53,7 +53,8 @@ class TestGmshIO:
                 "lines": expected_lines,
                 "surfaces": expected_surfaces,
                 "volumes": expected_volumes,
-                "physical_groups": expected_physical_groups}
+                "physical_groups": expected_physical_groups,
+                "constraints":{}}
 
     @pytest.fixture
     def expected_geo_data_3D_with_shared_group(self):
@@ -81,7 +82,8 @@ class TestGmshIO:
                 "lines": expected_lines,
                 "surfaces": expected_surfaces,
                 "volumes": expected_volumes,
-                "physical_groups": expected_physical_groups}
+                "physical_groups": expected_physical_groups,
+                "constraints":{}}
 
     @pytest.fixture
     def expected_second_order_mesh_data_2D(self):
@@ -713,7 +715,8 @@ class TestGmshIO:
                                     'lines': {},
                                     'surfaces': {},
                                     'volumes': {},
-                                    'physical_groups': {'test': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 0}}}
+                                    'physical_groups': {'test': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 0}},
+                                    "constraints":{}}
 
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_filled_geo_data)
 
@@ -760,7 +763,8 @@ class TestGmshIO:
                              'volumes': {},
                              'physical_groups': {'line': {'geometry_ids': [1, 2, 3, 4], 'id': 1, 'ndim': 1},
                                                  'first_new_point': {'geometry_ids': [4], 'id': 2, 'ndim': 0},
-                                                 'second_new_point': {'geometry_ids': [5], 'id': 3, 'ndim': 0}}}
+                                                 'second_new_point': {'geometry_ids': [5], 'id': 3, 'ndim': 0}},
+                             "constraints":{}}
 
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
 
@@ -821,7 +825,8 @@ class TestGmshIO:
                              'surfaces': {1: [6, 5, 7, 2, 3, 4]},
                              'volumes': {},
                              'physical_groups': {'surface': {'geometry_ids': [1], 'id': 1, 'ndim': 2},
-                                                 'new_line': {'geometry_ids': [5], 'id': 2, 'ndim': 1}}}
+                                                 'new_line': {'geometry_ids': [5], 'id': 2, 'ndim': 1}},
+                             "constraints":{}}
 
         # check if geo data is as expected
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
@@ -882,7 +887,8 @@ class TestGmshIO:
                              'surfaces': {1: [-5, 1, 2], 2: [4, 5, 3]},
                              'volumes': {},
                              'physical_groups': {'surface': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 2},
-                                                 'new_line': {'geometry_ids': [5], 'id': 2, 'ndim': 1}}}
+                                                 'new_line': {'geometry_ids': [5], 'id': 2, 'ndim': 1}},
+                             "constraints":{}}
 
         # check if geo data is as expected
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
@@ -946,7 +952,8 @@ class TestGmshIO:
                              'volumes': {},
                              'physical_groups': {'surface': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 2},
                                                  'group2_surface': {'geometry_ids': [1, 2], 'id': 2, 'ndim': 2},
-                                                 'new_line': {'geometry_ids': [5], 'id': 3, 'ndim': 1}}}
+                                                 'new_line': {'geometry_ids': [5], 'id': 3, 'ndim': 1}},
+                             "constraints":{}}
 
         # check if geo data is as expected
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
@@ -1026,7 +1033,8 @@ class TestGmshIO:
                              'volumes': {},
                              'physical_groups': {'surface': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 2},
                                                  'surface2': {'geometry_ids': [3, 4], 'id': 2, 'ndim': 2},
-                                                 'new_line': {'geometry_ids': [8, 11], 'id': 3, 'ndim': 1}}}
+                                                 'new_line': {'geometry_ids': [8, 11], 'id': 3, 'ndim': 1}},
+                             "constraints":{}}
 
         # check if geo data is as expected
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
@@ -1130,7 +1138,8 @@ class TestGmshIO:
                                           11: [-13, 9, -8]},
                              'volumes': {1: [-1, 7, 8, 5, 10], 2: [3, -7, 9, 2, 11]},
                              'physical_groups': {'new_surface': {'geometry_ids': [7], 'id': 2, 'ndim': 2},
-                                                 'volume': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 3}}}
+                                                 'volume': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 3}},
+                             "constraints":{}}
 
         # check if geo data is as expected
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
@@ -1171,7 +1180,7 @@ class TestGmshIO:
         empty_geo_data = gmsh_io.geo_data
 
         # check if geo data is empty after resetting
-        expected_empty_geo_data = {'lines': {}, 'physical_groups': {}, 'points': {}, 'surfaces': {}, 'volumes': {}}
+        expected_empty_geo_data = {'lines': {}, 'physical_groups': {}, 'points': {}, 'surfaces': {}, 'volumes': {}, "constraints":{}}
 
         TestUtils.assert_dictionary_almost_equal(empty_geo_data, expected_empty_geo_data)
 
@@ -1201,7 +1210,7 @@ class TestGmshIO:
         empty_geo_data = gmsh_io.geo_data
 
         # check if geo data is empty after resetting
-        expected_empty_geo_data = {'lines': {}, 'physical_groups': {}, 'points': {}, 'surfaces': {}, 'volumes': {}}
+        expected_empty_geo_data = {'lines': {}, 'physical_groups': {}, 'points': {}, 'surfaces': {}, 'volumes': {}, "constraints":{}}
         TestUtils.assert_dictionary_almost_equal(empty_geo_data, expected_empty_geo_data)
 
         # check if geo data is present after re-extracting
@@ -1213,7 +1222,7 @@ class TestGmshIO:
                                     'lines': {},
                                     'surfaces': {},
                                     'volumes': {},
-                                    'physical_groups': {'test': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 0}}}
+                                    'physical_groups': {'test': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 0}}, "constraints":{}}
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_filled_geo_data)
 
     def test_clear_mesh_data(self):
@@ -1292,7 +1301,8 @@ class TestGmshIO:
                                     'lines': {},
                                     'surfaces': {},
                                     'volumes': {},
-                                    'physical_groups': {'point_group': {'geometry_ids': [1, 2, 3], 'id': 1, 'ndim': 0}}}
+                                    'physical_groups': {'point_group': {'geometry_ids': [1, 2, 3], 'id': 1, 'ndim': 0}},
+                                    "constraints":{}}
 
         TestUtils.assert_dictionary_almost_equal(gmsh_io.geo_data, expected_filled_geo_data)
 
@@ -1322,7 +1332,8 @@ class TestGmshIO:
                                     'lines': {1: [1, 2], 2: [2, 3]},
                                     'surfaces': {},
                                     'volumes': {},
-                                    'physical_groups': {'line_group': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 1}}}
+                                    'physical_groups': {'line_group': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 1}},
+                                    "constraints":{}}
 
         TestUtils.assert_dictionary_almost_equal(gmsh_io.geo_data, expected_filled_geo_data)
 
@@ -1352,7 +1363,8 @@ class TestGmshIO:
                                     'lines': {1: [1, 2], 2: [2, 3], 3: [3, 1]},
                                     'surfaces': {1: [1, 2, 3]},
                                     'volumes': {},
-                                    'physical_groups': {'surface_group': {'geometry_ids': [1], 'id': 1, 'ndim': 2}}}
+                                    'physical_groups': {'surface_group': {'geometry_ids': [1], 'id': 1, 'ndim': 2}},
+                                    "constraints":{}}
 
         TestUtils.assert_dictionary_almost_equal(gmsh_io.geo_data, expected_filled_geo_data)
 
@@ -1388,7 +1400,8 @@ class TestGmshIO:
                                     'surfaces': {1: [1, 2, 3], 2: [4, 6, -5, -1], 3: [5, 8, -7, -2], 4: [7, 9, -4, -3],
                                                  5: [6, 8, 9]},
                                     'volumes': {1: [-2, -3, -4, -1, 5]},
-                                    'physical_groups': {'volume_group': {'geometry_ids': [1], 'id': 1, 'ndim': 3}}}
+                                    'physical_groups': {'volume_group': {'geometry_ids': [1], 'id': 1, 'ndim': 3}},
+                                    "constraints":{}}
 
         TestUtils.assert_dictionary_almost_equal(gmsh_io.geo_data, expected_filled_geo_data)
 
@@ -1863,7 +1876,8 @@ class TestGmshIO:
                                           8: [-16, 13, 17, -10]},
                              'volumes': {1: [-2, -3, -7, -8, -5, -1, 6]},
                              'physical_groups': {'new_line': {'ndim': 1, 'id': 2, 'geometry_ids': [13]},
-                                                 'volume': {'ndim': 3, 'id': 1, 'geometry_ids': [1]}}}
+                                                 'volume': {'ndim': 3, 'id': 1, 'geometry_ids': [1]}},
+                             "constraints":{}}
 
         gmsh.model.mesh.generate(3)
 
@@ -1892,7 +1906,8 @@ class TestGmshIO:
                     'lines': {1: [1, 2]},
                     'surfaces': {},
                     'volumes': {},
-                    'physical_groups': {'Line': {'ndim': 1, 'id': 1, 'geometry_ids': [1]}}}
+                    'physical_groups': {'Line': {'ndim': 1, 'id': 1, 'geometry_ids': [1]}},
+                    "constraints":{}}
 
         gmsh_io = GmshIO()
 
@@ -1935,7 +1950,8 @@ class TestGmshIO:
                     'lines': {1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [4, 1]},
                     'surfaces': {1: [1, 2, 3, 4]},
                     'volumes': {},
-                    'physical_groups': {'Surface': {'ndim': 2, 'id': 1, 'geometry_ids': [1]}}}
+                    'physical_groups': {'Surface': {'ndim': 2, 'id': 1, 'geometry_ids': [1]}},
+                    "constraints":{}}
 
         gmsh_io = GmshIO()
 
@@ -2180,7 +2196,8 @@ class TestGmshIO:
                              'volumes': {1: [-2, -3, -4, -5, -1, 6]},
                              'physical_groups': {'new_point': {'ndim': 0, 'id': 3, 'geometry_ids': [10]},
                                                  'new_surface': {'ndim': 2, 'id': 2, 'geometry_ids': [5]},
-                                                 'volume': {'ndim': 3, 'id': 1, 'geometry_ids': [1]}}}
+                                                 'volume': {'ndim': 3, 'id': 1, 'geometry_ids': [1]}},
+                             "constraints":{}}
 
         # check if geo data is as expected
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
@@ -2270,7 +2287,8 @@ class TestGmshIO:
                              "volumes": {1: [-2, -3, -7, -8, -5, -1, 6]},
                              "physical_groups": {'new_lines': {'geometry_ids': [13, 14, 15], 'id': 3, 'ndim': 1},
                                                  'new_surface': {'geometry_ids': [7, 8], 'id': 2, 'ndim': 2},
-                                                 'volume': {'geometry_ids': [1], 'id': 1, 'ndim': 3}}}
+                                                 'volume': {'geometry_ids': [1], 'id': 1, 'ndim': 3}},
+                             "constraints":{}}
 
         # check if geo data is as expected
         TestUtils.assert_dictionary_almost_equal(gmsh_io.geo_data, expected_geo_data)
