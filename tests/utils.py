@@ -41,10 +41,7 @@ class TestUtils:
             mesh_data = json.load(file)
 
         # make sure all node and element keys are integers
-        mesh_data["nodes"] = {int(k): v for k, v in
-                                                       mesh_data["nodes"].items()}
-        mesh_data["elements"] = {k: {int(kk): vv for kk, vv in v.items()}
-                                                          for k, v in
-                                                          mesh_data["elements"].items()}
+        mesh_data["nodes"] = {int(k): v for k, v in mesh_data["nodes"].items()}
+        mesh_data["elements"] = {k: {int(kk): vv for kk, vv in v.items()} for k, v in mesh_data["elements"].items()}
 
         return mesh_data

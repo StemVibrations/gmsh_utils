@@ -2691,6 +2691,37 @@ class TestGmshIO:
         with pytest.raises(ValueError, match=r"Volume 1 is not a cuboid, it has 7 surfaces."):
             gmsh_io.set_structured_mesh_constraints_volume([4, 3, 2], 1)
 
+    def test_get_coordinates_from_geometry_id(self):
+        """
+        Tests whether the coordinates of a point, line, surface, and volume are correctly
+        returned from the geometry id.
+        """
 
+        gmsh_io = GmshIO()
+        gmsh_io._GmshIO__geo_data = {
+            "points": {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0],
+                       5: [0.0, 0.0, 1.0], 6: [1.0, 0.0, 1.0], 7: [1.0, 1.0, 1.0], 8: [0.0, 1.0, 1.0]},
+            "lines": {1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [4, 1], 5: [1, 5], 6: [2, 6], 7: [3, 7], 8: [4, 8],
+                      9: [5, 6], 10: [6, 7], 11: [7, 8], 12: [8, 5]},
+            "surfaces": {1: [1, 2, 3, 4], 2: [5, 6, 7, 8], 3: [1, 6, 9, 5], 4: [2, 7, 10, 6], 5: [3, 8, 11, 7],
+                         6: [4, 5, 12, 8]},
+            "volumes": {1: [1, 2, 3, 4, 5, 6]}
+        }
+        # get coordinates of point
+        point_coordinates = gmsh_io.get_coordinates_from_geometry_id(0, 7)
+        np.testing.assert_allclose([[1.0, 1.0, 1.0]],point_coordinates)
 
+        # check coordinates of line
+        line_coordinates = gmsh_io.get_coordinates_from_geometry_id(1, 1)
+        np.testing.assert_allclose([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]], line_coordinates)
 
+        # check coordinates of surface
+        surface_coordinates = gmsh_io.get_coordinates_from_geometry_id(2, 1)
+        np.testing.assert_allclose([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 1.0, 0.0], [0.0, 1.0, 0.0]],
+                                   surface_coordinates)
+
+        # check coordinates of volume
+        volume_coordinates = gmsh_io.get_coordinates_from_geometry_id(3, 1)
+        np.testing.assert_allclose( [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 1.0, 0.0], [0.0, 1.0, 0.0],
+                                                [0.0, 0.0, 1.0], [1.0, 0.0, 1.0], [1.0, 1.0, 1.0], [0.0, 1.0, 1.0]],
+                                      volume_coordinates)

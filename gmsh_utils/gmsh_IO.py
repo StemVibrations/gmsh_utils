@@ -10,7 +10,7 @@ from gmsh_utils.math_utils import MathUtils
 # force gmsh io to not use numpy for gmsh
 gmsh.use_numpy = False
 
-# gmsh second order mesh, can generate 9 node quad and 27 node hex, but we want 8 node quad and 20 node hex
+# gmsh second order mesh can generate 9 node quad and 27 node hex, but we want 8 node quad and 20 node hex
 ELEMENT_MAPPER = {10: 16, # 9 node quad to 8 node quad
                   12: 17} # 27 node hex to 20 node hex
 
@@ -162,11 +162,12 @@ class GmshIO:
 
         if ndim == 0:
             return [self.geo_data["points"][geometry_id]]
+
         elif ndim == 1:
             return [self.geo_data["points"][self.geo_data["lines"][geometry_id][0]],
                     self.geo_data["points"][self.geo_data["lines"][geometry_id][1]]]
-        elif ndim == 2:
 
+        elif ndim == 2:
             unique_point_ids = set()
             for line_id in self.geo_data["surfaces"][geometry_id]:
                 unique_point_ids.update(self.geo_data["lines"][line_id])
@@ -178,7 +179,6 @@ class GmshIO:
                 for line_id in self.geo_data["surfaces"][surface_id]:
                     unique_point_ids.update(self.geo_data["lines"][line_id])
             return [self.geo_data["points"][point_id] for point_id in unique_point_ids]
-
 
     def create_point(self, coordinates: Sequence[float], mesh_size: float = -1) -> int:
         """
@@ -254,7 +254,7 @@ class GmshIO:
         surface_dim = 2
         volume_dim = 3
         new_dim_tags = gmsh.model.occ.extrude([(surface_dim, surface_id)], extrusion_length[0], extrusion_length[1],
-                                              extrusion_length[2], recombine=False)
+                                              extrusion_length[2])
         # gets the first volume tag from the list of new dimension tags
         volume_tag: int = next((dim_tag[1] for dim_tag in new_dim_tags if dim_tag[0] == volume_dim))
 
@@ -856,7 +856,6 @@ class GmshIO:
             # mesh has to be generated to retrieve mesh data regarding recombined entities
             gmsh.model.mesh.generate(gmsh.model.getDimension())
             self.extract_mesh_data()
-            # gmsh.fltk.run()
             self.finalize_gmsh()
         else:
             raise FileNotFoundError(f"File {filename} does not exist!")
@@ -1102,9 +1101,7 @@ class GmshIO:
             gmsh.model.addPhysicalGroup(v["ndim"], v["geometry_ids"], tag=v["id"], name=k)
 
         self.synchronize_gmsh()
-
         self.__set_constraints_to_mesh()
-
 
     def __add_or_append_to_physical_group(self, name: str, ndim: int, geometry_ids: Sequence[int]):
         """
