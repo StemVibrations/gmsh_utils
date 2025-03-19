@@ -201,6 +201,36 @@ class TestGmshIO:
 
         TestUtils.assert_dictionary_almost_equal(gmsh_io.mesh_data, expected_second_order_mesh_data_2D)
 
+    def test_second_semi_structured_mesh_2D(self):
+        """
+        Creates a second order 2D mesh, where the first surface is structured with quad elements; the second surface is
+        unstructured with triangle elements.
+        """
+        element_size = 1
+
+        input_dict = {'surface1': {"element_size": element_size,
+                                  "coordinates": [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)],
+                                  "ndim": 2},
+                      "surface2": {"element_size": element_size,
+                                    "coordinates": [(0, 1, 0), (0.5, 1, 0), (0, 2, 0)],
+                                    "ndim": 2},
+                      }
+
+        # set a name for mesh output file
+        mesh_output_name = "test_2D_semi_structured"
+
+        gmsh_io = GmshIO()
+        gmsh_io.generate_geometry(input_dict, mesh_output_name)
+        gmsh_io.set_structured_mesh_constraints_surface([3,3,1],1)
+
+        gmsh_io.generate_mesh(ndim=2, mesh_name=mesh_output_name, order=2, open_gmsh_gui=False)
+
+        expected_second_order_mesh_data_2D = TestUtils.read_mesh_data_from_json(
+            "tests/test_data/expected_second_order_mesh_data_2D_semi_structured.json")
+
+        TestUtils.assert_dictionary_almost_equal(gmsh_io.mesh_data, expected_second_order_mesh_data_2D)
+
+
     def test_generate_mesh_3D(self):
         """
         Checks whether mesh data generated for 3D geometries is not empty.
@@ -304,21 +334,49 @@ class TestGmshIO:
         gmsh_io.generate_mesh(3, mesh_name=mesh_output_name, order=2,
                               open_gmsh_gui=False)
 
+        file_name = ""
         if platform == 'win32':
-            with open("tests/test_data/expected_second_order_mesh_data_3D_windows.json", 'r') as f:
-                expected_second_order_mesh_data_3D = json.load(f)
+            file_name = "tests/test_data/expected_second_order_mesh_data_3D_windows.json"
         elif platform == 'linux':
-            with open('tests/test_data/expected_second_order_mesh_data_3D_linux.json', 'r') as f:
-                expected_second_order_mesh_data_3D = json.load(f)
+            file_name = "tests/test_data/expected_second_order_mesh_data_3D_linux.json"
 
-        # make sure all node and element keys are integers
-        expected_second_order_mesh_data_3D["nodes"] = {int(k): v for k, v in
-                                                       expected_second_order_mesh_data_3D["nodes"].items()}
-        expected_second_order_mesh_data_3D["elements"] = {k: {int(kk): vv for kk, vv in v.items()}
-                                                          for k, v in
-                                                          expected_second_order_mesh_data_3D["elements"].items()}
+        expected_second_order_mesh_data_3D = TestUtils.read_mesh_data_from_json(file_name)
 
         TestUtils.assert_dictionary_almost_equal(gmsh_io.mesh_data, expected_second_order_mesh_data_3D)
+
+    def test_generate_structured_second_order_mesh_3D(self):
+        """
+        Checks if the second order structured mesh in 3D is generated correctly.
+
+        """
+
+        element_size = 1
+        # extrusion in 1 meter in z direction
+        extrusion_length = [0, 0, 1]
+
+        input_dict = {'volume': {"element_size": element_size,
+                                 "coordinates": [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)],
+                                 "ndim": 3,
+                                 "extrusion_length": extrusion_length}
+                      }
+
+        # set a name for mesh output file
+        mesh_output_name = "test_3D_structured"
+
+        gmsh_io = GmshIO()
+
+        # generate geometry and second order mesh
+        gmsh_io.generate_geometry(input_dict, mesh_output_name)
+
+        gmsh_io.set_structured_mesh_constraints_volume([3,4,5],1)
+
+        gmsh_io.generate_mesh(3, mesh_name=mesh_output_name, order=2,
+                              open_gmsh_gui=False)
+
+        expected_mesh_data = TestUtils.read_mesh_data_from_json(
+            r"tests/test_data/expected_second_order_mesh_data_3D_structured.json")
+
+        TestUtils.assert_dictionary_almost_equal(gmsh_io.mesh_data, expected_mesh_data)
 
     def test_read_gmsh_geo_2D(self):
         """
@@ -2526,6 +2584,112 @@ class TestGmshIO:
         gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0]}
         with pytest.raises(ValueError, match=r"Surface 1 is not a rectangle, it has 3 corner nodes."):
             gmsh_io._GmshIO__validate_rectangle(1, [1, 2, 3])
+
+    def test_set_structured_mesh_constraints_surface(self):
+        """
+        Tests whether the constraints for a structured mesh on a surface are correctly set.
+
+        """
+        gmsh_io = GmshIO()
+
+        # 4 noded rectangle
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0]}
+        gmsh_io.geo_data["lines"] = {1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [1, 4]}
+        gmsh_io.geo_data["surfaces"] = {1: [1, 2, 3, -4]}
+        gmsh_io.set_structured_mesh_constraints_surface([4, 2, 1], 1)
+        assert gmsh_io.geo_data["constraints"]["transfinite_surface"][1] == {"n_points": [4, 2,1],
+                                                                             "corner_node_ids": [1, 2, 3, 4]}
+        assert gmsh_io.geo_data["constraints"]["transfinite_curve"] == {1: {"n_points": 4},
+                                                                        2: {"n_points": 2},
+                                                                        3: {"n_points": 4},
+                                                                        4: {"n_points": 2}}
+
+        # rectangle, but with an extra point on one of the lines
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0],
+                                      5: [0.0, 0.5, 0.0]}
+        gmsh_io.geo_data["lines"] = {1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [4, 5], 5: [5, 1]}
+        gmsh_io.geo_data["surfaces"] = {1: [1, 2, 3, 4, 5]}
+        gmsh_io.set_structured_mesh_constraints_surface([4, 3, 1], 1)
+        assert gmsh_io.geo_data["constraints"]["transfinite_surface"][1] == {"n_points": [4, 3,1],
+                                                                             "corner_node_ids": [1, 2, 3, 4]}
+        assert gmsh_io.geo_data["constraints"]["transfinite_curve"] == {1: {"n_points": 4},
+                                                                        2: {"n_points": 3},
+                                                                        3: {"n_points": 4},
+                                                                        4: {"n_points": 2},
+                                                                        5: {"n_points": 2}}
+
+        # raise error for non rectangle surface
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0], 5: [-0.25, 0.75, 0.0], 6: [-0.5, 0.5, 0.0]}
+        gmsh_io.geo_data["lines"] = {1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [4, 5], 5: [5, 6], 6: [6, 1]}
+        gmsh_io.geo_data["surfaces"] = {1: [1, 2, 3, 4, 5, 6]}
+        with pytest.raises(ValueError, match=r"Surface 1 is not a rectangle, it has 5 groups of collinear lines."):
+            gmsh_io.set_structured_mesh_constraints_surface([2, 2, 1], 1)
+
+        # raise error for surface with less than 4 lines
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0]}
+        gmsh_io.geo_data["lines"] = {1: [1, 2], 2: [2, 3], 3: [3, 1]}
+        gmsh_io.geo_data["surfaces"] = {1: [1, 2, 3]}
+        with pytest.raises(ValueError,
+                           match=r"Surface 1 has 3 lines. At least 4 lines are required for a structured surface."):
+            gmsh_io.set_structured_mesh_constraints_surface([2, 2, 1], 1)
+
+    def test_set_structured_mesh_constraints_volume(self,expected_geo_data_3D):
+        """
+        Tests whether the constraints for a structured mesh on a volume are correctly set.
+        """
+        gmsh_io = GmshIO()
+        gmsh_io._GmshIO__geo_data = expected_geo_data_3D
+
+        # pop the second volume, else pyramids are created
+        gmsh_io.geo_data["volumes"].pop(2)
+
+        # 8 noded cuboid
+        gmsh_io.set_structured_mesh_constraints_volume([4, 3, 2], 1)
+
+        expected_dictionary = {'transfinite_curve': {5: {'n_points': 4},
+                                                     6: {'n_points': 3},
+                                                     7: {'n_points': 4},
+                                                     8: {'n_points': 3},
+                                                     19: {'n_points': 4},
+                                                     20: {'n_points': 3},
+                                                     21: {'n_points': 4},
+                                                     22: {'n_points': 3},
+                                                     24: {'n_points': 2},
+                                                     25: {'n_points': 2},
+                                                     29: {'n_points': 2},
+                                                     33: {'n_points': 2}},
+                               'transfinite_surface': {10: {'corner_node_ids': [1, 2, 3, 4], 'n_points': [4, 3, 2]},
+                                                       26: {'corner_node_ids': [1, 2, 14, 13], 'n_points': [4, 3, 2]},
+                                                       30: {'corner_node_ids': [2, 3, 18, 14], 'n_points': [4, 3, 2]},
+                                                       34: {'corner_node_ids': [3, 4, 22, 18], 'n_points': [4, 3, 2]},
+                                                       38: {'corner_node_ids': [4, 1, 13, 22], 'n_points': [4, 3, 2]},
+                                                       39: {'corner_node_ids': [13, 14, 18, 22], 'n_points': [4, 3, 2]}},
+                               'transfinite_volume': {1: {'corner_node_ids': [1, 2, 3, 4, 13, 14, 18, 22],
+                                                          'n_points': [4, 3, 2]}}}
+
+        # check if the constraints are as expected
+        TestUtils.assert_dictionary_almost_equal(expected_dictionary, gmsh_io.geo_data["constraints"])
+
+        # check if mesh can be generated
+        gmsh_io.generate_mesh(3, open_gmsh_gui=False)
+
+        # split a surface into 2 surfaces
+        gmsh_io.geo_data["points"][33] = [0.25, 0.0, -0.5]
+        gmsh_io.geo_data["points"][34] = [0.25, 0.0, 0.0]
+
+        gmsh_io.geo_data["lines"][19] = [13, 33]
+        gmsh_io.geo_data["lines"][5] = [1, 34]
+        gmsh_io.geo_data["lines"][57] = [33,14]
+        gmsh_io.geo_data["lines"][58] = [34, 2]
+        gmsh_io.geo_data["lines"][56] = [34, 33]
+
+        gmsh_io.geo_data["surfaces"][26] = [5, 56, -19, -24]
+        gmsh_io.geo_data["surfaces"][62] = [58, 25, -57, -56]
+
+        gmsh_io.geo_data["volumes"][1] = [-10, 39, 26, 62, 30, 34, 38]
+
+        with pytest.raises(ValueError, match=r"Volume 1 is not a cuboid, it has 7 surfaces."):
+            gmsh_io.set_structured_mesh_constraints_volume([4, 3, 2], 1)
 
 
 

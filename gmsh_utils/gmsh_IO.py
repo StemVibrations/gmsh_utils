@@ -960,6 +960,10 @@ class GmshIO:
             - surface_id (int): Surface id.
             - corner_node_ids (List[int]): List of corner node ids.
 
+        Raises:
+            - ValueError: If the surface is not a rectangle.
+            - ValueError: If the surface does not have 4 corner nodes.
+
         """
         if "transfinite_surface" not in self.geo_data["constraints"]:
             self.geo_data["constraints"]["transfinite_surface"] = {}
