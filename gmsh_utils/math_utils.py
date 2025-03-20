@@ -224,4 +224,4 @@ class MathUtils:
         Returns:
             - float: Euclidean distance between the two points
         """
-        return np.linalg.norm(np.array(point_1_coordinates) - np.array(point_2_coordinates)).astype(float)
+        return float(np.linalg.norm(np.array(point_1_coordinates) - np.array(point_2_coordinates)))

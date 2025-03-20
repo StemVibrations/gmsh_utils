@@ -149,11 +149,12 @@ class GmshIO:
 
         return groups
 
-    def get_coordinates_from_geometry_id(self,ndim, geometry_id: int) -> List[List[float]]:
+    def get_coordinates_from_geometry_id(self, ndim: int, geometry_id: int) -> List[List[float]]:
         """
         Get the coordinates of the geometry points from the geometry id.
 
         Args:
+            - ndim (int): The geometry dimension.
             - geometry_id (int): The geometry id.
 
         Returns:
@@ -179,6 +180,9 @@ class GmshIO:
                 for line_id in self.geo_data["surfaces"][surface_id]:
                     unique_point_ids.update(self.geo_data["lines"][line_id])
             return [self.geo_data["points"][point_id] for point_id in unique_point_ids]
+
+        else:
+            raise ValueError(f"Geometry dimension {ndim} is not supported.")
 
     def create_point(self, coordinates: Sequence[float], mesh_size: float = -1) -> int:
         """
@@ -880,7 +884,7 @@ class GmshIO:
         nonzero_indices = np.where(~np.isclose(v1, 0))[0]
 
         if len(nonzero_indices) == 1:  # Ensure only one nonzero component exists
-            direction_index = nonzero_indices[0]
+            direction_index: int = nonzero_indices[0]
         else:
             raise ValueError(f"Line {line_id} is not aligned with x, y, or z axis.")
 
