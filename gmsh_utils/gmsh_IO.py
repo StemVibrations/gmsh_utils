@@ -27,9 +27,9 @@ class ElementType(Enum):
     HEXAHEDRON_8N = 5
     LINE_3N = 8
     TRIANGLE_6N = 9
-    QUADRANGLE_9N = 10 # not used, but gmsh generates 9 node quad
+    QUADRANGLE_9N = 10 # not supported, but gmsh generates 9 node quad
     TETRAHEDRON_10N = 11
-    HEXAHEDRON_27N = 12 # not used, but gmsh generates 27 node hex
+    HEXAHEDRON_27N = 12 # not supported, but gmsh generates 27 node hex
     POINT_1N = 15
     QUADRANGLE_8N = 16
     HEXAHEDRON_20N = 17
@@ -648,7 +648,8 @@ class GmshIO:
 
         return {element_name: element_data}
 
-    def __map_generated_elements_into_supported_elements(self, elem_types: List[int], element_connectivities) -> bool:
+    def __map_generated_elements_into_supported_elements(self, elem_types: List[int],
+                                                         element_connectivities: List[List[int]]) -> bool:
         """
         Maps the generated elements into supported elements. This is needed because gmsh can generate 9 node quad and
         27 node hex elements, but we want 8 node quad and 20 node hex elements. The mapping is done by changing the
@@ -656,6 +657,13 @@ class GmshIO:
         function returns True if the elements were changed, otherwise False.
 
         This function works since the unsupported nodes are always at the end of the element_connectivities list.
+
+        Args:
+            - elem_types (List[int]): Indices of element types.
+            - element_connectivities (List[List[int]]): element connectivities per element type.
+
+        returns:
+            - bool: True if elements were changed, otherwise False.
 
         """
 
@@ -669,18 +677,6 @@ class GmshIO:
                 elem_types[i] = ELEMENT_MAPPER[elem_types[i]]
 
                 original_n_nodes_element = self.get_num_nodes_from_elem_type(original_type)
-
-                # for j in range(len(elem_tags[i])):
-                #     # remove last node for every element, this works for 9 node quad to 8 node quad and 27 node hex to 20 node hex, assuming
-                #     # 2D elements are always defined before 3D elements
-                #     if elem_node_tags[i][j * n_nodes_element + n_nodes_element - 1] == 110:
-                #         a = 1 + 1
-                #     mesh_data["nodes"].pop(elem_node_tags[i][j * n_nodes_element + n_nodes_element - 1])
-                #
-                # for j in range(len(elem_node_tags[i]) - 1, -1, -1):  # Iterate in reverse order
-                #     if (j + 1) % n_nodes_element == 0:  # Check if it's the nth node
-                #         del elem_node_tags[i][j]  # Remove element in place
-
                 new_n_nodes_element = self.get_num_nodes_from_elem_type(elem_types[i])
 
                 # Calculate how many complete blocks are present
@@ -713,14 +709,13 @@ class GmshIO:
         elem_types, elem_tags, elem_node_tags = gmsh.model.mesh.getElements()
 
         # change 9 node quad to 8 node quad and 27 node hex to 20 node hex
-
         are_elements_changed = self.__map_generated_elements_into_supported_elements(elem_types,elem_node_tags)
 
         if are_elements_changed:
             # transform node ids to a set for faster lookup later on
             valid_nodes = set(mesh_data["nodes"].keys())
         else:
-            # else valid nodes will not be used
+            # else valid nodes will not be used and is set to empty
             valid_nodes = set()
 
         mesh_data["elements"] = self.extract_all_elements_data(elem_types, elem_tags, elem_node_tags)
@@ -899,9 +894,6 @@ class GmshIO:
 
             self.extract_geo_data()
 
-            # mesh has to be generated to retrieve mesh data regarding recombined entities
-            gmsh.model.mesh.generate(gmsh.model.getDimension())
-            self.extract_mesh_data()
             self.finalize_gmsh()
         else:
             raise FileNotFoundError(f"File {filename} does not exist!")
@@ -923,14 +915,13 @@ class GmshIO:
         v1 = np.array(points[1]) - np.array(points[0])
 
         # Find the index of the nonzero component
-        nonzero_indices = np.where(~np.isclose(v1, 0))[0]
+        nonzero_indices = np.flatnonzero(~np.isclose(v1, 0)).astype(int)
 
         if len(nonzero_indices) == 1:  # Ensure only one nonzero component exists
-            direction_index: int = nonzero_indices[0]
+            return nonzero_indices[0]
         else:
             raise ValueError(f"Line {line_id} is not aligned with x, y, or z axis.")
 
-        return direction_index
 
     def __set_constraints_straight_collinear_lines(self, line_ids: List[int], n_points: int):
         """
@@ -950,10 +941,12 @@ class GmshIO:
                 MathUtils.calculate_distance_between_points(*self.get_coordinates_from_geometry_id(1, abs(line_id)))
                 for line_id in line_ids]
 
+            total_length = sum(lengths)
+
             # set number of points per line based on the length of the lines
             for length, line_id in zip(lengths, line_ids):
 
-                length_ratio = length / sum(lengths)
+                length_ratio = length / total_length
                 new_n_points = (n_points - 1) * length_ratio + 1
 
                 # check if the number of points is an integer, if not raise an error
