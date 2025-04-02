@@ -918,10 +918,10 @@ class GmshIO:
         nonzero_indices = np.flatnonzero(~np.isclose(v1, 0)).astype(int)
 
         if len(nonzero_indices) == 1:  # Ensure only one nonzero component exists
-            return nonzero_indices[0]
+            direction_index: int = nonzero_indices[0]
+            return direction_index
         else:
             raise ValueError(f"Line {line_id} is not aligned with x, y, or z axis.")
-
 
     def __set_constraints_straight_collinear_lines(self, line_ids: List[int], n_points: int):
         """
