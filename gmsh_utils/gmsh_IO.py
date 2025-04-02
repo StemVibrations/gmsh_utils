@@ -27,7 +27,9 @@ class ElementType(Enum):
     HEXAHEDRON_8N = 5
     LINE_3N = 8
     TRIANGLE_6N = 9
+    QUADRANGLE_9N = 10 # not used, but gmsh generates 9 node quad
     TETRAHEDRON_10N = 11
+    HEXAHEDRON_27N = 12 # not used, but gmsh generates 27 node hex
     POINT_1N = 15
     QUADRANGLE_8N = 16
     HEXAHEDRON_20N = 17
@@ -646,6 +648,51 @@ class GmshIO:
 
         return {element_name: element_data}
 
+    def __map_generated_elements_into_supported_elements(self, elem_types: List[int], element_connectivities) -> bool:
+        """
+        Maps the generated elements into supported elements. This is needed because gmsh can generate 9 node quad and
+        27 node hex elements, but we want 8 node quad and 20 node hex elements. The mapping is done by changing the
+        element type in the element_types list and removing the last nodes from the element_connectivities list. The
+        function returns True if the elements were changed, otherwise False.
+
+        This function works since the unsupported nodes are always at the end of the element_connectivities list.
+
+        """
+
+        are_elements_changed = False
+        for i in range(len(elem_types)):
+
+            # only change the element type if it is in the ELEMENT_MAPPER dictionary
+            if elem_types[i] in ELEMENT_MAPPER:
+                original_type = elem_types[i]
+                are_elements_changed = True
+                elem_types[i] = ELEMENT_MAPPER[elem_types[i]]
+
+                original_n_nodes_element = self.get_num_nodes_from_elem_type(original_type)
+
+                # for j in range(len(elem_tags[i])):
+                #     # remove last node for every element, this works for 9 node quad to 8 node quad and 27 node hex to 20 node hex, assuming
+                #     # 2D elements are always defined before 3D elements
+                #     if elem_node_tags[i][j * n_nodes_element + n_nodes_element - 1] == 110:
+                #         a = 1 + 1
+                #     mesh_data["nodes"].pop(elem_node_tags[i][j * n_nodes_element + n_nodes_element - 1])
+                #
+                # for j in range(len(elem_node_tags[i]) - 1, -1, -1):  # Iterate in reverse order
+                #     if (j + 1) % n_nodes_element == 0:  # Check if it's the nth node
+                #         del elem_node_tags[i][j]  # Remove element in place
+
+                new_n_nodes_element = self.get_num_nodes_from_elem_type(elem_types[i])
+
+                # Calculate how many complete blocks are present
+                block_count = len(element_connectivities[i]) // original_n_nodes_element
+                # Process blocks in reverse order to avoid index shifts
+                for block in range(block_count - 1, -1, -1):
+                    block_start = block * original_n_nodes_element
+                    # Delete from the end of the block: remove nodes from index new_n_nodes_element to original_n_nodes_element - 1
+                    del element_connectivities[i][block_start + new_n_nodes_element: block_start + original_n_nodes_element]
+
+        return are_elements_changed
+
     def extract_mesh_data(self):
         """
         Gets gmsh mesh data and stores it in a dictionary. The dictionary contains nodal data, elemental data and
@@ -666,24 +713,15 @@ class GmshIO:
         elem_types, elem_tags, elem_node_tags = gmsh.model.mesh.getElements()
 
         # change 9 node quad to 8 node quad and 27 node hex to 20 node hex
-        filter_physical_groups = False
-        for i in range(len(elem_types)):
 
-            if elem_types[i] in ELEMENT_MAPPER:
-                filter_physical_groups = True
-                elem_types[i] = ELEMENT_MAPPER[elem_types[i]]
+        are_elements_changed = self.__map_generated_elements_into_supported_elements(elem_types,elem_node_tags)
 
-                # remove last node, this works for 9 node quad to 8 node quad and 27 node hex to 20 node hex, assuming
-                # 2D elements are always defined before 3D elements
-                mesh_data["nodes"].pop(elem_node_tags[i][-1])
-
-        if filter_physical_groups:
-            # transform node tags to set for faster lookup
+        if are_elements_changed:
+            # transform node ids to a set for faster lookup later on
             valid_nodes = set(mesh_data["nodes"].keys())
         else:
             # else valid nodes will not be used
             valid_nodes = set()
-
 
         mesh_data["elements"] = self.extract_all_elements_data(elem_types, elem_tags, elem_node_tags)
 
@@ -711,9 +749,13 @@ class GmshIO:
                 # gets element type of elements in physical group, note that gmsh makes sure that all elements in a
                 # physical group are of the same type
                 element_type = gmsh.model.mesh.getElements(dim=group_dim, tag=entity)[0][0]
+
+                # gets the element type from the element mapper, if it doesn't exist in the mapper, it will return the
+                # original type
                 element_type = ELEMENT_MAPPER.get(element_type, element_type)
 
-            if filter_physical_groups:
+            # only keep the nodes that are part of the new element types
+            if are_elements_changed:
                 filtered_node_ids = list(valid_nodes.intersection(node_ids))
             else:
                 filtered_node_ids = node_ids
