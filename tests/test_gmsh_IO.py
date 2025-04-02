@@ -201,7 +201,7 @@ class TestGmshIO:
 
         TestUtils.assert_dictionary_almost_equal(gmsh_io.mesh_data, expected_second_order_mesh_data_2D)
 
-    def test_second_semi_structured_mesh_2D(self):
+    def test_second_order_semi_structured_mesh_2D(self):
         """
         Creates a second order 2D mesh, where the first surface is structured with quad elements; the second surface is
         unstructured with triangle elements.
