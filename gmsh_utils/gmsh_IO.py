@@ -905,6 +905,9 @@ class GmshIO:
         Args:
             - line_id (int): Line id.
 
+        Raises:
+            - ValueError: If the line is not aligned with the x, y, or z axis.
+
         Returns:
             - int: Direction index, X = 0, Y = 1, Z = 2.
         """
@@ -930,6 +933,9 @@ class GmshIO:
         Args:
             - line_ids (List[int]): List of line ids.
             - n_points (int): Number of points.
+
+        Raises:
+            - ValueError: If a line cannot be divided into an integer number of evenly spaced points.
         """
 
         if len(line_ids) == 1:
@@ -950,8 +956,8 @@ class GmshIO:
                 new_n_points = (n_points - 1) * length_ratio + 1
 
                 # check if the number of points is an integer, if not raise an error
-                if new_n_points.is_integer():
-                    new_n_points = int(new_n_points)
+                if np.isclose(new_n_points, round(new_n_points)):
+                    new_n_points = round(new_n_points)
                 else:
                     raise ValueError(f"Line {line_id} cannot be divided into an integer number of evenly spaced points.")
 
@@ -996,7 +1002,6 @@ class GmshIO:
         Args:
             - n_points (List[int]): Number of points in each direction.
             - surface_id (int): Surface id.
-            - corner_node_ids (List[int]): List of corner node ids.
 
         Raises:
             - ValueError: If the surface is not a rectangle.
@@ -1054,6 +1059,9 @@ class GmshIO:
         Args:
             - n_points (List[int]): Number of points in x, y, z directions.
             - volume_id (int): Volume id.
+
+        Raises:
+            - ValueError: If the volume does not have 6 surfaces.
         """
         if "transfinite_surface" not in self.geo_data["constraints"]:
             self.geo_data["constraints"]["transfinite_surface"] = {}

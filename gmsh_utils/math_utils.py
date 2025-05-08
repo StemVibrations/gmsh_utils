@@ -203,14 +203,14 @@ class MathUtils:
         # check if vectors are parallel
         if not np.allclose(cross_prod, 0):
             return False
-        else:
-            # vectors are parallel, check if they are collinear
-            # create a new vector between the 2 lines
-            v3 = np.mean(line_2_end_coordinates_array, axis=0) - np.mean(line_1_end_coordinates_array, axis=0)
-            cross_prod = np.cross(v1, v3)
 
-            # If the cross product is [0,0,0], the vectors are collinear
-            return np.allclose(cross_prod, 0)
+        # vectors are parallel, check if they are collinear
+        # create a new vector between the 2 lines
+        v3 = np.mean(line_2_end_coordinates_array, axis=0) - np.mean(line_1_end_coordinates_array, axis=0)
+        cross_prod = np.cross(v1, v3)
+
+        # If the cross product is [0,0,0], the vectors are collinear
+        return np.allclose(cross_prod, 0)
 
     @staticmethod
     def calculate_distance_between_points(point_1_coordinates: Sequence[float], point_2_coordinates: Sequence[float]) -> float:
