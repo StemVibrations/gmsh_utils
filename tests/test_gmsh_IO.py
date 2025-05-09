@@ -53,7 +53,8 @@ class TestGmshIO:
                 "lines": expected_lines,
                 "surfaces": expected_surfaces,
                 "volumes": expected_volumes,
-                "physical_groups": expected_physical_groups}
+                "physical_groups": expected_physical_groups,
+                "constraints":{}}
 
     @pytest.fixture
     def expected_geo_data_3D_with_shared_group(self):
@@ -81,7 +82,8 @@ class TestGmshIO:
                 "lines": expected_lines,
                 "surfaces": expected_surfaces,
                 "volumes": expected_volumes,
-                "physical_groups": expected_physical_groups}
+                "physical_groups": expected_physical_groups,
+                "constraints":{}}
 
     @pytest.fixture
     def expected_second_order_mesh_data_2D(self):
@@ -199,6 +201,36 @@ class TestGmshIO:
 
         TestUtils.assert_dictionary_almost_equal(gmsh_io.mesh_data, expected_second_order_mesh_data_2D)
 
+    def test_second_order_semi_structured_mesh_2D(self):
+        """
+        Creates a second order 2D mesh, where the first surface is structured with quad elements; the second surface is
+        unstructured with triangle elements.
+        """
+        element_size = 1
+
+        input_dict = {'surface1': {"element_size": element_size,
+                                  "coordinates": [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)],
+                                  "ndim": 2},
+                      "surface2": {"element_size": element_size,
+                                    "coordinates": [(0, 1, 0), (0.5, 1, 0), (0, 2, 0)],
+                                    "ndim": 2},
+                      }
+
+        # set a name for mesh output file
+        mesh_output_name = "test_2D_semi_structured"
+
+        gmsh_io = GmshIO()
+        gmsh_io.generate_geometry(input_dict, mesh_output_name)
+        gmsh_io.set_structured_mesh_constraints_surface([3,3,1],1)
+
+        gmsh_io.generate_mesh(ndim=2, mesh_name=mesh_output_name, order=2, open_gmsh_gui=False)
+
+        expected_second_order_mesh_data_2D = TestUtils.read_mesh_data_from_json(
+            "tests/test_data/expected_second_order_mesh_data_2D_semi_structured.json")
+
+        TestUtils.assert_dictionary_almost_equal(gmsh_io.mesh_data, expected_second_order_mesh_data_2D)
+
+
     def test_generate_mesh_3D(self):
         """
         Checks whether mesh data generated for 3D geometries is not empty.
@@ -302,21 +334,49 @@ class TestGmshIO:
         gmsh_io.generate_mesh(3, mesh_name=mesh_output_name, order=2,
                               open_gmsh_gui=False)
 
+        file_name = ""
         if platform == 'win32':
-            with open("tests/test_data/expected_second_order_mesh_data_3D_windows.json", 'r') as f:
-                expected_second_order_mesh_data_3D = json.load(f)
+            file_name = "tests/test_data/expected_second_order_mesh_data_3D_windows.json"
         elif platform == 'linux':
-            with open('tests/test_data/expected_second_order_mesh_data_3D_linux.json', 'r') as f:
-                expected_second_order_mesh_data_3D = json.load(f)
+            file_name = "tests/test_data/expected_second_order_mesh_data_3D_linux.json"
 
-        # make sure all node and element keys are integers
-        expected_second_order_mesh_data_3D["nodes"] = {int(k): v for k, v in
-                                                       expected_second_order_mesh_data_3D["nodes"].items()}
-        expected_second_order_mesh_data_3D["elements"] = {k: {int(kk): vv for kk, vv in v.items()}
-                                                          for k, v in
-                                                          expected_second_order_mesh_data_3D["elements"].items()}
+        expected_second_order_mesh_data_3D = TestUtils.read_mesh_data_from_json(file_name)
 
         TestUtils.assert_dictionary_almost_equal(gmsh_io.mesh_data, expected_second_order_mesh_data_3D)
+
+    def test_generate_structured_second_order_mesh_3D(self):
+        """
+        Checks if the second order structured mesh in 3D is generated correctly.
+
+        """
+
+        element_size = 1
+        # extrusion in 1 meter in z direction
+        extrusion_length = [0, 0, 1]
+
+        input_dict = {'volume': {"element_size": element_size,
+                                 "coordinates": [(0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)],
+                                 "ndim": 3,
+                                 "extrusion_length": extrusion_length}
+                      }
+
+        # set a name for mesh output file
+        mesh_output_name = "test_3D_structured"
+
+        gmsh_io = GmshIO()
+
+        # generate geometry and second order mesh
+        gmsh_io.generate_geometry(input_dict, mesh_output_name)
+
+        gmsh_io.set_structured_mesh_constraints_volume([3,4,5],1)
+
+        gmsh_io.generate_mesh(3, mesh_name=mesh_output_name, order=2,
+                              open_gmsh_gui=False)
+
+        expected_mesh_data = TestUtils.read_mesh_data_from_json(
+            r"tests/test_data/expected_second_order_mesh_data_3D_structured.json")
+
+        TestUtils.assert_dictionary_almost_equal(gmsh_io.mesh_data, expected_mesh_data)
 
     def test_read_gmsh_geo_2D(self):
         """
@@ -713,7 +773,8 @@ class TestGmshIO:
                                     'lines': {},
                                     'surfaces': {},
                                     'volumes': {},
-                                    'physical_groups': {'test': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 0}}}
+                                    'physical_groups': {'test': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 0}},
+                                    "constraints":{}}
 
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_filled_geo_data)
 
@@ -760,7 +821,8 @@ class TestGmshIO:
                              'volumes': {},
                              'physical_groups': {'line': {'geometry_ids': [1, 2, 3, 4], 'id': 1, 'ndim': 1},
                                                  'first_new_point': {'geometry_ids': [4], 'id': 2, 'ndim': 0},
-                                                 'second_new_point': {'geometry_ids': [5], 'id': 3, 'ndim': 0}}}
+                                                 'second_new_point': {'geometry_ids': [5], 'id': 3, 'ndim': 0}},
+                             "constraints":{}}
 
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
 
@@ -821,7 +883,8 @@ class TestGmshIO:
                              'surfaces': {1: [6, 5, 7, 2, 3, 4]},
                              'volumes': {},
                              'physical_groups': {'surface': {'geometry_ids': [1], 'id': 1, 'ndim': 2},
-                                                 'new_line': {'geometry_ids': [5], 'id': 2, 'ndim': 1}}}
+                                                 'new_line': {'geometry_ids': [5], 'id': 2, 'ndim': 1}},
+                             "constraints":{}}
 
         # check if geo data is as expected
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
@@ -882,7 +945,8 @@ class TestGmshIO:
                              'surfaces': {1: [-5, 1, 2], 2: [4, 5, 3]},
                              'volumes': {},
                              'physical_groups': {'surface': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 2},
-                                                 'new_line': {'geometry_ids': [5], 'id': 2, 'ndim': 1}}}
+                                                 'new_line': {'geometry_ids': [5], 'id': 2, 'ndim': 1}},
+                             "constraints":{}}
 
         # check if geo data is as expected
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
@@ -946,7 +1010,8 @@ class TestGmshIO:
                              'volumes': {},
                              'physical_groups': {'surface': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 2},
                                                  'group2_surface': {'geometry_ids': [1, 2], 'id': 2, 'ndim': 2},
-                                                 'new_line': {'geometry_ids': [5], 'id': 3, 'ndim': 1}}}
+                                                 'new_line': {'geometry_ids': [5], 'id': 3, 'ndim': 1}},
+                             "constraints":{}}
 
         # check if geo data is as expected
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
@@ -1026,7 +1091,8 @@ class TestGmshIO:
                              'volumes': {},
                              'physical_groups': {'surface': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 2},
                                                  'surface2': {'geometry_ids': [3, 4], 'id': 2, 'ndim': 2},
-                                                 'new_line': {'geometry_ids': [8, 11], 'id': 3, 'ndim': 1}}}
+                                                 'new_line': {'geometry_ids': [8, 11], 'id': 3, 'ndim': 1}},
+                             "constraints":{}}
 
         # check if geo data is as expected
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
@@ -1130,7 +1196,8 @@ class TestGmshIO:
                                           11: [-13, 9, -8]},
                              'volumes': {1: [-1, 7, 8, 5, 10], 2: [3, -7, 9, 2, 11]},
                              'physical_groups': {'new_surface': {'geometry_ids': [7], 'id': 2, 'ndim': 2},
-                                                 'volume': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 3}}}
+                                                 'volume': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 3}},
+                             "constraints":{}}
 
         # check if geo data is as expected
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
@@ -1171,7 +1238,7 @@ class TestGmshIO:
         empty_geo_data = gmsh_io.geo_data
 
         # check if geo data is empty after resetting
-        expected_empty_geo_data = {'lines': {}, 'physical_groups': {}, 'points': {}, 'surfaces': {}, 'volumes': {}}
+        expected_empty_geo_data = {'lines': {}, 'physical_groups': {}, 'points': {}, 'surfaces': {}, 'volumes': {}, "constraints":{}}
 
         TestUtils.assert_dictionary_almost_equal(empty_geo_data, expected_empty_geo_data)
 
@@ -1201,7 +1268,7 @@ class TestGmshIO:
         empty_geo_data = gmsh_io.geo_data
 
         # check if geo data is empty after resetting
-        expected_empty_geo_data = {'lines': {}, 'physical_groups': {}, 'points': {}, 'surfaces': {}, 'volumes': {}}
+        expected_empty_geo_data = {'lines': {}, 'physical_groups': {}, 'points': {}, 'surfaces': {}, 'volumes': {}, "constraints":{}}
         TestUtils.assert_dictionary_almost_equal(empty_geo_data, expected_empty_geo_data)
 
         # check if geo data is present after re-extracting
@@ -1213,7 +1280,7 @@ class TestGmshIO:
                                     'lines': {},
                                     'surfaces': {},
                                     'volumes': {},
-                                    'physical_groups': {'test': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 0}}}
+                                    'physical_groups': {'test': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 0}}, "constraints":{}}
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_filled_geo_data)
 
     def test_clear_mesh_data(self):
@@ -1292,7 +1359,8 @@ class TestGmshIO:
                                     'lines': {},
                                     'surfaces': {},
                                     'volumes': {},
-                                    'physical_groups': {'point_group': {'geometry_ids': [1, 2, 3], 'id': 1, 'ndim': 0}}}
+                                    'physical_groups': {'point_group': {'geometry_ids': [1, 2, 3], 'id': 1, 'ndim': 0}},
+                                    "constraints":{}}
 
         TestUtils.assert_dictionary_almost_equal(gmsh_io.geo_data, expected_filled_geo_data)
 
@@ -1322,7 +1390,8 @@ class TestGmshIO:
                                     'lines': {1: [1, 2], 2: [2, 3]},
                                     'surfaces': {},
                                     'volumes': {},
-                                    'physical_groups': {'line_group': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 1}}}
+                                    'physical_groups': {'line_group': {'geometry_ids': [1, 2], 'id': 1, 'ndim': 1}},
+                                    "constraints":{}}
 
         TestUtils.assert_dictionary_almost_equal(gmsh_io.geo_data, expected_filled_geo_data)
 
@@ -1352,7 +1421,8 @@ class TestGmshIO:
                                     'lines': {1: [1, 2], 2: [2, 3], 3: [3, 1]},
                                     'surfaces': {1: [1, 2, 3]},
                                     'volumes': {},
-                                    'physical_groups': {'surface_group': {'geometry_ids': [1], 'id': 1, 'ndim': 2}}}
+                                    'physical_groups': {'surface_group': {'geometry_ids': [1], 'id': 1, 'ndim': 2}},
+                                    "constraints":{}}
 
         TestUtils.assert_dictionary_almost_equal(gmsh_io.geo_data, expected_filled_geo_data)
 
@@ -1388,7 +1458,8 @@ class TestGmshIO:
                                     'surfaces': {1: [1, 2, 3], 2: [4, 6, -5, -1], 3: [5, 8, -7, -2], 4: [7, 9, -4, -3],
                                                  5: [6, 8, 9]},
                                     'volumes': {1: [-2, -3, -4, -1, 5]},
-                                    'physical_groups': {'volume_group': {'geometry_ids': [1], 'id': 1, 'ndim': 3}}}
+                                    'physical_groups': {'volume_group': {'geometry_ids': [1], 'id': 1, 'ndim': 3}},
+                                    "constraints":{}}
 
         TestUtils.assert_dictionary_almost_equal(gmsh_io.geo_data, expected_filled_geo_data)
 
@@ -1863,7 +1934,8 @@ class TestGmshIO:
                                           8: [-16, 13, 17, -10]},
                              'volumes': {1: [-2, -3, -7, -8, -5, -1, 6]},
                              'physical_groups': {'new_line': {'ndim': 1, 'id': 2, 'geometry_ids': [13]},
-                                                 'volume': {'ndim': 3, 'id': 1, 'geometry_ids': [1]}}}
+                                                 'volume': {'ndim': 3, 'id': 1, 'geometry_ids': [1]}},
+                             "constraints":{}}
 
         gmsh.model.mesh.generate(3)
 
@@ -1892,7 +1964,8 @@ class TestGmshIO:
                     'lines': {1: [1, 2]},
                     'surfaces': {},
                     'volumes': {},
-                    'physical_groups': {'Line': {'ndim': 1, 'id': 1, 'geometry_ids': [1]}}}
+                    'physical_groups': {'Line': {'ndim': 1, 'id': 1, 'geometry_ids': [1]}},
+                    "constraints":{}}
 
         gmsh_io = GmshIO()
 
@@ -1935,7 +2008,8 @@ class TestGmshIO:
                     'lines': {1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [4, 1]},
                     'surfaces': {1: [1, 2, 3, 4]},
                     'volumes': {},
-                    'physical_groups': {'Surface': {'ndim': 2, 'id': 1, 'geometry_ids': [1]}}}
+                    'physical_groups': {'Surface': {'ndim': 2, 'id': 1, 'geometry_ids': [1]}},
+                    "constraints":{}}
 
         gmsh_io = GmshIO()
 
@@ -2180,7 +2254,8 @@ class TestGmshIO:
                              'volumes': {1: [-2, -3, -4, -5, -1, 6]},
                              'physical_groups': {'new_point': {'ndim': 0, 'id': 3, 'geometry_ids': [10]},
                                                  'new_surface': {'ndim': 2, 'id': 2, 'geometry_ids': [5]},
-                                                 'volume': {'ndim': 3, 'id': 1, 'geometry_ids': [1]}}}
+                                                 'volume': {'ndim': 3, 'id': 1, 'geometry_ids': [1]}},
+                             "constraints":{}}
 
         # check if geo data is as expected
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
@@ -2270,7 +2345,8 @@ class TestGmshIO:
                              "volumes": {1: [-2, -3, -7, -8, -5, -1, 6]},
                              "physical_groups": {'new_lines': {'geometry_ids': [13, 14, 15], 'id': 3, 'ndim': 1},
                                                  'new_surface': {'geometry_ids': [7, 8], 'id': 2, 'ndim': 2},
-                                                 'volume': {'geometry_ids': [1], 'id': 1, 'ndim': 3}}}
+                                                 'volume': {'geometry_ids': [1], 'id': 1, 'ndim': 3}},
+                             "constraints":{}}
 
         # check if geo data is as expected
         TestUtils.assert_dictionary_almost_equal(gmsh_io.geo_data, expected_geo_data)
@@ -2421,3 +2497,231 @@ class TestGmshIO:
         polygon_vertices = [(0, 0, 1), (10, 0, 1), (10, 20, 1), (0, 20, 1)]
         surface_ids = gmsh_io.get_surface_ids_at_polygon(polygon_vertices)
         assert surface_ids == [1, 3]
+
+    def test_get_direction_index_straight_line(self):
+        """
+        Tests whether the direction index of a straight line is correctly returned
+
+        """
+        gmsh_io = GmshIO()
+
+        # aligned with x-axis
+        gmsh_io.geo_data["lines"] = {1: [1, 2]}
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0]}
+
+        assert gmsh_io._GmshIO__get_direction_index_straight_line(1) == 0
+
+        # aligned with y-axis
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [0.0, 1.0, 0.0]}
+
+        assert gmsh_io._GmshIO__get_direction_index_straight_line(1) == 1
+
+        # aligned with z-axis
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [0.0, 0.0, 1.0]}
+
+        assert gmsh_io._GmshIO__get_direction_index_straight_line(1) == 2
+
+        # non-aligned line
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 1.0, 0.0]}
+
+        with pytest.raises(ValueError, match=r"Line 1 is not aligned with x, y, or z axis."):
+            gmsh_io._GmshIO__get_direction_index_straight_line(1)
+
+    def test_set_constraints_straight_collinear_lines(self):
+        """
+        Tests whether the constraints for straight collinear lines are correctly set.
+        """
+        gmsh_io = GmshIO()
+
+        gmsh_io.geo_data["constraints"] = {"transfinite_curve": {}}
+
+        # check the number of points for a single line
+        gmsh_io.geo_data["lines"] = {1: [1, 2]}
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0]}
+
+        gmsh_io._GmshIO__set_constraints_straight_collinear_lines([1], 5)
+        assert gmsh_io.geo_data["constraints"]["transfinite_curve"][1] == {"n_points": 5}
+
+        # check the number of points for multiple collinear lines
+        gmsh_io.geo_data["constraints"] = {"transfinite_curve": {}}
+        gmsh_io.geo_data["lines"] = {1: [1, 2], 2: [2, 3]}
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [2.0, 0.0, 0.0]}
+
+        gmsh_io._GmshIO__set_constraints_straight_collinear_lines([1, 2], 5)
+        assert gmsh_io.geo_data["constraints"]["transfinite_curve"][1] == {"n_points": 3}
+        assert gmsh_io.geo_data["constraints"]["transfinite_curve"][2] == {"n_points": 3}
+
+        # check expected error when the line cannot be divided into an integer number of evenly spaced points
+        gmsh_io.geo_data["constraints"] = {"transfinite_curve": {}}
+        gmsh_io.geo_data["lines"] = {1: [1, 2], 2: [2, 3]}
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [2.5, 0.0, 0.0]}
+
+        with pytest.raises(ValueError, match=r"Line 1 cannot be divided into an integer number of evenly spaced points."):
+            gmsh_io._GmshIO__set_constraints_straight_collinear_lines([1, 2], 5)
+
+    def test_validate_rectangle(self):
+        """
+        Tests whether a surface is correctly validated as a rectangle.
+        """
+
+        # simple rectangle
+        gmsh_io = GmshIO()
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0]}
+        gmsh_io._GmshIO__validate_rectangle(1, [1, 2, 3, 4])
+
+        # different lengths
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 2.0, 0.0], 4: [0.0, 1.0, 0.0]}
+        with pytest.raises(ValueError, match=r"Surface 1 is not a rectangle, opposite sides have different lengths."):
+            gmsh_io._GmshIO__validate_rectangle(1, [1, 2, 3, 4])
+
+        # not aligned with axes
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 1.0], 4: [0.0, 1.0, 1.0]}
+        with pytest.raises(ValueError, match=r"Surface 1 is not an aligned rectangle, "
+                                             r"the sides are not aligned with the axes."):
+            gmsh_io._GmshIO__validate_rectangle(1, [1, 2, 3, 4])
+
+        # surface with 3 points
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0]}
+        with pytest.raises(ValueError, match=r"Surface 1 is not a rectangle, it has 3 corner nodes."):
+            gmsh_io._GmshIO__validate_rectangle(1, [1, 2, 3])
+
+    def test_set_structured_mesh_constraints_surface(self):
+        """
+        Tests whether the constraints for a structured mesh on a surface are correctly set.
+
+        """
+        gmsh_io = GmshIO()
+
+        # 4 noded rectangle
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0]}
+        gmsh_io.geo_data["lines"] = {1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [1, 4]}
+        gmsh_io.geo_data["surfaces"] = {1: [1, 2, 3, -4]}
+        gmsh_io.set_structured_mesh_constraints_surface([4, 2, 1], 1)
+        assert gmsh_io.geo_data["constraints"]["transfinite_surface"][1] == {"n_points": [4, 2,1],
+                                                                             "corner_node_ids": [1, 2, 3, 4]}
+        assert gmsh_io.geo_data["constraints"]["transfinite_curve"] == {1: {"n_points": 4},
+                                                                        2: {"n_points": 2},
+                                                                        3: {"n_points": 4},
+                                                                        4: {"n_points": 2}}
+
+        # rectangle, but with an extra point on one of the lines
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0],
+                                      5: [0.0, 0.5, 0.0]}
+        gmsh_io.geo_data["lines"] = {1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [4, 5], 5: [5, 1]}
+        gmsh_io.geo_data["surfaces"] = {1: [1, 2, 3, 4, 5]}
+        gmsh_io.set_structured_mesh_constraints_surface([4, 3, 1], 1)
+        assert gmsh_io.geo_data["constraints"]["transfinite_surface"][1] == {"n_points": [4, 3,1],
+                                                                             "corner_node_ids": [1, 2, 3, 4]}
+        assert gmsh_io.geo_data["constraints"]["transfinite_curve"] == {1: {"n_points": 4},
+                                                                        2: {"n_points": 3},
+                                                                        3: {"n_points": 4},
+                                                                        4: {"n_points": 2},
+                                                                        5: {"n_points": 2}}
+
+        # raise error for non rectangle surface
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0], 5: [-0.25, 0.75, 0.0], 6: [-0.5, 0.5, 0.0]}
+        gmsh_io.geo_data["lines"] = {1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [4, 5], 5: [5, 6], 6: [6, 1]}
+        gmsh_io.geo_data["surfaces"] = {1: [1, 2, 3, 4, 5, 6]}
+        with pytest.raises(ValueError, match=r"Surface 1 is not a rectangle, it has 5 groups of collinear lines."):
+            gmsh_io.set_structured_mesh_constraints_surface([2, 2, 1], 1)
+
+        # raise error for surface with less than 4 lines
+        gmsh_io.geo_data["points"] = {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0]}
+        gmsh_io.geo_data["lines"] = {1: [1, 2], 2: [2, 3], 3: [3, 1]}
+        gmsh_io.geo_data["surfaces"] = {1: [1, 2, 3]}
+        with pytest.raises(ValueError,
+                           match=r"Surface 1 has 3 lines. At least 4 lines are required for a structured surface."):
+            gmsh_io.set_structured_mesh_constraints_surface([2, 2, 1], 1)
+
+    def test_set_structured_mesh_constraints_volume(self,expected_geo_data_3D):
+        """
+        Tests whether the constraints for a structured mesh on a volume are correctly set.
+        """
+        gmsh_io = GmshIO()
+        gmsh_io._GmshIO__geo_data = expected_geo_data_3D
+
+        # pop the second volume, else pyramids are created
+        gmsh_io.geo_data["volumes"].pop(2)
+
+        # 8 noded cuboid
+        gmsh_io.set_structured_mesh_constraints_volume([4, 3, 2], 1)
+
+        expected_dictionary = {'transfinite_curve': {5: {'n_points': 4},
+                                                     6: {'n_points': 3},
+                                                     7: {'n_points': 4},
+                                                     8: {'n_points': 3},
+                                                     19: {'n_points': 4},
+                                                     20: {'n_points': 3},
+                                                     21: {'n_points': 4},
+                                                     22: {'n_points': 3},
+                                                     24: {'n_points': 2},
+                                                     25: {'n_points': 2},
+                                                     29: {'n_points': 2},
+                                                     33: {'n_points': 2}},
+                               'transfinite_surface': {10: {'corner_node_ids': [1, 2, 3, 4], 'n_points': [4, 3, 2]},
+                                                       26: {'corner_node_ids': [1, 2, 14, 13], 'n_points': [4, 3, 2]},
+                                                       30: {'corner_node_ids': [2, 3, 18, 14], 'n_points': [4, 3, 2]},
+                                                       34: {'corner_node_ids': [3, 4, 22, 18], 'n_points': [4, 3, 2]},
+                                                       38: {'corner_node_ids': [4, 1, 13, 22], 'n_points': [4, 3, 2]},
+                                                       39: {'corner_node_ids': [13, 14, 18, 22], 'n_points': [4, 3, 2]}},
+                               'transfinite_volume': {1: {'corner_node_ids': [1, 2, 3, 4, 13, 14, 18, 22],
+                                                          'n_points': [4, 3, 2]}}}
+
+        # check if the constraints are as expected
+        TestUtils.assert_dictionary_almost_equal(expected_dictionary, gmsh_io.geo_data["constraints"])
+
+        # check if mesh can be generated
+        gmsh_io.generate_mesh(3, open_gmsh_gui=False)
+
+        # split a surface into 2 surfaces
+        gmsh_io.geo_data["points"][33] = [0.25, 0.0, -0.5]
+        gmsh_io.geo_data["points"][34] = [0.25, 0.0, 0.0]
+
+        gmsh_io.geo_data["lines"][19] = [13, 33]
+        gmsh_io.geo_data["lines"][5] = [1, 34]
+        gmsh_io.geo_data["lines"][57] = [33,14]
+        gmsh_io.geo_data["lines"][58] = [34, 2]
+        gmsh_io.geo_data["lines"][56] = [34, 33]
+
+        gmsh_io.geo_data["surfaces"][26] = [5, 56, -19, -24]
+        gmsh_io.geo_data["surfaces"][62] = [58, 25, -57, -56]
+
+        gmsh_io.geo_data["volumes"][1] = [-10, 39, 26, 62, 30, 34, 38]
+
+        with pytest.raises(ValueError, match=r"Volume 1 is not a cuboid, it has 7 surfaces."):
+            gmsh_io.set_structured_mesh_constraints_volume([4, 3, 2], 1)
+
+    def test_get_coordinates_from_geometry_id(self):
+        """
+        Tests whether the coordinates of a point, line, surface, and volume are correctly
+        returned from the geometry id.
+        """
+
+        gmsh_io = GmshIO()
+        gmsh_io._GmshIO__geo_data = {
+            "points": {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0],
+                       5: [0.0, 0.0, 1.0], 6: [1.0, 0.0, 1.0], 7: [1.0, 1.0, 1.0], 8: [0.0, 1.0, 1.0]},
+            "lines": {1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [4, 1], 5: [1, 5], 6: [2, 6], 7: [3, 7], 8: [4, 8],
+                      9: [5, 6], 10: [6, 7], 11: [7, 8], 12: [8, 5]},
+            "surfaces": {1: [1, 2, 3, 4], 2: [5, 6, 7, 8], 3: [1, 6, 9, 5], 4: [2, 7, 10, 6], 5: [3, 8, 11, 7],
+                         6: [4, 5, 12, 8]},
+            "volumes": {1: [1, 2, 3, 4, 5, 6]}
+        }
+        # get coordinates of point
+        point_coordinates = gmsh_io.get_coordinates_from_geometry_id(0, 7)
+        np.testing.assert_allclose([[1.0, 1.0, 1.0]],point_coordinates)
+
+        # check coordinates of line
+        line_coordinates = gmsh_io.get_coordinates_from_geometry_id(1, 1)
+        np.testing.assert_allclose([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]], line_coordinates)
+
+        # check coordinates of surface
+        surface_coordinates = gmsh_io.get_coordinates_from_geometry_id(2, 1)
+        np.testing.assert_allclose([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 1.0, 0.0], [0.0, 1.0, 0.0]],
+                                   surface_coordinates)
+
+        # check coordinates of volume
+        volume_coordinates = gmsh_io.get_coordinates_from_geometry_id(3, 1)
+        np.testing.assert_allclose( [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 1.0, 0.0], [0.0, 1.0, 0.0],
+                                                [0.0, 0.0, 1.0], [1.0, 0.0, 1.0], [1.0, 1.0, 1.0], [0.0, 1.0, 1.0]],
+                                      volume_coordinates)
