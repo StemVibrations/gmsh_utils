@@ -531,6 +531,20 @@ class GmshIO:
             self.synchronize_gmsh()
             self.extract_geo_data()
 
+            # add all volume lines to a new physical group, else there are problems with ids after adding a point on a
+            # volume edge
+            if ndim ==3:
+                volume_ids = self.geo_data["physical_groups"][layer_name]["geometry_ids"]
+                lines_volumes = []
+                for volume_id in volume_ids:
+                    surfaces_volume = gmsh.model.getBoundary([(3, volume_id)], recursive=False, oriented=False)
+
+                    for surface in surfaces_volume:
+                        lines_volumes.extend(gmsh.model.getBoundary([surface], recursive=False, oriented=False))
+
+                line_group_name = layer_name + "_edge_lines"
+                self.__add_or_append_to_physical_group(line_group_name, 1, [line[1] for line in lines_volumes])
+
         # add element size to geo data
         for layer_name, layer in layer_parameters.items():
             if "element_size" in layer and layer["element_size"] > 0:
