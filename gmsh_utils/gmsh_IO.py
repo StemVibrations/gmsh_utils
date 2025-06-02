@@ -528,22 +528,13 @@ class GmshIO:
 
             # clean up geo data after each layer, such that occ entities are correctly assigned
             gmsh.model.occ.removeAllDuplicates()
+
+            # if a point is created, it is necessary to synchronize the point intersection separately
+            if ndim == 0:
+                self.__synchronize_point_intersection()
+
             self.synchronize_gmsh()
             self.extract_geo_data()
-
-            # add all volume lines to a new physical group, else there are problems with ids after adding a point on a
-            # volume edge
-            if ndim ==3:
-                volume_ids = self.geo_data["physical_groups"][layer_name]["geometry_ids"]
-                lines_volumes = []
-                for volume_id in volume_ids:
-                    surfaces_volume = gmsh.model.getBoundary([(3, volume_id)], recursive=False, oriented=False)
-
-                    for surface in surfaces_volume:
-                        lines_volumes.extend(gmsh.model.getBoundary([surface], recursive=False, oriented=False))
-
-                line_group_name = layer_name + "_edge_lines"
-                self.__add_or_append_to_physical_group(line_group_name, 1, [line[1] for line in lines_volumes])
 
         # add element size to geo data
         for layer_name, layer in layer_parameters.items():
@@ -1382,6 +1373,48 @@ class GmshIO:
 
         if gmsh.isInitialized():
             gmsh.finalize()
+
+
+    def __synchronize_point_intersection(self):
+        """
+        Synchronizes the intersection of points and lines. If a point intersects a line, the line is split into two
+        new lines at the intersection point. Both of the new lines are then manually added to the existing
+        physical group, as gmsh does not do this automatically.
+
+        """
+        # synchronize the occ geometry and the gmsh model, such that all entities are up to date
+        self.__synchronize_geometry()
+
+        # only in 3D geometries lines are intersected with points separately, in 2D geometries this is done in
+        # synchronize_intersection
+        if gmsh.model.getDimension() == 3:
+
+            # get all entities
+            occ_entities = gmsh.model.occ.get_entities()
+
+            # get all lines and surfaces
+            points = [entity for entity in occ_entities if entity[0] == 0]
+            lines = [entity for entity in occ_entities if entity[0] == 1]
+
+            # intersect all lines with all surfaces
+            new_entities, new_entities_map = gmsh.model.occ.fragment(lines, points, removeTool=True,
+                                                                     removeObject=True)
+
+            # create the new entities map in the correct order, including all points, lines, surfaces and volumes
+            new_points = new_entities_map[len(lines):]
+            new_lines = new_entities_map[:len(lines)]
+
+            surfaces = [[entity] for entity in occ_entities if entity[0] == 2]
+            volumes = [[entity] for entity in occ_entities if entity[0] == 3]
+            new_entities_map = new_points + new_lines + surfaces + volumes
+
+            # in the original entities list, exchange original points with new points, other entities remain the same
+            new_occ_entities = gmsh.model.occ.get_entities()
+            unique_original_entities = ([entity for entity in new_occ_entities if entity[0] == 0] +
+                                        [entity for entity in occ_entities if entity[0] != 0])
+
+            # re-add physical groups on split entities
+            self.__readd_physical_group_on_split_entities(unique_original_entities, new_entities_map)
 
     def __synchronize_intersection(self):
         """

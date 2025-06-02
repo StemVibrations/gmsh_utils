@@ -1212,6 +1212,49 @@ class TestGmshIO:
         # check if geo data hasn't changed after re-synchronizing
         TestUtils.assert_dictionary_almost_equal(filled_geo_data, expected_geo_data)
 
+    def test_synchronize_gmsh_after_adding_point_on_line_on_volume(self):
+        """
+        Tests if a point can be added on a line which is on surface of a volume, which is created through extrusion.
+        This test checks whether the point is added correctly and the geo data is updated accordingly.
+
+        """
+
+        gmsh_io = GmshIO()
+
+        volume = {"layer_1": {"ndim":3,
+                              "coordinates":[(0,0,0) , (1,0,0), (1,1,0), (0.2,1,0), (0,1,0)],
+                              "extrusion_length":[0,0,1] }}
+        gmsh_io.generate_geometry(volume, "model_1")
+
+        point = {"point": {"ndim": 0, "coordinates": [(0.2, 1, 0.5)]}}
+        gmsh_io.generate_geometry(point, "model_1")
+
+        gmsh_io.synchronize_gmsh()
+        gmsh_io.extract_geo_data()
+
+        generated_geo_data = gmsh_io.geo_data
+
+        expected_geo_data= {"points":{1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0], 4: [0.2, 1.0, 0.0],
+                                      5: [0.0, 1.0, 0.0], 6: [0.0, 0.0, 1.0], 7: [1.0, 0.0, 1.0], 8: [1.0, 1.0, 1.0],
+                                      9: [0.2, 1.0, 1.0], 10: [0.0, 1.0, 1.0], 11: [0.2, 1.0, 0.5]},
+                            'lines': {1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [4, 5],
+                                      5: [5, 1], 6: [1, 6], 7: [2, 7], 8: [6, 7],
+                                      9: [3, 8], 10: [7, 8], 12: [8, 9], 13: [5, 10],
+                                      14: [9, 10], 15: [10, 6], 16: [4, 11], 17: [11, 9]},
+                            "surfaces": {1: [1, 2, 3, 4, 5], 2: [6, 8, -7, -1], 3: [7, 10, -9, -2],
+                                         4: [9, 12, -17, -16, -3], 5: [16, 17, 14, -13, -4], 6: [13, 15, -6, -5],
+                                         7: [8, 10, 12, 14, 15]},
+                            "volumes": {1: [-2, -3, -4, -5, -6, -1, 7]},
+                            "physical_groups":{'layer_1': {'geometry_ids': [1], 'id': 1, 'ndim': 3},
+                                               'point': {'geometry_ids': [11], 'id': 2, 'ndim': 0}},
+                            "constraints":{}}
+
+        TestUtils.assert_dictionary_almost_equal(generated_geo_data, expected_geo_data)
+
+        # generate mesh to check if the mesh can actually be generated
+        gmsh_io.generate_mesh(ndim=3)
+
+
     def test_reset_gmsh(self):
         """
         Checks whether gmsh is reset after calling reset_gmsh.
@@ -2190,69 +2233,34 @@ class TestGmshIO:
         gmsh_io = GmshIO()
         gmsh.initialize()
 
-        # create first surface
-        # create surface points
-        point_id1 = gmsh.model.occ.addPoint(0, 0, 0)
-        point_id2 = gmsh.model.occ.addPoint(1, 0, 0)
-        point_id3 = gmsh.model.occ.addPoint(1, 1, 0)
-        point_id4 = gmsh.model.occ.addPoint(0, 1, 0)
+        # create a volume by extruding a surface
+        layer_parameters = {"volume": {"coordinates": [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]],
+                                        "ndim": 3,
+                                        "extrusion_length": [0,0,1]}}
+        gmsh_io.generate_geometry(layer_parameters, "")
 
-        # create surface lines
-        line_id1 = gmsh.model.occ.addLine(point_id1, point_id2)
-        line_id2 = gmsh.model.occ.addLine(point_id2, point_id3)
-        line_id3 = gmsh.model.occ.addLine(point_id3, point_id4)
-        line_id4 = gmsh.model.occ.addLine(point_id4, point_id1)
+        # create a new surface on the top of an existing volume edge
+        layer_parameters = {"new_surface": {"coordinates": [[0, 0, 0], [0, 0, 1], [0, 1, 1], [0, 1, 0]],
+                                                "ndim": 2}}
+        gmsh_io.generate_geometry(layer_parameters, "")
 
-        # create a surface
-        curve_loop_id = gmsh.model.occ.addCurveLoop([line_id1, line_id2, line_id3, line_id4])
-        surface_id = gmsh.model.occ.addPlaneSurface([curve_loop_id])
-
-        # create a volume by extruding the surface
-        new_dim_ids = gmsh.model.occ.extrude([(2, surface_id)], 0, 0, 1)
-        volume_id: int = next((dim_tag[1] for dim_tag in new_dim_ids if dim_tag[0] == 3))
-
-        gmsh.model.addPhysicalGroup(3, [volume_id], tag=-1, name="volume")
+        # generate a new point on top of an existing point
+        layer_parameters = {"new_point": {"coordinates": [(0, 0, 1)],
+                                        "ndim": 0}}
+        gmsh_io.generate_geometry(layer_parameters, "")
         gmsh_io.synchronize_gmsh()
-
-        # add new surface group
-        point_id_5 = gmsh.model.occ.addPoint(0.0, 0, 0)
-        point_id_6 = gmsh.model.occ.addPoint(0, 0, 1)
-        point_id_7 = gmsh.model.occ.addPoint(0, 1, 1)
-        point_id_8 = gmsh.model.occ.addPoint(0, 1, 0)
-
-        line_id5 = gmsh.model.occ.addLine(point_id_5, point_id_6)
-        line_id6 = gmsh.model.occ.addLine(point_id_6, point_id_7)
-        line_id7 = gmsh.model.occ.addLine(point_id_7, point_id_8)
-        line_id8 = gmsh.model.occ.addLine(point_id_8, point_id_5)
-
-        curve_loop_id2 = gmsh.model.occ.addCurveLoop([line_id5, line_id6, line_id7, line_id8])
-        surface_id2 = gmsh.model.occ.addPlaneSurface([curve_loop_id2])
-
-        gmsh.model.addPhysicalGroup(2, [surface_id2], name="new_surface")
-        gmsh_io.synchronize_gmsh()
-
-        # add new point group
-        point_id_9 = gmsh.model.occ.addPoint(0, 0, 1)
-
-        gmsh.model.addPhysicalGroup(0, [point_id_9], name="new_point")
-        gmsh_io.synchronize_gmsh()
-
-        # extract geo data
         gmsh_io.extract_geo_data()
+
         filled_geo_data = gmsh_io.geo_data
 
-        # todo, points 9, 10, 11 are duplicates, somehow they are not removed. It is possible that
-        # the points are present in point physical groups, but the points shouldn't be present in
-        # the line connectivities. Note that meshing works fine, i.e. no hanging nodes are present
         expected_geo_data = {'points': {1: [0.0, 0.0, 0.0], 2: [1.0, 0.0, 0.0], 3: [1.0, 1.0, 0.0], 4: [0.0, 1.0, 0.0],
-                                        5: [0.0, 0.0, 1.0], 6: [1.0, 0.0, 1.0], 7: [1.0, 1.0, 1.0], 8: [0.0, 1.0, 1.0],
-                                        9: [0.0, 1.0, 0.0], 10: [0, 0.0, 1.0], 11: [0.0, 1.0, 1.0]},
+                                        5: [0.0, 0.0, 1.0], 6: [1.0, 0.0, 1.0], 7: [1.0, 1.0, 1.0], 8: [0.0, 1.0, 1.0]},
                              'lines': {1: [1, 2], 2: [2, 3], 3: [3, 4], 4: [4, 1], 5: [1, 5], 6: [2, 6],
                                        7: [5, 6], 8: [3, 7], 9: [6, 7], 10: [4, 8], 11: [7, 8], 12: [8, 5]},
                              'surfaces': {1: [1, 2, 3, 4], 2: [5, 7, -6, -1], 3: [6, 9, -8, -2],
                                           4: [8, 11, -10, -3], 5: [10, 12, -5, -4], 6: [7, 9, 11, 12]},
                              'volumes': {1: [-2, -3, -4, -5, -1, 6]},
-                             'physical_groups': {'new_point': {'ndim': 0, 'id': 3, 'geometry_ids': [10]},
+                             'physical_groups': {'new_point': {'ndim': 0, 'id': 3, 'geometry_ids': [5]},
                                                  'new_surface': {'ndim': 2, 'id': 2, 'geometry_ids': [5]},
                                                  'volume': {'ndim': 3, 'id': 1, 'geometry_ids': [1]}},
                              "constraints":{}}
