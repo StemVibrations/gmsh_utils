@@ -60,6 +60,10 @@ class GmshIO:
                                            "physical_groups": {},
                                            "constraints":{}}
 
+        # make sure gmsh is finalized before initializing. Else a corrupted gmsh instance can cause issues
+        if gmsh.isInitialized():
+            gmsh.finalize()
+
     @property
     def mesh_data(self) -> Dict[str, Any]:
         """

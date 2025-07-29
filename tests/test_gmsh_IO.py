@@ -2733,3 +2733,16 @@ class TestGmshIO:
         np.testing.assert_allclose( [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 1.0, 0.0], [0.0, 1.0, 0.0],
                                                 [0.0, 0.0, 1.0], [1.0, 0.0, 1.0], [1.0, 1.0, 1.0], [0.0, 1.0, 1.0]],
                                       volume_coordinates)
+
+    def test_construct_gmsh_io_with_open_gmsh_instance(self):
+        """
+        Tests whether the GmshIO class closes an open Gmsh instance correctly
+        """
+
+        gmsh.initialize()
+        _ = GmshIO()
+
+        assert not gmsh.isInitialized()
+
+
+
