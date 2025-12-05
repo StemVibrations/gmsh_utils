@@ -2442,11 +2442,15 @@ class TestGmshIO:
 
     def test_set_verbosity_after_gmsh_reset(self):
         """
-        Tests whether the verbosity level is set correctly after gmsh.reset() is called.
+        Tests whether the verbosity level is set correctly after reset_gmsh_instance() is called.
         """
 
         gmsh_io = GmshIO()
+
+        # check if verbosity level is not being set before initializing gmsh
+        gmsh_io.set_verbosity_level(3)
         gmsh.initialize()
+        assert gmsh.option.getNumber("General.Verbosity") == 5  # default verbosity level
 
         # set verbosity level
         initial_level = 3

@@ -1577,7 +1577,8 @@ class GmshIO:
         if verbosity_level not in [0, 1, 2, 3, 4, 5, 99]:
             raise ValueError(f"Verbosity level must be 0, 1, 2, 3, 4, 5 or 99. Verbosity level is {verbosity_level}")
 
-        gmsh.option.setNumber("General.Verbosity", verbosity_level)
+        if gmsh.isInitialized():
+            gmsh.option.setNumber("General.Verbosity", verbosity_level)
 
     def __initialize_gmsh_options(self):
         """
