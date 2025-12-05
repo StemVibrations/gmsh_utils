@@ -62,7 +62,7 @@ class GmshIO:
                                            "physical_groups": {},
                                            "constraints":{}}
 
-        self.__gmsh_options: Dict[str,Any] = {"verbosity_level": 2}
+        self.__gmsh_options: Dict[str,Any] = {"verbosity_level": 5}
 
         # make sure gmsh is finalized before initializing. Else a corrupted gmsh instance can cause issues
         if gmsh.isInitialized():
