@@ -2447,12 +2447,10 @@ class TestGmshIO:
 
         gmsh_io = GmshIO()
 
-        # check if verbosity level is unset before initializing gmsh
+        # check if verbosity level is not being set before initializing gmsh
         gmsh_io.set_verbosity_level(3)
-        assert gmsh.option.getNumber("General.Verbosity") == 0
-
-        # only after initializing gmsh, the verbosity level can be set
         gmsh.initialize()
+        assert gmsh.option.getNumber("General.Verbosity") == 5  # default verbosity level
 
         # set verbosity level
         initial_level = 3
