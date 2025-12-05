@@ -62,7 +62,7 @@ class GmshIO:
                                            "physical_groups": {},
                                            "constraints":{}}
 
-        self.__gmsh_options: Dict[str,Any] = {"verbosity_level": 5}
+        self.__gmsh_options: Dict[str, Any] = {"verbosity_level": 5}
 
         # make sure gmsh is finalized before initializing. Else a corrupted gmsh instance can cause issues
         if gmsh.isInitialized():
@@ -1577,7 +1577,8 @@ class GmshIO:
         if verbosity_level not in [0, 1, 2, 3, 4, 5, 99]:
             raise ValueError(f"Verbosity level must be 0, 1, 2, 3, 4, 5 or 99. Verbosity level is {verbosity_level}")
 
-        gmsh.option.setNumber("General.Verbosity", verbosity_level)
+        if gmsh.isInitialized():
+            gmsh.option.setNumber("General.Verbosity", verbosity_level)
 
     def __initialize_gmsh_options(self):
         """
