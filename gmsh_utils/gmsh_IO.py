@@ -44,6 +44,8 @@ class GmshIO:
             connectivity's and element types.
         - geo_data (dict): Dictionary containing the geometry data, the geometry data contains: points, lines, \
             surfaces, volumes and the physical groups.
+        - __gmsh_options (Dict[str, Any]): Dictionary containing gmsh options. These options are maintained after gmsh \
+           is re-initialized.
 
     """
 
@@ -59,6 +61,8 @@ class GmshIO:
                                            "volumes": {},
                                            "physical_groups": {},
                                            "constraints":{}}
+
+        self.__gmsh_options: Dict[str,Any] = {"verbosity_level": 2}
 
         # make sure gmsh is finalized before initializing. Else a corrupted gmsh instance can cause issues
         if gmsh.isInitialized():
@@ -516,6 +520,7 @@ class GmshIO:
         if not gmsh.isInitialized():
             gmsh.initialize()
             gmsh.model.add(model_name)
+            self.__initialize_gmsh_options()
 
         for layer_name, layer in layer_parameters.items():
             ndim = layer["ndim"]
@@ -1531,15 +1536,15 @@ class GmshIO:
             # synchronize intersections of entities
             self.__synchronize_intersection()
 
-    @staticmethod
-    def reset_gmsh_instance():
+    def reset_gmsh_instance(self):
         """
-        Resets gmsh object. Finalizes gmsh if the gmsh object is initialized and initializes gmsh.
+        Resets gmsh object. Finalizes gmsh if the gmsh object is initialized and initializes gmsh and its options.
 
         """
         if gmsh.isInitialized():
             gmsh.finalize()
         gmsh.initialize()
+        self.__initialize_gmsh_options()
 
     def clear_geo_data(self):
         """
@@ -1561,16 +1566,23 @@ class GmshIO:
 
         self.__mesh_data = {}
 
-    @staticmethod
-    def set_verbosity_level(verbosity_level: int):
+    def set_verbosity_level(self, verbosity_level: int):
         """
         Sets the verbosity level of gmsh.
         Level of information printed on the terminal and the message console (0: silent except for fatal errors,
         1: errors, 2: warnings, 3: direct, 4: information, 5: status, 99: debug) Default value: 5
 
         """
-
+        self.__gmsh_options["verbosity_level"] = verbosity_level
         if verbosity_level not in [0, 1, 2, 3, 4, 5, 99]:
             raise ValueError(f"Verbosity level must be 0, 1, 2, 3, 4, 5 or 99. Verbosity level is {verbosity_level}")
 
         gmsh.option.setNumber("General.Verbosity", verbosity_level)
+
+    def __initialize_gmsh_options(self):
+        """
+        Initializes available gmsh options. Current available options are:
+        - verbosity_level
+        """
+
+        self.set_verbosity_level(self.__gmsh_options["verbosity_level"])

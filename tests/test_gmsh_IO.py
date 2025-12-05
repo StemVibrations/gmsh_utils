@@ -2440,6 +2440,23 @@ class TestGmshIO:
         with pytest.raises(ValueError, match=f"Verbosity level must be 0, 1, 2, 3, 4, 5 or 99. Verbosity level is 100"):
             gmsh_io.set_verbosity_level(non_existing_level)
 
+    def test_set_verbosity_after_gmsh_reset(self):
+        """
+        Tests whether the verbosity level is set correctly after gmsh.reset() is called.
+        """
+
+        gmsh_io = GmshIO()
+        gmsh.initialize()
+
+        # set verbosity level
+        initial_level = 3
+        gmsh_io.set_verbosity_level(initial_level)
+        assert gmsh.option.getNumber("General.Verbosity") == initial_level
+
+        # reset gmsh and check if verbosity level is still the same
+        gmsh_io.reset_gmsh_instance()
+        assert gmsh.option.getNumber("General.Verbosity") == initial_level
+
     def test_get_surface_ids_at_plane(self):
         """
         Tests whether the surface ids at a plane are correctly returned.
